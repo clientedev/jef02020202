@@ -243,6 +243,7 @@ function renderizarCalendario() {
         html += '</div>';
     }
     container.innerHTML = html;
+    atualizarMetricasEvolucao();
 }
 
 function setVisualizacao(tipo) {
@@ -316,6 +317,7 @@ function renderizarLista() {
     
     html += '</tbody></table></div>';
     container.innerHTML = html;
+    atualizarMetricasEvolucao();
 }
 
 function renderizarTimeline() {
@@ -389,6 +391,17 @@ function abrirDetalhesDia(data, dia) {
     } else {
         const inputData = document.getElementById('eventoData');
         if (inputData) inputData.value = data;
+        
+        // Limpar campos de empresa antes de abrir para novo agendamento
+        const inputEmpresaId = document.getElementById('eventoEmpresaId');
+        if (inputEmpresaId) inputEmpresaId.value = '';
+        
+        const inputBusca = document.getElementById('eventoBuscaEmpresa');
+        if (inputBusca) inputBusca.value = '';
+        
+        const inputSigla = document.getElementById('eventoSigla');
+        if (inputSigla) inputSigla.value = '';
+
         abrirModalNovoEvento();
     }
 }
