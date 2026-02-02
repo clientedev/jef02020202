@@ -45,16 +45,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof atualizarSidebar !== 'undefined') atualizarSidebar();
     
     const hoje = new Date();
-    document.getElementById('filtroMesAno').value = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+    const filtroMesAno = document.getElementById('filtroMesAno');
+    if (filtroMesAno) {
+        filtroMesAno.value = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+    }
     
     carregarDados();
     
-    document.getElementById('formEvento').addEventListener('submit', salvarEvento);
+    const formEvento = document.getElementById('formEvento');
+    if (formEvento) formEvento.addEventListener('submit', salvarEvento);
 
     // Lógica de Busca de Empresa
     const inputBusca = document.getElementById('eventoBuscaEmpresa');
-    const inputId = document.getElementById('eventoEmpresaId');
-    const inputSigla = document.getElementById('eventoSigla');
     const listaSugestoes = document.getElementById('listaSugestoesEmpresa');
 
     if (inputBusca) {
@@ -110,9 +112,6 @@ async function carregarDados() {
         ]);
         await carregarEventos();
         renderizarCalendario();
-        renderizarCalendarioMobile();
-        atualizarResumo();
-        renderizarLegendaConsultores();
     } catch (error) {
         console.error('Erro ao carregar dados:', error);
     }
@@ -172,7 +171,7 @@ async function carregarEventos() {
         const ultimoDia = new Date(anoAtual, mesAtual + 1, 0);
         params.append('data_inicio', primeiroDia.toISOString().split('T')[0]);
         params.append('data_fim', ultimoDia.toISOString().split('T')[0]);
-        const fConsultor = document.getElementById('filtroConsultor').value;
+        const fConsultor = document.getElementById('filtroConsultor')?.value;
         if (fConsultor) params.append('consultor_id', fConsultor);
         const response = await apiRequest(`/api/cronograma/eventos?${params}`);
         eventos = await response.json();
@@ -184,7 +183,8 @@ async function carregarEventos() {
 function renderizarCalendario() {
     const container = document.getElementById('diasCalendario');
     if (!container) return;
-    document.getElementById('mesAnoAtual').textContent = `${MESES[mesAtual]} ${anoAtual}`;
+    const mesAnoAtual = document.getElementById('mesAnoAtual');
+    if (mesAnoAtual) mesAnoAtual.textContent = `${MESES[mesAtual]} ${anoAtual}`;
     
     const primeiroDia = new Date(anoAtual, mesAtual, 1);
     const ultimoDia = new Date(anoAtual, mesAtual + 1, 0);
@@ -217,7 +217,7 @@ function renderizarCalendario() {
                 const consultorCor = getConsultorCor(evento.consultor_id);
                 const titulo = (evento.sigla_empresa || 'Empresa') + (evento.program_nome ? ` - ${evento.program_nome}` : '');
                 html += `
-                    <div class="flex items-center gap-1 p-1 rounded bg-dark-bg/80 border border-dark-border/30">
+                    <div class="flex items-center gap-1 p-1 rounded bg-dark-bg/80 border border-dark-border/30 hover:border-blue-500/50" onclick="event.stopPropagation(); editarEvento(${evento.id})">
                         <div class="w-4 h-4 rounded text-[8px] flex items-center justify-center text-white font-bold" style="background-color: ${consultorCor}">${getIniciais(evento.consultor_nome)}</div>
                         <span class="text-[9px] text-gray-200 truncate flex-1">${titulo}</span>
                     </div>
@@ -231,10 +231,55 @@ function renderizarCalendario() {
     container.innerHTML = html;
 }
 
+async function editarEvento(id) {
+    try {
+        const response = await apiRequest(`/api/cronograma/eventos/${id}`);
+        if (!response.ok) throw new Error('Falha ao carregar evento');
+        const evento = await response.json();
+        
+        const form = document.getElementById('formEvento');
+        if (form) form.reset();
+        
+        document.getElementById('eventoId').value = evento.id;
+        document.getElementById('eventoData').value = evento.data;
+        document.getElementById('eventoConsultor').value = evento.consultor_id;
+        document.getElementById('eventoBuscaEmpresa').value = evento.empresa_nome || '';
+        document.getElementById('eventoEmpresaId').value = evento.empresa_id || '';
+        document.getElementById('eventoSigla').value = evento.sigla_empresa || '';
+        document.getElementById('eventoCategoria').value = evento.categoria;
+        document.getElementById('eventoDescricao').value = evento.descricao || '';
+        
+        document.getElementById('campoEventoPrograma').classList.add('hidden');
+        document.getElementById('configuracaoDistribuicao').classList.add('hidden');
+        
+        document.getElementById('modalEvento').classList.remove('hidden');
+    } catch (e) {
+        console.error(e);
+        alert('Erro ao carregar detalhes do evento');
+    }
+}
+
 async function salvarEvento(e) {
     e.preventDefault();
     const programId = document.getElementById('eventoPrograma')?.value;
     const empresaId = document.getElementById('eventoEmpresaId')?.value;
+    const eventoId = document.getElementById('eventoId')?.value;
+
+    if (eventoId) {
+        const dados = {
+            data: document.getElementById('eventoData').value,
+            categoria: document.getElementById('eventoCategoria').value,
+            consultor_id: parseInt(document.getElementById('eventoConsultor').value),
+            empresa_id: empresaId ? parseInt(empresaId) : null,
+            sigla_empresa: document.getElementById('eventoSigla').value || null,
+            descricao: document.getElementById('eventoDescricao').value
+        };
+        const response = await apiRequest(`/api/cronograma/eventos/${eventoId}`, { method: 'PUT', body: JSON.stringify(dados) });
+        if (response.ok) {
+            fecharModalEvento(); await carregarEventos(); renderizarCalendario();
+        }
+        return;
+    }
     
     if (programId) {
         const diasCheckboxes = document.querySelectorAll('input[name="eventoDiasSemana"]:checked');
@@ -261,7 +306,6 @@ async function salvarEvento(e) {
     const dados = {
         data: document.getElementById('eventoData').value,
         categoria: document.getElementById('eventoCategoria').value,
-        periodo: document.getElementById('eventoPeriodo').value,
         consultor_id: parseInt(document.getElementById('eventoConsultor').value),
         empresa_id: empresaId ? parseInt(empresaId) : null,
         sigla_empresa: document.getElementById('eventoSigla').value || null,
@@ -275,7 +319,8 @@ async function salvarEvento(e) {
 }
 
 function abrirModalNovoEvento() {
-    document.getElementById('formEvento').reset();
+    const form = document.getElementById('formEvento');
+    if (form) form.reset();
     document.getElementById('eventoId').value = '';
     document.getElementById('eventoEmpresaId').value = '';
     document.getElementById('eventoBuscaEmpresa').value = '';
@@ -300,10 +345,38 @@ async function carregarProgramasNoEvento() {
     } catch (e) { console.error(e); }
 }
 
-function renderizarCalendarioMobile() {}
-function atualizarResumo() {}
-function renderizarLegendaConsultores() {}
 function abrirDetalhesDia(data, dia) {
     document.getElementById('eventoData').value = data;
     abrirModalNovoEvento();
+}
+
+function mesAnterior() {
+    if (mesAtual === 0) { mesAtual = 11; anoAtual--; } else { mesAtual--; }
+    carregarDados();
+}
+
+function proximoMes() {
+    if (mesAtual === 11) { mesAtual = 0; anoAtual++; } else { mesAtual++; }
+    carregarDados();
+}
+
+function irParaHoje() {
+    const hoje = new Date();
+    mesAtual = hoje.getMonth();
+    anoAtual = hoje.getFullYear();
+    carregarDados();
+}
+
+function renderizarCalendarioMobile() {}
+function atualizarResumo() {}
+function renderizarLegendaConsultores() {}
+function aplicarFiltros() { carregarDados(); }
+function limparFiltros() {
+    document.getElementById('filtroConsultor').value = '';
+    document.getElementById('filtroCategoria').value = '';
+    carregarDados();
+}
+function toggleFiltros() {
+    const container = document.getElementById('filtrosContainer');
+    if (container) container.classList.toggle('hidden');
 }
