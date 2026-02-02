@@ -98,10 +98,15 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function selecionarEmpresaParaEvento(id, nome, sigla) {
-    document.getElementById('eventoBuscaEmpresa').value = nome;
-    document.getElementById('eventoEmpresaId').value = id;
-    document.getElementById('eventoSigla').value = sigla;
-    document.getElementById('listaSugestoesEmpresa').classList.add('hidden');
+    const bus = document.getElementById('eventoBuscaEmpresa');
+    const eid = document.getElementById('eventoEmpresaId');
+    const sig = document.getElementById('eventoSigla');
+    const sug = document.getElementById('listaSugestoesEmpresa');
+    
+    if (bus) bus.value = nome;
+    if (eid) eid.value = id;
+    if (sig) sig.value = sigla;
+    if (sug) sug.classList.add('hidden');
 }
 
 async function carregarDados() {
@@ -111,7 +116,14 @@ async function carregarDados() {
             carregarCategorias()
         ]);
         await carregarEventos();
-        renderizarCalendario();
+        
+        const timelineActive = document.getElementById('timelineDesktop') && !document.getElementById('timelineDesktop').classList.contains('hidden');
+        const listActive = document.getElementById('listaDesktop') && !document.getElementById('listaDesktop').classList.contains('hidden');
+        
+        if (timelineActive) renderizarTimeline();
+        else if (listActive) renderizarLista();
+        else renderizarCalendario();
+        
     } catch (error) {
         console.error('Erro ao carregar dados:', error);
     }
@@ -174,9 +186,11 @@ async function carregarEventos() {
         const fConsultor = document.getElementById('filtroConsultor')?.value;
         if (fConsultor) params.append('consultor_id', fConsultor);
         const response = await apiRequest(`/api/cronograma/eventos?${params}`);
+        if (!response.ok) throw new Error('Falha ao carregar eventos');
         eventos = await response.json();
     } catch (error) {
         console.error('Erro ao carregar eventos:', error);
+        eventos = [];
     }
 }
 
@@ -231,18 +245,154 @@ function renderizarCalendario() {
     container.innerHTML = html;
 }
 
-function abrirDetalhesDia(data, dia) {
-    const eventosDoDia = eventos.filter(e => e.data === data);
+function setVisualizacao(tipo) {
+    const cal = document.getElementById('calendarioDesktop');
+    const list = document.getElementById('listaDesktop');
+    const timeline = document.getElementById('timelineDesktop');
     
-    if (eventosDoDia.length > 0) {
-        editarEvento(eventosDoDia[0].id);
-    } else {
-        document.getElementById('eventoData').value = data;
+    if (cal) cal.classList.add('hidden');
+    if (list) list.classList.add('hidden');
+    if (timeline) timeline.classList.add('hidden');
+    
+    if (tipo === 'calendario') {
+        if (cal) cal.classList.remove('hidden');
+        renderizarCalendario();
+    } else if (tipo === 'lista') {
+        if (list) list.classList.remove('hidden');
+        renderizarLista();
+    } else if (tipo === 'timeline') {
+        if (timeline) timeline.classList.remove('hidden');
+        renderizarTimeline();
+    }
+}
+
+function renderizarLista() {
+    const container = document.getElementById('listaDesktop');
+    if (!container) return;
+    
+    const eventosOrdenados = [...eventos].sort((a, b) => new Date(a.data) - new Date(b.data));
+    
+    if (eventosOrdenados.length === 0) {
+        container.innerHTML = '<div class="text-center py-10 text-gray-500">Nenhum evento agendado para este período.</div>';
+        return;
+    }
+    
+    let html = `
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-dark-border/50 text-gray-400 text-xs">
+                        <th class="py-3 px-4">DATA</th>
+                        <th class="py-3 px-4">CONSULTOR</th>
+                        <th class="py-3 px-4">EMPRESA</th>
+                        <th class="py-3 px-4">PROGRAMA/ATIVIDADE</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm">
+    `;
+    
+    eventosOrdenados.forEach(e => {
+        const dataFormatada = new Date(e.data + 'T12:00:00').toLocaleDateString('pt-BR');
+        html += `
+            <tr class="border-b border-dark-border/30 hover:bg-dark-bg/30 cursor-pointer" onclick="editarEvento(${e.id})">
+                <td class="py-3 px-4 text-white font-medium">${dataFormatada}</td>
+                <td class="py-3 px-4">
+                    <div class="flex items-center gap-2 text-gray-300">
+                        <div class="w-6 h-6 rounded flex items-center justify-center text-white text-[10px] font-bold" style="background-color: ${getConsultorCor(e.consultor_id)}">
+                            ${getIniciais(e.consultor_nome)}
+                        </div>
+                        ${e.consultor_nome}
+                    </div>
+                </td>
+                <td class="py-3 px-4">
+                    <span class="px-2 py-1 rounded bg-blue-500/10 text-blue-400 text-xs font-bold border border-blue-500/20">
+                        ${e.sigla_empresa || 'SEM SIGLA'}
+                    </span>
+                </td>
+                <td class="py-3 px-4 text-gray-400">${e.program_nome || e.titulo || '-'}</td>
+            </tr>
+        `;
+    });
+    
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+}
+
+function renderizarTimeline() {
+    const container = document.getElementById('timelineDesktop');
+    if (!container) return;
+    
+    const primeiroDia = new Date(anoAtual, mesAtual, 1);
+    const ultimoDia = new Date(anoAtual, mesAtual + 1, 0);
+    const diasNoMes = ultimoDia.getDate();
+    
+    let html = `
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse table-fixed min-w-[1200px]">
+                <thead>
+                    <tr class="border-b border-dark-border/50 text-gray-400 text-[10px]">
+                        <th class="py-3 px-4 w-[200px] sticky left-0 bg-dark-card z-10">CONSULTOR</th>
+    `;
+    
+    for (let d = 1; d <= diasNoMes; d++) {
+        html += `<th class="py-3 text-center border-l border-dark-border/30">${d}</th>`;
+    }
+    
+    html += '</tr></thead><tbody class="text-[10px]">';
+    
+    consultores.forEach(c => {
+        html += `
+            <tr class="border-b border-dark-border/20 group">
+                <td class="py-3 px-4 sticky left-0 bg-dark-card group-hover:bg-dark-hover z-10 border-r border-dark-border/30">
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-6 rounded flex items-center justify-center text-white font-bold" style="background-color: ${getConsultorCor(c.id)}">
+                            ${getIniciais(c.nome)}
+                        </div>
+                        <span class="text-white truncate">${c.nome}</span>
+                    </div>
+                </td>
+        `;
+        
+        for (let d = 1; d <= diasNoMes; d++) {
+            const dataStr = new Date(anoAtual, mesAtual, d).toISOString().split('T')[0];
+            const ev = eventos.find(e => e.consultor_id === c.id && e.data === dataStr);
+            
+            if (ev) {
+                const corCat = CATEGORIA_CORES[ev.categoria]?.cor || '#6b7280';
+                html += `
+                    <td class="p-0.5 border-l border-dark-border/30 align-top">
+                        <div class="p-1 rounded text-white h-full min-h-[40px] cursor-pointer hover:brightness-110 overflow-hidden" 
+                             style="background-color: ${corCat}" 
+                             onclick="editarEvento(${ev.id})"
+                             title="${ev.sigla_empresa}: ${ev.program_nome || ev.titulo}">
+                            <div class="font-bold truncate">${ev.sigla_empresa || '?'}</div>
+                            <div class="text-[8px] opacity-80 truncate">${ev.program_nome || ''}</div>
+                        </div>
+                    </td>
+                `;
+            } else {
+                html += `<td class="p-0.5 border-l border-dark-border/30"></td>`;
+            }
+        }
+        html += '</tr>';
+    });
+    
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+}
+
+function abrirDetalhesDia(data, dia) {
+    const evs = eventos.filter(e => e.data === data);
+    if (evs.length > 0) editarEvento(evs[0].id);
+    else {
+        const inputData = document.getElementById('eventoData');
+        if (inputData) inputData.value = data;
         abrirModalNovoEvento();
     }
 }
 
 async function editarEvento(id) {
+    if (!id) return;
     try {
         const response = await apiRequest(`/api/cronograma/eventos/${id}`);
         if (!response.ok) throw new Error('Falha ao carregar evento');
@@ -251,31 +401,39 @@ async function editarEvento(id) {
         const form = document.getElementById('formEvento');
         if (form) form.reset();
         
-        document.getElementById('eventoId').value = evento.id;
-        document.getElementById('eventoData').value = evento.data;
-        document.getElementById('eventoConsultor').value = evento.consultor_id;
-        document.getElementById('eventoBuscaEmpresa').value = evento.empresa_nome || '';
-        document.getElementById('eventoEmpresaId').value = evento.empresa_id || '';
-        document.getElementById('eventoSigla').value = evento.sigla_empresa || '';
-        document.getElementById('eventoCategoria').value = evento.categoria;
-        document.getElementById('eventoDescricao').value = evento.descricao || '';
+        const setVal = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.value = val || '';
+        };
+
+        setVal('eventoId', evento.id);
+        setVal('eventoData', evento.data);
+        setVal('eventoConsultor', evento.consultor_id);
+        setVal('eventoBuscaEmpresa', evento.empresa_nome || '');
+        setVal('eventoEmpresaId', evento.empresa_id || '');
+        setVal('eventoSigla', evento.sigla_empresa || '');
+        setVal('eventoCategoria', evento.categoria);
+        setVal('eventoDescricao', evento.descricao || '');
         
         const campoProg = document.getElementById('campoEventoPrograma');
         const selectProg = document.getElementById('eventoPrograma');
         
-        if (evento.program_nome) {
+        if (evento.program_nome && campoProg && selectProg) {
             campoProg.classList.remove('hidden');
             selectProg.innerHTML = `<option value="${evento.program_id}">${evento.program_nome}</option>`;
             selectProg.disabled = true;
-        } else {
+        } else if (campoProg && selectProg) {
             campoProg.classList.add('hidden');
             selectProg.disabled = false;
         }
         
-        document.getElementById('configuracaoDistribuicao').classList.add('hidden');
-        document.getElementById('modalEvento').classList.remove('hidden');
+        const configDist = document.getElementById('configuracaoDistribuicao');
+        if (configDist) configDist.classList.add('hidden');
+        
+        const modal = document.getElementById('modalEvento');
+        if (modal) modal.classList.remove('hidden');
     } catch (e) {
-        console.error(e);
+        console.error('Erro ao editar evento:', e);
         alert('Erro ao carregar detalhes do evento');
     }
 }
@@ -297,7 +455,7 @@ async function salvarEvento(e) {
         };
         const response = await apiRequest(`/api/cronograma/eventos/${eventoId}`, { method: 'PUT', body: JSON.stringify(dados) });
         if (response.ok) {
-            fecharModalEvento(); await carregarEventos(); renderizarCalendario();
+            fecharModalEvento(); await carregarEventos(); await carregarDados();
         }
         return;
     }
@@ -317,7 +475,7 @@ async function salvarEvento(e) {
         
         const response = await apiRequest('/api/programs/auto-schedule', { method: 'POST', body: JSON.stringify(dadosAuto) });
         if (response.ok) {
-            fecharModalEvento(); await carregarEventos(); renderizarCalendario();
+            fecharModalEvento(); await carregarEventos(); await carregarDados();
         } else {
             const err = await response.json(); alert(err.detail || 'Erro ao gerar');
         }
@@ -335,7 +493,7 @@ async function salvarEvento(e) {
 
     const response = await apiRequest('/api/cronograma/eventos', { method: 'POST', body: JSON.stringify(dados) });
     if (response.ok) {
-        fecharModalEvento(); await carregarEventos(); renderizarCalendario();
+        fecharModalEvento(); await carregarEventos(); await carregarDados();
     }
 }
 
@@ -345,12 +503,12 @@ function abrirModalNovoEvento() {
     document.getElementById('eventoId').value = '';
     document.getElementById('eventoEmpresaId').value = '';
     document.getElementById('eventoBuscaEmpresa').value = '';
-    const campoProg = document.getElementById('campoEventoPrograma');
-    if (campoProg) campoProg.classList.remove('hidden');
-    const selectProg = document.getElementById('eventoPrograma');
-    if (selectProg) selectProg.disabled = false;
-    const configDist = document.getElementById('configuracaoDistribuicao');
-    if (configDist) configDist.classList.remove('hidden');
+    const cp = document.getElementById('campoEventoPrograma');
+    if (cp) cp.classList.remove('hidden');
+    const sp = document.getElementById('eventoPrograma');
+    if (sp) sp.disabled = false;
+    const cd = document.getElementById('configuracaoDistribuicao');
+    if (cd) cd.classList.remove('hidden');
     carregarProgramasNoEvento();
     document.getElementById('modalEvento').classList.remove('hidden');
 }
