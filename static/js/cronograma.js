@@ -476,7 +476,7 @@ function atualizarMetricasEvolucao() {
     const grupos = {};
     eventos.forEach(ev => {
         if (ev.program_id && ev.empresa_id) {
-            const key = \`\${ev.empresa_id}-\${ev.program_id}\`;
+            const key = `${ev.empresa_id}-${ev.program_id}`;
             if (!grupos[key]) {
                 grupos[key] = {
                     empresa: ev.empresa_nome || ev.sigla_empresa,
@@ -506,23 +506,22 @@ function atualizarMetricasEvolucao() {
             <div class="p-4 rounded-xl bg-dark-card border border-dark-border/50 space-y-3">
                 <div class="flex justify-between items-start gap-2">
                     <div class="min-w-0 flex-1">
-                        <h4 class="text-sm font-bold text-white truncate">\${item.empresa}</h4>
-                        <p class="text-[10px] text-gray-400 truncate">\${item.programa}</p>
+                        <h4 class="text-sm font-bold text-white truncate">${item.empresa}</h4>
+                        <p class="text-[10px] text-gray-400 truncate">${item.programa}</p>
                     </div>
-                    <span class="text-lg font-bold text-blue-400 ml-2">\${porcentagem}%</span>
+                    <span class="text-lg font-bold text-blue-400 ml-2">${porcentagem}%</span>
                 </div>
                 <div class="w-full h-2 bg-dark-bg rounded-full overflow-hidden border border-dark-border/30">
-                    <div class="h-full bg-blue-500 transition-all duration-500" style="width: \${porcentagem}%"></div>
+                    <div class="h-full bg-blue-500 transition-all duration-500" style="width: ${porcentagem}%"></div>
                 </div>
                 <div class="flex justify-between text-[10px] text-gray-500">
-                    <span>\${item.realizado} de \${item.total} sessões</span>
-                    <span>\${item.total - item.realizado} restantes</span>
+                    <span>${item.realizado} de ${item.total} sessões</span>
+                    <span>${item.total - item.realizado} restantes</span>
                 </div>
             </div>
         `;
     }).join('');
 }
-
 
 async function editarEvento(id) {
     if (!id) return;
@@ -631,19 +630,35 @@ async function salvarEvento(e) {
 }
 
 function abrirModalNovoEvento() {
+    console.log("Abrindo modal novo evento...");
+    const modal = document.getElementById('modalEvento');
+    if (!modal) {
+        console.error("Modal 'modalEvento' não encontrado!");
+        return;
+    }
     const form = document.getElementById('formEvento');
     if (form) form.reset();
-    document.getElementById('eventoId').value = '';
-    document.getElementById('eventoEmpresaId').value = '';
-    document.getElementById('eventoBuscaEmpresa').value = '';
+    
+    const inputId = document.getElementById('eventoId');
+    if (inputId) inputId.value = '';
+    
+    const inputEmpresaId = document.getElementById('eventoEmpresaId');
+    if (inputEmpresaId) inputEmpresaId.value = '';
+    
+    const inputBusca = document.getElementById('eventoBuscaEmpresa');
+    if (inputBusca) inputBusca.value = '';
+    
     const cp = document.getElementById('campoEventoPrograma');
     if (cp) cp.classList.remove('hidden');
+    
     const sp = document.getElementById('eventoPrograma');
     if (sp) sp.disabled = false;
+    
     const cd = document.getElementById('configuracaoDistribuicao');
     if (cd) cd.classList.remove('hidden');
+    
     carregarProgramasNoEvento();
-    document.getElementById('modalEvento').classList.remove('hidden');
+    modal.classList.remove('hidden');
 }
 
 function fecharModalEvento() {
@@ -683,8 +698,10 @@ function atualizarResumo() {}
 function renderizarLegendaConsultores() {}
 function aplicarFiltros() { carregarDados(); }
 function limparFiltros() {
-    document.getElementById('filtroConsultor').value = '';
-    document.getElementById('filtroCategoria').value = '';
+    const fc = document.getElementById('filtroConsultor');
+    const fcat = document.getElementById('filtroCategoria');
+    if (fc) fc.value = '';
+    if (fcat) fcat.value = '';
     carregarDados();
 }
 function toggleFiltros() {
