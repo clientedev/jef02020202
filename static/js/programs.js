@@ -94,10 +94,6 @@ function renderizarProgramas() {
                         </span>
                     </div>
                 </div>
-                <button onclick="abrirAgendamento('${p.id}', '${p.nome}', ${p.carga_horaria})" 
-                        class="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-medium transition-all opacity-0 group-hover:opacity-100">
-                    Agendar
-                </button>
             </div>
         </div>
     `).join('');
@@ -141,7 +137,8 @@ function abrirAgendamento(id, nome, carga) {
 }
 
 function fecharModalAgendarPrograma() {
-    document.getElementById('modalAgendarPrograma').classList.add('hidden');
+    const modal = document.getElementById('modalAgendarPrograma');
+    if (modal) modal.classList.add('hidden');
 }
 
 const formAuto = document.getElementById('formAutoAgendamento');

@@ -250,6 +250,14 @@
                 <label class="block text-xs sm:text-sm text-gray-400 mb-1.5">Sigla da Empresa</label>
                 <input type="text" id="eventoSigla" placeholder="Ex: ABAJUR, PRODMEC..." class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none">
             </div>
+
+            <div id="campoEventoPrograma" class="hidden">
+                <label class="block text-xs sm:text-sm text-gray-400 mb-1.5">Programa Associado</label>
+                <select id="eventoPrograma" class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none">
+                    <option value="">Selecione um programa...</option>
+                </select>
+                <p class="text-[10px] text-gray-500 mt-1">Ao selecionar um programa, os detalhes da empresa serão preenchidos automaticamente.</p>
+            </div>
             
             <div>
                 <label class="block text-xs sm:text-sm text-gray-400 mb-1.5">Descricao</label>
@@ -342,94 +350,6 @@
     </div>
 </div>
 
-<div id="modalAgendarPrograma" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
-    <div class="glass-effect rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-slide-up">
-        <div class="p-6 border-b border-dark-border/50 flex justify-between items-center sticky top-0 glass-effect z-10">
-            <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                <i class="fas fa-calendar-check text-blue-400"></i>
-                Agendar Programa
-            </h3>
-            <button onclick="fecharModalAgendarPrograma()" class="w-8 h-8 rounded-lg bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <form id="formAutoAgendamento" class="p-6 space-y-4">
-            <input type="hidden" id="agendProgId">
-            <div id="infoProgSelecionado" class="p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl mb-4">
-                <p class="text-blue-400 font-medium text-sm" id="agendProgNome"></p>
-                <p class="text-gray-400 text-xs mt-1" id="agendProgCarga"></p>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm text-gray-400 mb-1.5">Data de Início *</label>
-                    <input type="date" id="agendDataInicio" required class="w-full px-4 py-2.5 input-modern text-white text-sm rounded-xl focus:outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm text-gray-400 mb-1.5">Horas por Dia *</label>
-                    <input type="number" id="agendHorasDia" step="0.5" value="4" required class="w-full px-4 py-2.5 input-modern text-white text-sm rounded-xl focus:outline-none">
-                </div>
-            </div>
-
-            <div>
-                <label class="block text-sm text-gray-400 mb-1.5">Consultor *</label>
-                <select id="agendConsultor" required class="w-full px-4 py-2.5 input-modern text-white text-sm rounded-xl focus:outline-none">
-                    <option value="">Selecione...</option>
-                </select>
-            </div>
-
-            <div>
-                <label class="block text-sm text-gray-400 mb-1.5">Dias da Semana *</label>
-                <div class="grid grid-cols-4 sm:grid-cols-7 gap-2">
-                    <label class="flex flex-col items-center p-2 rounded-lg bg-dark-card/50 border border-dark-border/30 cursor-pointer hover:bg-dark-hover transition">
-                        <input type="checkbox" name="diasSemana" value="0" class="hidden peer">
-                        <span class="text-[10px] text-gray-400 peer-checked:text-blue-400 font-bold">SEG</span>
-                        <div class="w-3 h-3 rounded-full border-2 border-gray-600 mt-1 peer-checked:border-blue-500 peer-checked:bg-blue-500"></div>
-                    </label>
-                    <label class="flex flex-col items-center p-2 rounded-lg bg-dark-card/50 border border-dark-border/30 cursor-pointer hover:bg-dark-hover transition">
-                        <input type="checkbox" name="diasSemana" value="1" class="hidden peer">
-                        <span class="text-[10px] text-gray-400 peer-checked:text-blue-400 font-bold">TER</span>
-                        <div class="w-3 h-3 rounded-full border-2 border-gray-600 mt-1 peer-checked:border-blue-500 peer-checked:bg-blue-500"></div>
-                    </label>
-                    <label class="flex flex-col items-center p-2 rounded-lg bg-dark-card/50 border border-dark-border/30 cursor-pointer hover:bg-dark-hover transition">
-                        <input type="checkbox" name="diasSemana" value="2" class="hidden peer">
-                        <span class="text-[10px] text-gray-400 peer-checked:text-blue-400 font-bold">QUA</span>
-                        <div class="w-3 h-3 rounded-full border-2 border-gray-600 mt-1 peer-checked:border-blue-500 peer-checked:bg-blue-500"></div>
-                    </label>
-                    <label class="flex flex-col items-center p-2 rounded-lg bg-dark-card/50 border border-dark-border/30 cursor-pointer hover:bg-dark-hover transition">
-                        <input type="checkbox" name="diasSemana" value="3" class="hidden peer">
-                        <span class="text-[10px] text-gray-400 peer-checked:text-blue-400 font-bold">QUI</span>
-                        <div class="w-3 h-3 rounded-full border-2 border-gray-600 mt-1 peer-checked:border-blue-500 peer-checked:bg-blue-500"></div>
-                    </label>
-                    <label class="flex flex-col items-center p-2 rounded-lg bg-dark-card/50 border border-dark-border/30 cursor-pointer hover:bg-dark-hover transition">
-                        <input type="checkbox" name="diasSemana" value="4" class="hidden peer">
-                        <span class="text-[10px] text-gray-400 peer-checked:text-blue-400 font-bold">SEX</span>
-                        <div class="w-3 h-3 rounded-full border-2 border-gray-600 mt-1 peer-checked:border-blue-500 peer-checked:bg-blue-500"></div>
-                    </label>
-                    <label class="flex flex-col items-center p-2 rounded-lg bg-dark-card/50 border border-dark-border/30 cursor-pointer hover:bg-dark-hover transition">
-                        <input type="checkbox" name="diasSemana" value="5" class="hidden peer">
-                        <span class="text-[10px] text-gray-400 peer-checked:text-blue-400 font-bold">SAB</span>
-                        <div class="w-3 h-3 rounded-full border-2 border-gray-600 mt-1 peer-checked:border-blue-500 peer-checked:bg-blue-500"></div>
-                    </label>
-                    <label class="flex flex-col items-center p-2 rounded-lg bg-dark-card/50 border border-dark-border/30 cursor-pointer hover:bg-dark-hover transition">
-                        <input type="checkbox" name="diasSemana" value="6" class="hidden peer">
-                        <span class="text-[10px] text-gray-400 peer-checked:text-blue-400 font-bold">DOM</span>
-                        <div class="w-3 h-3 rounded-full border-2 border-gray-600 mt-1 peer-checked:border-blue-500 peer-checked:bg-blue-500"></div>
-                    </label>
-                </div>
-            </div>
-
-            <div class="flex gap-3 pt-4">
-                <button type="button" onclick="fecharModalAgendarPrograma()" class="flex-1 py-3 bg-dark-card hover:bg-dark-hover text-gray-300 rounded-xl font-medium transition">
-                    Cancelar
-                </button>
-                <button type="submit" class="flex-1 py-3 btn-primary text-white rounded-xl font-medium transition-all hover:scale-[1.02]">
-                    <i class="fas fa-magic mr-2"></i>Gerar Cronograma
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
 {% endblock %}
 
 {% block scripts %}

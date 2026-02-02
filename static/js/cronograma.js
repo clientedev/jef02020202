@@ -622,10 +622,46 @@ function abrirModalNovoEvento() {
     document.getElementById('eventoId').value = '';
     document.getElementById('btnExcluirEvento').classList.add('hidden');
     
+    // Mostrar campo de programa e carregar opções
+    const campoPrograma = document.getElementById('campoEventoPrograma');
+    if (campoPrograma) {
+        campoPrograma.classList.remove('hidden');
+        carregarProgramasNoEvento();
+    }
+    
     const hoje = new Date().toISOString().split('T')[0];
     document.getElementById('eventoData').value = hoje;
     
     document.getElementById('modalEvento').classList.remove('hidden');
+}
+
+async function carregarProgramasNoEvento() {
+    try {
+        const response = await apiRequest('/api/programs/');
+        const programas = await response.json();
+        const select = document.getElementById('eventoPrograma');
+        if (select) {
+            select.innerHTML = '<option value="">Selecione um programa...</option>' + 
+                programas.map(p => `<option value="${p.id}" data-empresa-id="${p.empresa_id || ''}">${p.nome}</option>`).join('');
+            
+            // Listener para preencher empresa automaticamente
+            select.onchange = async function() {
+                const option = this.options[this.selectedIndex];
+                const empresaId = option.getAttribute('data-empresa-id');
+                if (empresaId) {
+                    try {
+                        const respEmp = await apiRequest(`/api/empresas/${empresaId}`);
+                        const empresa = await respEmp.json();
+                        document.getElementById('eventoSigla').value = empresa.sigla || empresa.empresa;
+                    } catch (e) {
+                        console.error('Erro ao buscar detalhes da empresa:', e);
+                    }
+                }
+            };
+        }
+    } catch (error) {
+        console.error('Erro ao carregar programas no evento:', error);
+    }
 }
 
 function abrirModalNovoEventoData() {
@@ -657,6 +693,10 @@ async function editarEvento(eventoId) {
         document.getElementById('eventoSigla').value = evento.sigla_empresa || '';
         document.getElementById('eventoDescricao').value = evento.descricao || '';
         
+        // Esconder campo de programa na edição
+        const campoPrograma = document.getElementById('campoEventoPrograma');
+        if (campoPrograma) campoPrograma.classList.add('hidden');
+        
         document.getElementById('btnExcluirEvento').classList.remove('hidden');
         
         fecharModalDetalhesDia();
@@ -675,13 +715,15 @@ async function salvarEvento(e) {
     e.preventDefault();
     
     const eventoId = document.getElementById('eventoId').value;
+    const programId = document.getElementById('eventoPrograma')?.value;
     const dados = {
         data: document.getElementById('eventoData').value,
         categoria: document.getElementById('eventoCategoria').value,
         periodo: document.getElementById('eventoPeriodo').value,
         consultor_id: parseInt(document.getElementById('eventoConsultor').value),
         sigla_empresa: document.getElementById('eventoSigla').value || null,
-        descricao: document.getElementById('eventoDescricao').value || null
+        descricao: document.getElementById('eventoDescricao').value || null,
+        program_id: programId ? parseInt(programId) : null
     };
     
     try {
