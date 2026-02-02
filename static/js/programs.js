@@ -1,5 +1,27 @@
 let programas = [];
 
+function showToast(message, type = 'info') {
+    const existingToast = document.querySelector('.toast-notification');
+    if (existingToast) existingToast.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification fixed top-4 right-4 z-[9999] px-4 py-3 rounded-xl shadow-lg animate-slide-up flex items-center gap-2';
+    
+    if (type === 'success') {
+        toast.classList.add('bg-green-500/90', 'text-white');
+        toast.innerHTML = `<i class="fas fa-check-circle"></i><span>${message}</span>`;
+    } else if (type === 'error') {
+        toast.classList.add('bg-red-500/90', 'text-white');
+        toast.innerHTML = `<i class="fas fa-exclamation-circle"></i><span>${message}</span>`;
+    } else {
+        toast.classList.add('bg-blue-500/90', 'text-white');
+        toast.innerHTML = `<i class="fas fa-info-circle"></i><span>${message}</span>`;
+    }
+    
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+}
+
 async function abrirModalProgramas() {
     const modal = document.getElementById('modalProgramas');
     if (modal) {
