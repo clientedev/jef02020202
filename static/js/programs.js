@@ -26,32 +26,7 @@ async function abrirModalProgramas() {
     const modal = document.getElementById('modalProgramas');
     if (modal) {
         modal.classList.remove('hidden');
-        // Garantir que os dados sejam carregados ao abrir
         await carregarProgramas();
-    } else {
-        console.error('Modal modalProgramas não encontrado no DOM');
-    }
-}
-
-async function carregarEmpresasParaProgramas() {
-    try {
-        const response = await apiRequest('/api/empresas/?page_size=100');
-        if (!response.ok) {
-            throw new Error('Falha ao carregar empresas');
-        }
-        const data = await response.json();
-        const empresas = data.items || [];
-        
-        const select = document.getElementById('progEmpresa');
-        if (select) {
-            select.innerHTML = '<option value="">Selecione uma empresa...</option>' + 
-                empresas.map(e => `<option value="${e.id}">${e.empresa}</option>`).join('');
-            console.log('Select de empresas populado com', empresas.length, 'itens');
-        } else {
-            console.error('Elemento #progEmpresa não encontrado no DOM');
-        }
-    } catch (error) {
-        console.error('Erro ao carregar empresas:', error);
     }
 }
 
@@ -62,19 +37,10 @@ function fecharModalProgramas() {
 
 async function carregarProgramas() {
     try {
-        console.log('carregarProgramas chamado');
         const response = await apiRequest('/api/programs/');
-        if (!response.ok) {
-            throw new Error('Falha ao carregar programas');
-        }
+        if (!response.ok) throw new Error('Falha ao carregar programas');
         programas = await response.json();
         renderizarProgramas();
-        
-        // Carregar empresas para o select de criação de programa se ele existir
-        const select = document.getElementById('progEmpresa');
-        if (select) {
-            await carregarEmpresasParaProgramas();
-        }
     } catch (error) {
         console.error('Erro ao carregar programas:', error);
     }
@@ -124,72 +90,12 @@ if (formProg) {
             
             if (response.ok) {
                 showToast('Programa cadastrado com sucesso!', 'success');
-                document.getElementById('formPrograma').reset();
+                formProg.reset();
                 await carregarProgramas();
             }
         } catch (error) {
             console.error('Erro ao salvar programa:', error);
             showToast('Erro ao salvar programa', 'error');
-        }
-    });
-}
-
-function abrirAgendamento(id, nome, carga) {
-    document.getElementById('agendProgId').value = id;
-    document.getElementById('agendProgNome').textContent = nome;
-    document.getElementById('agendProgCarga').textContent = `Carga Horária: ${carga}h`;
-    document.getElementById('modalAgendarPrograma').classList.remove('hidden');
-}
-
-function fecharModalAgendarPrograma() {
-    const modal = document.getElementById('modalAgendarPrograma');
-    if (modal) modal.classList.add('hidden');
-}
-
-const formAuto = document.getElementById('formAutoAgendamento');
-if (formAuto) {
-    formAuto.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const diasCheckboxes = document.querySelectorAll('input[name="diasSemana"]:checked');
-        if (diasCheckboxes.length === 0) {
-            showToast('Selecione pelo menos um dia da semana', 'error');
-            return;
-        }
-        
-        const diasSemana = Array.from(diasCheckboxes).map(cb => parseInt(cb.value));
-        
-        const data = {
-            program_id: parseInt(document.getElementById('agendProgId').value),
-            consultor_id: parseInt(document.getElementById('agendConsultor').value),
-            data_inicio: document.getElementById('agendDataInicio').value,
-            dias_semana: diasSemana,
-            horas_por_dia: parseFloat(document.getElementById('agendHorasDia').value)
-        };
-        
-        try {
-            const response = await apiRequest('/api/programs/auto-schedule', {
-                method: 'POST',
-                body: JSON.stringify(data)
-            });
-            
-            if (response.ok) {
-                const res = await response.json();
-                showToast(res.message, 'success');
-                fecharModalAgendarPrograma();
-                fecharModalProgramas();
-                if (typeof carregarEventos !== 'undefined') {
-                    await carregarEventos();
-                    if (typeof renderizarCalendario !== 'undefined') renderizarCalendario();
-                    if (typeof renderizarCalendarioMobile !== 'undefined') renderizarCalendarioMobile();
-                }
-            } else {
-                const error = await response.json();
-                showToast(error.detail || 'Erro ao gerar cronograma', 'error');
-            }
-        } catch (error) {
-            console.error('Erro no agendamento automático:', error);
-            showToast('Erro de conexão com servidor', 'error');
         }
     });
 }

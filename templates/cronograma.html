@@ -38,7 +38,7 @@
         <div class="p-3 sm:p-4 lg:p-6 xl:p-8 space-y-3 sm:space-y-4 lg:space-y-6">
             <div id="filtrosContainer" class="hidden lg:block glass-effect rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-dark-border/50 animate-fade-in">
                 <div class="flex items-center justify-between mb-3 lg:mb-4">
-                    <h3 class="text-sm sm:text-base font-semibold text-white flex items-center gap-2">
+                    <h3 class="text-sm sm:base font-semibold text-white flex items-center gap-2">
                         <i class="fas fa-filter text-blue-400 text-sm"></i>
                         Filtros
                     </h3>
@@ -92,17 +92,6 @@
                     </button>
                 </div>
                 
-                <div class="block sm:hidden mb-3">
-                    <div class="flex rounded-xl bg-dark-card/50 p-1">
-                        <button onclick="setVisualizacao('calendario')" id="btnVisualizacaoCalendario" class="flex-1 py-2 px-3 rounded-lg text-xs font-medium transition bg-blue-500/20 text-blue-400">
-                            <i class="fas fa-calendar-alt mr-1"></i> Calendario
-                        </button>
-                        <button onclick="setVisualizacao('lista')" id="btnVisualizacaoLista" class="flex-1 py-2 px-3 rounded-lg text-xs font-medium transition text-gray-400">
-                            <i class="fas fa-list mr-1"></i> Lista
-                        </button>
-                    </div>
-                </div>
-
                 <div id="calendarioDesktop" class="hidden sm:block">
                     <div class="grid grid-cols-7 gap-0.5 sm:gap-1 mb-1 sm:mb-2">
                         <div class="text-center font-bold text-red-400 py-1.5 sm:py-2 lg:py-3 bg-dark-card/50 rounded-lg text-xs sm:text-sm">D</div>
@@ -115,247 +104,103 @@
                     </div>
                     <div id="diasCalendario" class="grid grid-cols-7 gap-0.5 sm:gap-1"></div>
                 </div>
-
-                <div id="calendarioMobile" class="sm:hidden">
-                    <div id="calendarioMobileGrid" class="grid grid-cols-7 gap-0.5 mb-1">
-                        <div class="text-center font-bold text-red-400 py-1.5 bg-dark-card/50 rounded text-[10px]">D</div>
-                        <div class="text-center font-bold text-gray-300 py-1.5 bg-dark-card/50 rounded text-[10px]">S</div>
-                        <div class="text-center font-bold text-gray-300 py-1.5 bg-dark-card/50 rounded text-[10px]">T</div>
-                        <div class="text-center font-bold text-gray-300 py-1.5 bg-dark-card/50 rounded text-[10px]">Q</div>
-                        <div class="text-center font-bold text-gray-300 py-1.5 bg-dark-card/50 rounded text-[10px]">Q</div>
-                        <div class="text-center font-bold text-gray-300 py-1.5 bg-dark-card/50 rounded text-[10px]">S</div>
-                        <div class="text-center font-bold text-blue-400 py-1.5 bg-dark-card/50 rounded text-[10px]">S</div>
-                    </div>
-                    <div id="diasCalendarioMobile" class="grid grid-cols-7 gap-0.5"></div>
-                </div>
-
-                <div id="listaEventosMobile" class="sm:hidden hidden space-y-2"></div>
-            </div>
-
-            <div class="glass-effect rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-dark-border/50 animate-slide-up" style="animation-delay: 0.1s;">
-                <h3 class="text-sm sm:text-base lg:text-lg font-semibold text-white mb-3 flex items-center gap-2">
-                    <i class="fas fa-users text-blue-400 text-sm"></i>
-                    Consultores
-                </h3>
-                <div id="legendaConsultores" class="flex flex-wrap gap-1.5 sm:gap-2"></div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
-                <div class="glass-effect rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-dark-border/50 animate-slide-up" style="animation-delay: 0.2s;">
-                    <h3 class="text-sm sm:text-base lg:text-lg font-semibold text-white mb-3 flex items-center gap-2">
-                        <i class="fas fa-palette text-pink-400 text-sm"></i>
-                        Categorias
-                    </h3>
-                    <div class="grid grid-cols-4 sm:grid-cols-4 gap-1.5 sm:gap-2" id="legendaCategorias">
-                        <div class="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-1.5 sm:p-2 rounded-lg bg-dark-card/50 hover:bg-dark-card transition cursor-pointer" onclick="filtrarPorCategoria('C')">
-                            <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-md flex items-center justify-center text-white font-bold text-[10px] sm:text-xs" style="background-color: #22c55e;">C</div>
-                            <span class="text-gray-300 text-[9px] sm:text-xs hidden sm:inline">Consultoria</span>
-                        </div>
-                        <div class="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-1.5 sm:p-2 rounded-lg bg-dark-card/50 hover:bg-dark-card transition cursor-pointer" onclick="filtrarPorCategoria('K')">
-                            <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-md flex items-center justify-center text-white font-bold text-[10px] sm:text-xs" style="background-color: #eab308;">K</div>
-                            <span class="text-gray-300 text-[9px] sm:text-xs hidden sm:inline">Kick-off</span>
-                        </div>
-                        <div class="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-1.5 sm:p-2 rounded-lg bg-dark-card/50 hover:bg-dark-card transition cursor-pointer" onclick="filtrarPorCategoria('F')">
-                            <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-md flex items-center justify-center text-white font-bold text-[10px] sm:text-xs" style="background-color: #3b82f6;">F</div>
-                            <span class="text-gray-300 text-[9px] sm:text-xs hidden sm:inline">Reuniao</span>
-                        </div>
-                        <div class="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-1.5 sm:p-2 rounded-lg bg-dark-card/50 hover:bg-dark-card transition cursor-pointer" onclick="filtrarPorCategoria('M')">
-                            <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-md flex items-center justify-center text-white font-bold text-[10px] sm:text-xs" style="background-color: #ef4444;">M</div>
-                            <span class="text-gray-300 text-[9px] sm:text-xs hidden sm:inline">Mentoria</span>
-                        </div>
-                        <div class="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-1.5 sm:p-2 rounded-lg bg-dark-card/50 hover:bg-dark-card transition cursor-pointer" onclick="filtrarPorCategoria('T')">
-                            <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-md flex items-center justify-center text-white font-bold text-[10px] sm:text-xs" style="background-color: #f97316;">T</div>
-                            <span class="text-gray-300 text-[9px] sm:text-xs hidden sm:inline">T0</span>
-                        </div>
-                        <div class="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-1.5 sm:p-2 rounded-lg bg-dark-card/50 hover:bg-dark-card transition cursor-pointer" onclick="filtrarPorCategoria('P')">
-                            <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-md flex items-center justify-center text-white font-bold text-[10px] sm:text-xs" style="background-color: #06b6d4;">P</div>
-                            <span class="text-gray-300 text-[9px] sm:text-xs hidden sm:inline">Programado</span>
-                        </div>
-                        <div class="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-1.5 sm:p-2 rounded-lg bg-dark-card/50 hover:bg-dark-card transition cursor-pointer col-span-2" onclick="filtrarPorCategoria('O')">
-                            <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-md flex items-center justify-center text-white font-bold text-[10px] sm:text-xs" style="background-color: #6b7280;">O</div>
-                            <span class="text-gray-300 text-[9px] sm:text-xs hidden sm:inline">Outros</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="glass-effect rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-dark-border/50 animate-slide-up" style="animation-delay: 0.3s;">
-                    <h3 class="text-sm sm:text-base lg:text-lg font-semibold text-white mb-3 flex items-center gap-2">
-                        <i class="fas fa-chart-pie text-purple-400 text-sm"></i>
-                        Resumo
-                    </h3>
-                    <div id="resumoMes" class="space-y-2 sm:space-y-3">
-                        <div class="flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-dark-card/50">
-                            <span class="text-gray-400 text-xs sm:text-sm">Total de Eventos</span>
-                            <span class="text-xl sm:text-2xl font-bold text-white" id="totalEventos">0</span>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 sm:gap-3" id="resumoCategorias"></div>
-                    </div>
-                </div>
             </div>
         </div>
     </main>
 </div>
 
+<!-- Modal Novo Evento -->
 <div id="modalEvento" class="hidden fixed inset-0 modal-backdrop flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
     <div class="glass-effect rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg max-h-[95vh] sm:max-h-[90vh] overflow-hidden animate-slide-up">
-        <div class="p-4 sm:p-6 border-b border-dark-border/50 flex justify-between items-center sticky top-0 glass-effect z-10">
-            <h3 class="text-base sm:text-xl font-bold text-white flex items-center gap-2" id="modalEventoTitulo">
-                <i class="fas fa-calendar-plus text-blue-400 text-sm sm:text-base"></i>
-                Novo Evento
+        <div class="p-4 sm:p-6 border-b border-dark-border/50 flex justify-between items-center">
+            <h3 class="text-base sm:text-xl font-bold text-white flex items-center gap-2">
+                <i class="fas fa-calendar-plus text-blue-400"></i>
+                Agendamento
             </h3>
             <button onclick="fecharModalEvento()" class="w-8 h-8 rounded-lg bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition">
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <form id="formEvento" class="p-4 sm:p-6 space-y-3 sm:space-y-4 overflow-y-auto max-h-[calc(95vh-80px)] sm:max-h-[calc(90vh-80px)] custom-scrollbar">
+        <form id="formEvento" class="p-4 sm:p-6 space-y-4 overflow-y-auto max-h-[calc(95vh-80px)] custom-scrollbar">
             <input type="hidden" id="eventoId">
-            
-            <div>
-                <label class="block text-xs sm:text-sm text-gray-400 mb-1.5">Data *</label>
-                <input type="date" id="eventoData" required class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none">
-            </div>
             
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-xs sm:text-sm text-gray-400 mb-1.5">Categoria *</label>
-                    <select id="eventoCategoria" required class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none">
-                        <option value="">Selecione...</option>
-                        <option value="C">C - Consultoria</option>
-                        <option value="K">K - Kick-off</option>
-                        <option value="F">F - Reuniao Final</option>
-                        <option value="M">M - Mentoria</option>
-                        <option value="T">T - T0 Diagnostico</option>
-                        <option value="P">P - Programado</option>
-                        <option value="O">O - Outros</option>
-                    </select>
+                    <label class="block text-xs sm:text-sm text-gray-400 mb-1.5">Data *</label>
+                    <input type="date" id="eventoData" required class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none">
                 </div>
                 <div>
-                    <label class="block text-xs sm:text-sm text-gray-400 mb-1.5">Periodo</label>
-                    <select id="eventoPeriodo" class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none">
-                        <option value="D">Dia todo</option>
-                        <option value="M">Manha</option>
-                        <option value="T">Tarde</option>
+                    <label class="block text-xs sm:text-sm text-gray-400 mb-1.5">Consultor *</label>
+                    <select id="eventoConsultor" required class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none">
+                        <option value="">Selecione...</option>
                     </select>
                 </div>
             </div>
-            
-            <div>
-                <label class="block text-xs sm:text-sm text-gray-400 mb-1.5">Consultor *</label>
-                <select id="eventoConsultor" required class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none">
-                    <option value="">Selecione o consultor...</option>
-                </select>
-            </div>
-            
-            <!-- Seleção de Empresa -->
+
+            <!-- BUSCA DE EMPRESA -->
             <div class="space-y-1.5 relative">
-                <label class="block text-xs sm:text-sm text-gray-400">Empresa *</label>
-                <input type="text" id="eventoBuscaEmpresa" placeholder="Buscar empresa..." class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none" autocomplete="off">
+                <label class="block text-xs sm:text-sm text-gray-400 font-bold text-blue-400">EMPRESA *</label>
+                <input type="text" id="eventoBuscaEmpresa" placeholder="Digite para buscar..." class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl border-2 border-blue-500/30 focus:border-blue-500 transition-all" autocomplete="off">
                 <input type="hidden" id="eventoEmpresaId">
-                <div id="listaSugestoesEmpresa" class="hidden absolute z-50 w-full mt-1 bg-dark-card border border-dark-border/50 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
-                    <!-- Sugestões serão inseridas aqui via JS -->
-                </div>
+                <input type="hidden" id="eventoSigla">
+                <div id="listaSugestoesEmpresa" class="hidden absolute z-50 w-full mt-1 bg-dark-card border border-dark-border/50 rounded-xl shadow-2xl max-h-60 overflow-y-auto"></div>
             </div>
 
-            <!-- Sigla da Empresa -->
-            <div class="hidden">
-                <label class="block text-xs sm:text-sm text-gray-400 mb-1.5">Sigla da Empresa</label>
-                <input type="text" id="eventoSigla" class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none" readonly>
-            </div>
-
-            <div id="campoEventoPrograma" class="hidden">
-                <label class="block text-xs sm:text-sm text-gray-400 mb-1.5">Programa Associado</label>
-                <select id="eventoPrograma" class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none">
+            <!-- SELEÇÃO DE PROGRAMA -->
+            <div id="campoEventoPrograma" class="space-y-1.5">
+                <label class="block text-xs sm:text-sm text-gray-400 font-bold text-green-400">PROGRAMA *</label>
+                <select id="eventoPrograma" required class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl border-2 border-green-500/30 focus:border-green-500 transition-all">
                     <option value="">Selecione um programa...</option>
                 </select>
-                <p class="text-[10px] text-gray-500 mt-1">Ao selecionar um programa, os detalhes da empresa serão preenchidos automaticamente.</p>
             </div>
-            
-            <div id="configuracaoDistribuicao" class="hidden space-y-4 pt-2 border-t border-dark-border/30">
+
+            <div id="configuracaoDistribuicao" class="space-y-4 pt-4 border-t border-dark-border/30">
                 <h4 class="text-xs font-bold text-blue-400 uppercase tracking-wider">Configuração de Distribuição</h4>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs sm:text-sm text-gray-400 mb-1.5">Horas por Dia *</label>
-                        <input type="number" id="eventoHorasDia" step="0.5" value="8" class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none">
+                        <select id="eventoHorasDia" class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none">
+                            <option value="8">8h (Dia Todo)</option>
+                            <option value="4">4h (Manhã/Tarde)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs sm:text-sm text-gray-400 mb-1.5">Categoria</label>
+                        <select id="eventoCategoria" required class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none">
+                            <option value="P">P - Programado</option>
+                            <option value="C">C - Consultoria</option>
+                            <option value="M">M - Mentoria</option>
+                        </select>
                     </div>
                 </div>
+                
                 <div>
                     <label class="block text-xs sm:text-sm text-gray-400 mb-2">Dias da Semana *</label>
-                    <div class="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                    <div class="grid grid-cols-5 gap-2">
+                        {% for dia, label in [('0', 'SEG'), ('1', 'TER'), ('2', 'QUA'), ('3', 'QUI'), ('4', 'SEX')] %}
                         <label class="flex flex-col items-center p-2 rounded-lg bg-dark-card/50 border border-dark-border/30 cursor-pointer hover:bg-dark-hover transition">
-                            <input type="checkbox" name="eventoDiasSemana" value="0" checked class="hidden peer">
-                            <span class="text-[10px] text-gray-400 peer-checked:text-blue-400 font-bold">SEG</span>
+                            <input type="checkbox" name="eventoDiasSemana" value="{{ dia }}" checked class="hidden peer">
+                            <span class="text-[10px] text-gray-400 peer-checked:text-blue-400 font-bold">{{ label }}</span>
                             <div class="w-3 h-3 rounded-full border-2 border-gray-600 mt-1 peer-checked:border-blue-500 peer-checked:bg-blue-500"></div>
                         </label>
-                        <label class="flex flex-col items-center p-2 rounded-lg bg-dark-card/50 border border-dark-border/30 cursor-pointer hover:bg-dark-hover transition">
-                            <input type="checkbox" name="eventoDiasSemana" value="1" checked class="hidden peer">
-                            <span class="text-[10px] text-gray-400 peer-checked:text-blue-400 font-bold">TER</span>
-                            <div class="w-3 h-3 rounded-full border-2 border-gray-600 mt-1 peer-checked:border-blue-500 peer-checked:bg-blue-500"></div>
-                        </label>
-                        <label class="flex flex-col items-center p-2 rounded-lg bg-dark-card/50 border border-dark-border/30 cursor-pointer hover:bg-dark-hover transition">
-                            <input type="checkbox" name="eventoDiasSemana" value="2" checked class="hidden peer">
-                            <span class="text-[10px] text-gray-400 peer-checked:text-blue-400 font-bold">QUA</span>
-                            <div class="w-3 h-3 rounded-full border-2 border-gray-600 mt-1 peer-checked:border-blue-500 peer-checked:bg-blue-500"></div>
-                        </label>
-                        <label class="flex flex-col items-center p-2 rounded-lg bg-dark-card/50 border border-dark-border/30 cursor-pointer hover:bg-dark-hover transition">
-                            <input type="checkbox" name="eventoDiasSemana" value="3" checked class="hidden peer">
-                            <span class="text-[10px] text-gray-400 peer-checked:text-blue-400 font-bold">QUI</span>
-                            <div class="w-3 h-3 rounded-full border-2 border-gray-600 mt-1 peer-checked:border-blue-500 peer-checked:bg-blue-500"></div>
-                        </label>
-                        <label class="flex flex-col items-center p-2 rounded-lg bg-dark-card/50 border border-dark-border/30 cursor-pointer hover:bg-dark-hover transition">
-                            <input type="checkbox" name="eventoDiasSemana" value="4" checked class="hidden peer">
-                            <span class="text-[10px] text-gray-400 peer-checked:text-blue-400 font-bold">SEX</span>
-                            <div class="w-3 h-3 rounded-full border-2 border-gray-600 mt-1 peer-checked:border-blue-500 peer-checked:bg-blue-500"></div>
-                        </label>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
-            
-            <div>
-                <label class="block text-xs sm:text-sm text-gray-400 mb-1.5">Descricao</label>
-                <textarea id="eventoDescricao" rows="2" placeholder="Detalhes do evento..." class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none resize-none"></textarea>
-            </div>
-            
-            <div class="flex gap-2 sm:gap-3 pt-2 sm:pt-4 sticky bottom-0 bg-dark-bg/80 -mx-4 sm:-mx-6 px-4 sm:px-6 pb-4 sm:pb-0 -mb-4 sm:mb-0">
-                <button type="button" id="btnExcluirEvento" onclick="excluirEvento()" class="px-3 sm:px-4 py-2.5 sm:py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl font-medium transition hidden text-sm">
-                    <i class="fas fa-trash"></i>
-                </button>
-                <div class="flex-1"></div>
-                <button type="button" onclick="fecharModalEvento()" class="px-4 sm:px-6 py-2.5 sm:py-3 bg-dark-card hover:bg-dark-hover text-gray-300 rounded-xl font-medium transition text-sm">
-                    Cancelar
-                </button>
-                <button type="submit" class="px-4 sm:px-6 py-2.5 sm:py-3 btn-primary text-white rounded-xl font-medium text-sm">
-                    <i class="fas fa-save mr-1 sm:mr-2"></i>Salvar
-                </button>
+
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="fecharModalEvento()" class="flex-1 py-3 bg-dark-card hover:bg-dark-hover text-gray-300 rounded-xl font-medium transition text-sm">Cancelar</button>
+                <button type="submit" class="flex-1 py-3 btn-primary text-white rounded-xl font-bold text-sm">Gerar no Cronograma</button>
             </div>
         </form>
     </div>
 </div>
 
-<div id="modalDetalhesDia" class="hidden fixed inset-0 modal-backdrop flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+<!-- Modal Programas -->
+<div id="modalProgramas" class="hidden fixed inset-0 modal-backdrop flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
     <div class="glass-effect rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-2xl max-h-[85vh] sm:max-h-[80vh] overflow-hidden animate-slide-up">
-        <div class="p-3 sm:p-4 lg:p-6 border-b border-dark-border/50 flex justify-between items-center sticky top-0 glass-effect z-10">
-            <h3 class="text-sm sm:text-base lg:text-xl font-bold text-white flex items-center gap-2 truncate" id="modalDetalhesTitulo">
-                <i class="fas fa-calendar-day text-blue-400 text-sm"></i>
-                <span class="truncate">Eventos do Dia</span>
-            </h3>
-            <div class="flex items-center gap-2 flex-shrink-0">
-                <button onclick="abrirModalNovoEventoData()" class="px-2.5 sm:px-4 py-1.5 sm:py-2 btn-primary text-white rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm">
-                    <i class="fas fa-plus sm:mr-1"></i>
-                    <span class="hidden sm:inline">Adicionar</span>
-                </button>
-                <button onclick="fecharModalDetalhesDia()" class="w-8 h-8 rounded-lg bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition">
-                    <i class="fas fa-times text-sm"></i>
-                </button>
-            </div>
-        </div>
-        <div id="modalDetalhesConteudo" class="p-3 sm:p-4 lg:p-6 overflow-y-auto max-h-[calc(85vh-70px)] sm:max-h-[60vh] space-y-2 sm:space-y-3"></div>
-    </div>
-</div>
-
-<div id="modalProgramas" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
-    <div class="glass-effect rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden animate-slide-up">
-        <div class="p-6 border-b border-dark-border/50 flex justify-between items-center sticky top-0 glass-effect z-10">
-            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+        <div class="p-4 sm:p-6 border-b border-dark-border/50 flex justify-between items-center sticky top-0 glass-effect z-10">
+            <h3 class="text-base sm:text-xl font-bold text-white flex items-center gap-2">
                 <i class="fas fa-list-check text-blue-400"></i>
                 Gestão de Programas
             </h3>
@@ -363,47 +208,38 @@
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <div class="p-6 space-y-6 overflow-y-auto max-h-[calc(85vh-80px)]">
-            <form id="formPrograma" class="space-y-4 bg-dark-card/30 p-4 rounded-xl border border-dark-border/30">
-                <h4 class="text-white font-medium mb-2">Novo Programa</h4>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm text-gray-400 mb-1.5">Nome do Programa *</label>
-                        <input type="text" id="progNome" required class="w-full px-4 py-2.5 input-modern text-white text-sm rounded-xl focus:outline-none">
+        
+        <div class="flex flex-col h-full overflow-hidden">
+            <div class="p-4 sm:p-6 border-b border-dark-border/30 bg-dark-bg/30">
+                <form id="formPrograma" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-1.5">
+                            <label class="block text-xs sm:text-sm text-gray-400">Nome do Programa *</label>
+                            <input type="text" id="progNome" required placeholder="Ex: Diagnóstico Empresarial" class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none">
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="block text-xs sm:text-sm text-gray-400">Carga Horária (Total) *</label>
+                            <input type="number" id="progCarga" required placeholder="Ex: 40" class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none">
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm text-gray-400 mb-1.5">Empresa</label>
-                        <select id="progEmpresa" class="w-full px-4 py-2.5 input-modern text-white text-sm rounded-xl focus:outline-none">
-                            <option value="">Selecione uma empresa...</option>
-                        </select>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs sm:text-sm text-gray-400">Descrição</label>
+                        <textarea id="progDesc" rows="2" placeholder="Objetivo do programa..." class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none resize-none"></textarea>
                     </div>
-                </div>
-                <div>
-                    <label class="block text-sm text-gray-400 mb-1.5">Carga Horária Total (h) *</label>
-                    <input type="number" id="progCarga" step="0.5" required class="w-full px-4 py-2.5 input-modern text-white text-sm rounded-xl focus:outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm text-gray-400 mb-1.5">Descrição</label>
-                    <textarea id="progDesc" rows="2" class="w-full px-4 py-2.5 input-modern text-white text-sm rounded-xl focus:outline-none resize-none"></textarea>
-                </div>
-                <button type="submit" class="w-full py-2.5 btn-primary text-white rounded-xl font-medium text-sm transition-all hover:scale-[1.02]">
-                    <i class="fas fa-plus mr-2"></i>Cadastrar Programa
-                </button>
-            </form>
-
-            <div class="space-y-3">
-                <h4 class="text-white font-medium">Programas Cadastrados</h4>
-                <div id="listaProgramas" class="grid grid-cols-1 gap-3">
-                    <!-- Programas via JS -->
-                </div>
+                    <button type="submit" class="w-full btn-primary text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
+                        <i class="fas fa-save"></i> Cadastrar Programa
+                    </button>
+                </form>
+            </div>
+            
+            <div class="p-4 sm:p-6 overflow-y-auto max-h-[40vh] custom-scrollbar">
+                <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Programas Ativos</h4>
+                <div id="listaProgramas" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
             </div>
         </div>
     </div>
 </div>
 
-{% endblock %}
-
-{% block scripts %}
 <script src="/static/js/cronograma.js"></script>
 <script src="/static/js/programs.js"></script>
 {% endblock %}
