@@ -624,8 +624,10 @@ function abrirModalNovoEvento() {
     
     // Mostrar campo de programa e carregar opções
     const campoPrograma = document.getElementById('campoEventoPrograma');
+    const configDist = document.getElementById('configuracaoDistribuicao');
     if (campoPrograma) {
         campoPrograma.classList.remove('hidden');
+        if (configDist) configDist.classList.remove('hidden');
         carregarProgramasNoEvento();
     }
     
@@ -693,9 +695,11 @@ async function editarEvento(eventoId) {
         document.getElementById('eventoSigla').value = evento.sigla_empresa || '';
         document.getElementById('eventoDescricao').value = evento.descricao || '';
         
-        // Esconder campo de programa na edição
-        const campoPrograma = document.getElementById('campoEventoPrograma');
-        if (campoPrograma) campoPrograma.classList.add('hidden');
+    // Esconder campo de programa na edição
+    const campoPrograma = document.getElementById('campoEventoPrograma');
+    const configDist = document.getElementById('configuracaoDistribuicao');
+    if (campoPrograma) campoPrograma.classList.add('hidden');
+    if (configDist) configDist.classList.add('hidden');
         
         document.getElementById('btnExcluirEvento').classList.remove('hidden');
         
@@ -716,6 +720,48 @@ async function salvarEvento(e) {
     
     const eventoId = document.getElementById('eventoId').value;
     const programId = document.getElementById('eventoPrograma')?.value;
+    
+    if (programId) {
+        // Fluxo de agendamento automático de programa
+        const diasCheckboxes = document.querySelectorAll('input[name="eventoDiasSemana"]:checked');
+        if (diasCheckboxes.length === 0) {
+            alert('Selecione pelo menos um dia da semana para o programa');
+            return;
+        }
+        
+        const dadosAuto = {
+            program_id: parseInt(programId),
+            consultor_id: parseInt(document.getElementById('eventoConsultor').value),
+            data_inicio: document.getElementById('eventoData').value,
+            dias_semana: Array.from(diasCheckboxes).map(cb => parseInt(cb.value)),
+            horas_por_dia: parseFloat(document.getElementById('eventoHorasDia').value || 8)
+        };
+        
+        try {
+            const response = await apiRequest('/api/programs/auto-schedule', {
+                method: 'POST',
+                body: JSON.stringify(dadosAuto)
+            });
+            
+            if (response.ok) {
+                const res = await response.json();
+                fecharModalEvento();
+                await carregarEventos();
+                renderizarCalendario();
+                renderizarCalendarioMobile();
+                if (typeof showToast !== 'undefined') showToast(res.message, 'success');
+                else alert(res.message);
+            } else {
+                const error = await response.json();
+                alert(error.detail || 'Erro ao gerar cronograma');
+            }
+        } catch (error) {
+            console.error('Erro no agendamento automático:', error);
+            alert('Erro de conexão com servidor');
+        }
+        return;
+    }
+
     const dados = {
         data: document.getElementById('eventoData').value,
         categoria: document.getElementById('eventoCategoria').value,
