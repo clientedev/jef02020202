@@ -46,7 +46,7 @@ def auto_schedule(request: AutoScheduleRequest, db: Session = Depends(get_db)):
     if not program:
         raise HTTPException(status_code=404, detail="Programa não encontrado")
 
-    horas_restantes = program.carga_horaria
+    horas_restantes = float(program.carga_horaria)
     data_atual = request.data_inicio
     eventos_criados = []
 
