@@ -331,7 +331,8 @@ def listar_eventos(
             consultor_id=evento.consultor_id,
             consultor_nome=evento.consultor.nome if evento.consultor else "Sem consultor",
             titulo=evento.titulo or f"{cat_value}-{evento.sigla_empresa or ''}",
-            cor=cat_info["cor"]
+            cor=cat_info["cor"],
+            alterado=bool(evento.alterado)
         ))
     
     return result
@@ -401,6 +402,11 @@ def atualizar_evento(
                 detail="Consultor nao encontrado"
             )
     
+    if dados.data and dados.data != evento.data:
+        if not evento.data_original:
+            evento.data_original = evento.data
+        evento.alterado = 1
+
     dados_atualizacao = dados.model_dump(exclude_unset=True)
     for campo, valor in dados_atualizacao.items():
         setattr(evento, campo, valor)

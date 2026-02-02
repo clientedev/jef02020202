@@ -220,8 +220,11 @@ function renderizarCalendario() {
         const diaSemana = new Date(anoAtual, mesAtual, dia).getDay();
         const isFimDeSemana = diaSemana === 0 || diaSemana === 6;
         
+        const hasAlterado = eventosDoDia.some(e => e.alterado);
+        
         let classesDia = 'min-h-[140px] rounded-xl p-2.5 transition cursor-pointer hover:ring-2 hover:ring-blue-500/50 hover:scale-[1.02] ';
         if (isHoje) classesDia += 'bg-gradient-to-br from-blue-900/60 to-blue-800/40 ring-2 ring-blue-500 shadow-lg shadow-blue-500/20 ';
+        else if (hasAlterado) classesDia += 'bg-red-900/20 border-2 border-red-500/50 ';
         else if (isFimDeSemana) classesDia += 'bg-dark-bg/30 ';
         else classesDia += 'bg-dark-bg/50 hover:bg-dark-bg/70 ';
         
@@ -237,16 +240,18 @@ function renderizarCalendario() {
                 const consultorCor = getConsultorCor(evento.consultor_id);
                 const corCat = CATEGORIA_CORES[evento.categoria]?.cor || '#6b7280';
                 const titulo = evento.sigla_empresa || 'Empresa';
-                const programa = evento.program_nome ? evento.program_nome.substring(0, 15) : '';
+                const programa = evento.program_nome ? evento.program_nome.substring(0, 20) : '';
+                const alteradoBadge = evento.alterado ? '<span class="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-auto"></span>' : '';
                 html += `
-                    <div class="flex items-center gap-1.5 p-1.5 rounded-lg bg-dark-card/90 border border-dark-border/40 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-1.5 p-1.5 rounded-lg bg-dark-card/90 border ${evento.alterado ? 'border-red-500/50' : 'border-dark-border/40'} shadow-sm hover:shadow-md transition-shadow">
                         <div class="w-1 h-8 rounded-full flex-shrink-0" style="background-color: ${corCat}"></div>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-1">
                                 <div class="w-5 h-5 rounded-md text-[9px] flex items-center justify-center text-white font-bold flex-shrink-0" style="background-color: ${consultorCor}">${getIniciais(evento.consultor_nome)}</div>
-                                <span class="text-[11px] text-white font-medium truncate">${titulo}</span>
+                                <span class="text-[11px] text-white font-bold truncate">${titulo}</span>
+                                ${alteradoBadge}
                             </div>
-                            ${programa ? `<div class="text-[9px] text-gray-400 truncate mt-0.5 pl-6">${programa}</div>` : ''}
+                            ${programa ? `<div class="text-[9px] text-blue-400 font-medium truncate mt-0.5 pl-6">${programa}</div>` : ''}
                         </div>
                     </div>
                 `;
@@ -445,9 +450,14 @@ async function exibirDetalhesAgendamento(id) {
 
         if (conteudo) {
             conteudo.innerHTML = `
+                ${evento.alterado ? `
+                <div class="p-2 mb-2 rounded-lg bg-red-500/20 border border-red-500/30 text-center">
+                    <span class="text-xs text-red-400 font-bold uppercase"><i class="fas fa-exclamation-triangle mr-1"></i> Data Alterada</span>
+                </div>
+                ` : ''}
                 <div class="flex items-center justify-between">
                     <span class="text-xs text-gray-400">Data</span>
-                    <span class="text-sm text-white font-medium">${dataFormatada}</span>
+                    <span class="text-sm ${evento.alterado ? 'text-red-400 font-bold' : 'text-white font-medium'}">${dataFormatada}</span>
                 </div>
                 <div class="flex items-center justify-between">
                     <span class="text-xs text-gray-400">Categoria</span>
