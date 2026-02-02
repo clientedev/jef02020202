@@ -194,6 +194,38 @@ async def healthz():
     """Alternative health check endpoint for Kubernetes/Railway compatibility"""
     return {"status": "ok"}
 
+def adicionar_colunas_faltantes_eventos():
+    """Adiciona colunas faltantes à tabela cronograma_eventos se não existirem"""
+    from sqlalchemy import text
+    
+    if engine is None:
+        return
+    
+    colunas_necessarias = {
+        'program_id': 'INTEGER REFERENCES programs(id)',
+    }
+    
+    with engine.connect() as conn:
+        result = conn.execute(text("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'cronograma_eventos'
+        """))
+        colunas_existentes = {row[0] for row in result.fetchall()}
+        
+        for coluna, tipo in colunas_necessarias.items():
+            if coluna not in colunas_existentes:
+                print(f"🔄 Adicionando coluna '{coluna}' à tabela cronograma_eventos...")
+                try:
+                    conn.execute(text(f"""
+                        ALTER TABLE cronograma_eventos 
+                        ADD COLUMN {coluna} {tipo}
+                    """))
+                    conn.commit()
+                    print(f"✅ Coluna '{coluna}' adicionada com sucesso à cronograma_eventos")
+                except Exception as e:
+                    print(f"⚠️ Erro ao adicionar coluna '{coluna}' à cronograma_eventos: {e}")
+
 @app.on_event("startup")
 async def startup_event():
     """Cria tabelas se necessário e executa seed de dados iniciais"""
@@ -224,6 +256,11 @@ async def startup_event():
         adicionar_colunas_faltantes_prospeccoes()
     except Exception as e:
         print(f"⚠️ Erro ao adicionar colunas faltantes em prospeccoes: {e}")
+    
+    try:
+        adicionar_colunas_faltantes_eventos()
+    except Exception as e:
+        print(f"⚠️ Erro ao adicionar colunas faltantes em eventos: {e}")
     
     try:
         criar_tabela_prospeccoes_historico()

@@ -1,12 +1,18 @@
 let programas = [];
 
 async function abrirModalProgramas() {
-    document.getElementById('modalProgramas').classList.remove('hidden');
-    await carregarProgramas();
+    const modal = document.getElementById('modalProgramas');
+    if (modal) {
+        modal.classList.remove('hidden');
+        await carregarProgramas();
+    } else {
+        console.error('Modal modalProgramas não encontrado no DOM');
+    }
 }
 
 function fecharModalProgramas() {
-    document.getElementById('modalProgramas').classList.add('hidden');
+    const modal = document.getElementById('modalProgramas');
+    if (modal) modal.classList.add('hidden');
 }
 
 async function carregarProgramas() {
@@ -54,30 +60,33 @@ function renderizarProgramas() {
     `).join('');
 }
 
-document.getElementById('formPrograma').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const data = {
-        nome: document.getElementById('progNome').value,
-        carga_horaria: parseFloat(document.getElementById('progCarga').value),
-        descricao: document.getElementById('progDesc').value
-    };
-    
-    try {
-        const response = await apiRequest('/api/programs/', {
-            method: 'POST',
-            body: JSON.stringify(data)
-        });
+const formProg = document.getElementById('formPrograma');
+if (formProg) {
+    formProg.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = {
+            nome: document.getElementById('progNome').value,
+            carga_horaria: parseFloat(document.getElementById('progCarga').value),
+            descricao: document.getElementById('progDesc').value
+        };
         
-        if (response.ok) {
-            showToast('Programa cadastrado com sucesso!', 'success');
-            document.getElementById('formPrograma').reset();
-            await carregarProgramas();
+        try {
+            const response = await apiRequest('/api/programs/', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+            
+            if (response.ok) {
+                showToast('Programa cadastrado com sucesso!', 'success');
+                document.getElementById('formPrograma').reset();
+                await carregarProgramas();
+            }
+        } catch (error) {
+            console.error('Erro ao salvar programa:', error);
+            showToast('Erro ao salvar programa', 'error');
         }
-    } catch (error) {
-        console.error('Erro ao salvar programa:', error);
-        showToast('Erro ao salvar programa', 'error');
-    }
-});
+    });
+}
 
 function abrirAgendamento(id, nome, carga) {
     document.getElementById('agendProgId').value = id;
@@ -90,47 +99,50 @@ function fecharModalAgendarPrograma() {
     document.getElementById('modalAgendarPrograma').classList.add('hidden');
 }
 
-document.getElementById('formAutoAgendamento').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const diasCheckboxes = document.querySelectorAll('input[name="diasSemana"]:checked');
-    if (diasCheckboxes.length === 0) {
-        showToast('Selecione pelo menos um dia da semana', 'error');
-        return;
-    }
-    
-    const diasSemana = Array.from(diasCheckboxes).map(cb => parseInt(cb.value));
-    
-    const data = {
-        program_id: parseInt(document.getElementById('agendProgId').value),
-        consultor_id: parseInt(document.getElementById('agendConsultor').value),
-        data_inicio: document.getElementById('agendDataInicio').value,
-        dias_semana: diasSemana,
-        horas_por_dia: parseFloat(document.getElementById('agendHorasDia').value)
-    };
-    
-    try {
-        const response = await apiRequest('/api/programs/auto-schedule', {
-            method: 'POST',
-            body: JSON.stringify(data)
-        });
+const formAuto = document.getElementById('formAutoAgendamento');
+if (formAuto) {
+    formAuto.addEventListener('submit', async (e) => {
+        e.preventDefault();
         
-        if (response.ok) {
-            const res = await response.json();
-            showToast(res.message, 'success');
-            fecharModalAgendarPrograma();
-            fecharModalProgramas();
-            if (typeof carregarEventos !== 'undefined') {
-                await carregarEventos();
-                if (typeof renderizarCalendario !== 'undefined') renderizarCalendario();
-                if (typeof renderizarCalendarioMobile !== 'undefined') renderizarCalendarioMobile();
-            }
-        } else {
-            const error = await response.json();
-            showToast(error.detail || 'Erro ao gerar cronograma', 'error');
+        const diasCheckboxes = document.querySelectorAll('input[name="diasSemana"]:checked');
+        if (diasCheckboxes.length === 0) {
+            showToast('Selecione pelo menos um dia da semana', 'error');
+            return;
         }
-    } catch (error) {
-        console.error('Erro no agendamento automático:', error);
-        showToast('Erro de conexão com servidor', 'error');
-    }
-});
+        
+        const diasSemana = Array.from(diasCheckboxes).map(cb => parseInt(cb.value));
+        
+        const data = {
+            program_id: parseInt(document.getElementById('agendProgId').value),
+            consultor_id: parseInt(document.getElementById('agendConsultor').value),
+            data_inicio: document.getElementById('agendDataInicio').value,
+            dias_semana: diasSemana,
+            horas_por_dia: parseFloat(document.getElementById('agendHorasDia').value)
+        };
+        
+        try {
+            const response = await apiRequest('/api/programs/auto-schedule', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+            
+            if (response.ok) {
+                const res = await response.json();
+                showToast(res.message, 'success');
+                fecharModalAgendarPrograma();
+                fecharModalProgramas();
+                if (typeof carregarEventos !== 'undefined') {
+                    await carregarEventos();
+                    if (typeof renderizarCalendario !== 'undefined') renderizarCalendario();
+                    if (typeof renderizarCalendarioMobile !== 'undefined') renderizarCalendarioMobile();
+                }
+            } else {
+                const error = await response.json();
+                showToast(error.detail || 'Erro ao gerar cronograma', 'error');
+            }
+        } catch (error) {
+            console.error('Erro no agendamento automático:', error);
+            showToast('Erro de conexão com servidor', 'error');
+        }
+    });
+}
