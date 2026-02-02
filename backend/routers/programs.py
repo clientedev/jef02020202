@@ -68,7 +68,7 @@ def auto_schedule(request: AutoScheduleRequest, db: Session = Depends(get_db)):
             )
             db.add(novo_evento)
             eventos_criados.append(novo_evento)
-            horas_restantes -= horas_hoje
+            horas_restantes -= float(horas_hoje)
         
         data_atual += timedelta(days=1)
         if (data_atual - request.data_inicio).days > 365: # Safety break

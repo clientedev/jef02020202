@@ -37,8 +37,12 @@ async function abrirModalProgramas() {
 
 async function carregarEmpresasParaProgramas() {
     try {
-        const response = await apiRequest('/api/empresas/');
-        const empresas = await response.json();
+        const response = await apiRequest('/api/empresas/?page_size=100');
+        if (!response.ok) {
+            throw new Error('Falha ao carregar empresas');
+        }
+        const data = await response.json();
+        const empresas = data.items || [];
         const select = document.getElementById('progEmpresa');
         if (select) {
             select.innerHTML = '<option value="">Selecione uma empresa...</option>' + 
