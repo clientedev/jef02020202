@@ -294,7 +294,7 @@ function renderizarLista() {
     eventosOrdenados.forEach(e => {
         const dataFormatada = new Date(e.data + 'T12:00:00').toLocaleDateString('pt-BR');
         html += `
-            <tr class="border-b border-dark-border/30 hover:bg-dark-bg/30 cursor-pointer" onclick="editarEvento(${e.id})">
+            <tr class="border-b border-dark-border/30 hover:bg-dark-bg/30 cursor-pointer" onclick="exibirDetalhesAgendamento(${e.id})">
                 <td class="py-3 px-4 text-white font-medium">${dataFormatada}</td>
                 <td class="py-3 px-4">
                     <div class="flex items-center gap-2 text-gray-300">
@@ -363,7 +363,7 @@ function renderizarTimeline() {
                     <td class="p-0.5 border-l border-dark-border/30 align-top">
                         <div class="p-1 rounded text-white h-full min-h-[40px] cursor-pointer hover:brightness-110 overflow-hidden" 
                              style="background-color: ${corCat}" 
-                             onclick="editarEvento(${ev.id})"
+                             onclick="exibirDetalhesAgendamento(${ev.id})"
                              title="${ev.sigla_empresa}: ${ev.program_nome || ev.titulo}">
                             <div class="font-bold truncate">${ev.sigla_empresa || '?'}</div>
                             <div class="text-[8px] opacity-80 truncate">${ev.program_nome || ''}</div>
@@ -379,17 +379,150 @@ function renderizarTimeline() {
     
     html += '</tbody></table></div>';
     container.innerHTML = html;
+    atualizarMetricasEvolucao();
 }
 
 function abrirDetalhesDia(data, dia) {
     const evs = eventos.filter(e => e.data === data);
-    if (evs.length > 0) editarEvento(evs[0].id);
-    else {
+    if (evs.length > 0) {
+        exibirDetalhesAgendamento(evs[0].id);
+    } else {
         const inputData = document.getElementById('eventoData');
         if (inputData) inputData.value = data;
         abrirModalNovoEvento();
     }
 }
+
+async function exibirDetalhesAgendamento(id) {
+    if (!id) return;
+    try {
+        const response = await apiRequest(`/api/cronograma/eventos/${id}`);
+        if (!response.ok) throw new Error('Falha ao carregar evento');
+        const evento = await response.json();
+        
+        const conteudo = document.getElementById('conteudoDetalhesEvento');
+        const btnEditar = document.getElementById('btnEditarDesdeDetalhes');
+        
+        if (btnEditar) {
+            btnEditar.onclick = () => {
+                fecharModalDetalhes();
+                editarEvento(id);
+            };
+        }
+
+        const dataFormatada = new Date(evento.data + 'T12:00:00').toLocaleDateString('pt-BR');
+        const corCat = CATEGORIA_CORES[evento.categoria]?.cor || '#6b7280';
+        const nomeCat = CATEGORIA_CORES[evento.categoria]?.nome || 'Outros';
+
+        if (conteudo) {
+            conteudo.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <span class="text-xs text-gray-400">Data</span>
+                    <span class="text-sm text-white font-medium">${dataFormatada}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-xs text-gray-400">Categoria</span>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold text-white" style="background-color: ${corCat}">${nomeCat}</span>
+                </div>
+                <div class="space-y-1">
+                    <span class="text-xs text-gray-400 block">Consultor</span>
+                    <div class="flex items-center gap-2 p-2 rounded-lg bg-dark-bg/50 border border-dark-border/30">
+                        <div class="w-8 h-8 rounded flex items-center justify-center text-white font-bold" style="background-color: ${getConsultorCor(evento.consultor_id)}">
+                            ${getIniciais(evento.consultor_nome)}
+                        </div>
+                        <span class="text-sm text-white">${evento.consultor_nome}</span>
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    <span class="text-xs text-gray-400 block">Empresa</span>
+                    <div class="p-2 rounded-lg bg-dark-bg/50 border border-dark-border/30">
+                        <div class="text-sm text-white font-bold">${evento.empresa_nome || 'N/A'}</div>
+                        <div class="text-xs text-blue-400">${evento.sigla_empresa || 'Sem sigla'}</div>
+                    </div>
+                </div>
+                ${evento.program_nome ? `
+                <div class="space-y-1">
+                    <span class="text-xs text-gray-400 block">Programa</span>
+                    <div class="p-2 rounded-lg bg-green-500/10 border border-green-500/20">
+                        <div class="text-sm text-green-400 font-bold">${evento.program_nome}</div>
+                    </div>
+                </div>
+                ` : ''}
+                ${evento.descricao ? `
+                <div class="space-y-1">
+                    <span class="text-xs text-gray-400 block">Descrição</span>
+                    <div class="p-3 rounded-lg bg-dark-bg/50 border border-dark-border/30 text-xs text-gray-300 italic">
+                        ${evento.descricao}
+                    </div>
+                </div>
+                ` : ''}
+            `;
+        }
+
+        document.getElementById('modalDetalhesEvento').classList.remove('hidden');
+    } catch (e) {
+        console.error('Erro ao exibir detalhes:', e);
+    }
+}
+
+function fecharModalDetalhes() {
+    document.getElementById('modalDetalhesEvento').classList.add('hidden');
+}
+
+function atualizarMetricasEvolucao() {
+    const container = document.getElementById('metricasEvolucao');
+    if (!container) return;
+
+    const grupos = {};
+    eventos.forEach(ev => {
+        if (ev.program_id && ev.empresa_id) {
+            const key = \`\${ev.empresa_id}-\${ev.program_id}\`;
+            if (!grupos[key]) {
+                grupos[key] = {
+                    empresa: ev.empresa_nome || ev.sigla_empresa,
+                    programa: ev.program_nome,
+                    total: 0,
+                    realizado: 0
+                };
+            }
+            grupos[key].total++;
+            const hoje = new Date();
+            const dataEv = new Date(ev.data + 'T23:59:59');
+            if (dataEv <= hoje) {
+                grupos[key].realizado++;
+            }
+        }
+    });
+
+    const lista = Object.values(grupos);
+    if (lista.length === 0) {
+        container.innerHTML = '<div class="text-center py-4 text-gray-500 col-span-full">Nenhum programa vinculado encontrado.</div>';
+        return;
+    }
+
+    container.innerHTML = lista.map(item => {
+        const porcentagem = Math.round((item.realizado / item.total) * 100);
+        return `
+            <div class="p-4 rounded-xl bg-dark-card border border-dark-border/50 space-y-3">
+                <div class="flex justify-between items-start gap-2">
+                    <div class="min-w-0 flex-1">
+                        <h4 class="text-sm font-bold text-white truncate">\${item.empresa}</h4>
+                        <p class="text-[10px] text-gray-400 truncate">\${item.programa}</p>
+                    </div>
+                    <span class="text-lg font-bold text-blue-400 ml-2">\${porcentagem}%</span>
+                </div>
+                <div class="w-full h-2 bg-dark-bg rounded-full overflow-hidden border border-dark-border/30">
+                    <div class="h-full bg-blue-500 transition-all duration-500" style="width: \${porcentagem}%"></div>
+                </div>
+                <div class="flex justify-between text-[10px] text-gray-500">
+                    <span>\${item.realizado} de \${item.total} sessões</span>
+                    <span>\${item.total - item.realizado} restantes</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
 
 async function editarEvento(id) {
     if (!id) return;
