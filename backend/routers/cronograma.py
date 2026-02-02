@@ -295,7 +295,9 @@ def listar_eventos(
     usuario: Usuario = Depends(obter_usuario_atual)
 ):
     query = db.query(CronogramaEvento).options(
-        joinedload(CronogramaEvento.consultor)
+        joinedload(CronogramaEvento.consultor),
+        joinedload(CronogramaEvento.empresa),
+        joinedload(CronogramaEvento.program)
     )
     
     if consultor_id:
@@ -327,7 +329,9 @@ def listar_eventos(
             categoria=cat_value,
             categoria_nome=cat_info["nome"],
             periodo=evento.periodo.value if evento.periodo else "D",
-            sigla_empresa=evento.sigla_empresa,
+            sigla_empresa=evento.sigla_empresa or (evento.empresa.sigla if evento.empresa else None),
+            empresa_nome=evento.empresa.empresa if evento.empresa else None,
+            program_nome=evento.program.nome if evento.program else None,
             consultor_id=evento.consultor_id,
             consultor_nome=evento.consultor.nome if evento.consultor else "Sem consultor",
             titulo=evento.titulo or f"{cat_value}-{evento.sigla_empresa or ''}",

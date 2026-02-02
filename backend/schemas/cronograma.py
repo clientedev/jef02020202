@@ -176,6 +176,8 @@ class EventoCalendario(BaseModel):
     categoria_nome: str
     periodo: str
     sigla_empresa: Optional[str] = None
+    empresa_nome: Optional[str] = None
+    program_nome: Optional[str] = None
     consultor_id: int
     consultor_nome: str
     titulo: Optional[str] = None
