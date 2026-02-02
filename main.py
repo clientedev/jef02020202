@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from backend.database import SessionLocal, Base, engine
 from backend.models import Usuario, Empresa, Prospeccao, Agendamento, AtribuicaoEmpresa, Notificacao, Mensagem
-from backend.routers import auth, empresas, prospeccoes, agendamentos, admin, atribuicoes, consultores, dashboard, cnpj, notificacoes, mensagens, cronograma, pipeline
+from backend.routers import auth, empresas, prospeccoes, agendamentos, admin, atribuicoes, consultores, dashboard, cnpj, notificacoes, mensagens, cronograma, pipeline, programs
 from backend.routers.formularios import router as formularios_router, router_public as formularios_public_router
 from backend.utils.seed import criar_usuario_admin_padrao, criar_empresas_padrao, criar_consultores_padrao, criar_stages_padrao, popular_pipeline, criar_prospeccoes_padrao
 from backend.utils.seed_cronograma import seed_cronograma
@@ -318,6 +318,7 @@ app.include_router(notificacoes.router)
 app.include_router(mensagens.router)
 app.include_router(cronograma.router)
 app.include_router(pipeline.router)
+app.include_router(programs.router)
 app.include_router(formularios_router)
 app.include_router(formularios_public_router)
 

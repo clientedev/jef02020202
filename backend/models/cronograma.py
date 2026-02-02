@@ -101,6 +101,7 @@ class CronogramaEvento(Base):
     empresa_id = Column(Integer, ForeignKey("empresas.id"), nullable=True)
     consultor_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False, index=True)
     projeto_id = Column(Integer, ForeignKey("cronograma_projetos.id"), nullable=True)
+    program_id = Column(Integer, ForeignKey("programs.id"), nullable=True)
     titulo = Column(String(300))
     descricao = Column(Text)
     observacoes = Column(Text)
@@ -110,3 +111,16 @@ class CronogramaEvento(Base):
     empresa = relationship("Empresa")
     consultor = relationship("Usuario", back_populates="eventos_cronograma")
     projeto = relationship("CronogramaProjeto")
+    program = relationship("Program", back_populates="eventos")
+
+
+class Program(Base):
+    __tablename__ = "programs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nome = Column(String(200), nullable=False)
+    carga_horaria = Column(Float, nullable=False)  # Horas totais do programa
+    descricao = Column(Text)
+    data_criacao = Column(DateTime, default=datetime.utcnow)
+
+    eventos = relationship("CronogramaEvento", back_populates="program")
