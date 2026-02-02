@@ -26,10 +26,8 @@ async function abrirModalProgramas() {
     const modal = document.getElementById('modalProgramas');
     if (modal) {
         modal.classList.remove('hidden');
-        await Promise.all([
-            carregarProgramas(),
-            carregarEmpresasParaProgramas()
-        ]);
+        // Garantir que os dados sejam carregados ao abrir
+        await carregarProgramas();
     } else {
         console.error('Modal modalProgramas não encontrado no DOM');
     }
@@ -43,10 +41,14 @@ async function carregarEmpresasParaProgramas() {
         }
         const data = await response.json();
         const empresas = data.items || [];
+        
         const select = document.getElementById('progEmpresa');
         if (select) {
             select.innerHTML = '<option value="">Selecione uma empresa...</option>' + 
                 empresas.map(e => `<option value="${e.id}">${e.empresa}</option>`).join('');
+            console.log('Select de empresas populado com', empresas.length, 'itens');
+        } else {
+            console.error('Elemento #progEmpresa não encontrado no DOM');
         }
     } catch (error) {
         console.error('Erro ao carregar empresas:', error);
@@ -60,14 +62,19 @@ function fecharModalProgramas() {
 
 async function carregarProgramas() {
     try {
+        console.log('carregarProgramas chamado');
         const response = await apiRequest('/api/programs/');
+        if (!response.ok) {
+            throw new Error('Falha ao carregar programas');
+        }
         programas = await response.json();
         renderizarProgramas();
         
-        // Atualizar select no agendamento
-        const selectConsultor = document.getElementById('agendConsultor');
-        const selectOriginal = document.getElementById('eventoConsultor');
-        selectConsultor.innerHTML = selectOriginal.innerHTML;
+        // Carregar empresas para o select de criação de programa se ele existir
+        const select = document.getElementById('progEmpresa');
+        if (select) {
+            await carregarEmpresasParaProgramas();
+        }
     } catch (error) {
         console.error('Erro ao carregar programas:', error);
     }

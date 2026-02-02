@@ -60,7 +60,7 @@ def auto_schedule(request: AutoScheduleRequest, db: Session = Depends(get_db)):
                 categoria=CategoriaEvento.programado,
                 periodo=PeriodoEvento.dia_todo if horas_hoje >= 4 else PeriodoEvento.manha,
                 consultor_id=request.consultor_id,
-                empresa_id=request.empresa_id,
+                empresa_id=program.empresa_id, # Usar a empresa do programa
                 projeto_id=request.projeto_id,
                 program_id=program.id,
                 titulo=f"{program.nome} - Sessão",
