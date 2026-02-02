@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Agenda Operacional - Nucleo 1.03{% endblock %}
+
+{% set active_page = 'agenda_operacional' %}
+{% block content %}
+<div class="flex h-screen">
+    {% include "partials/sidebar.html" %}
+    
+    <main class="flex-1 overflow-hidden flex flex-col">
+        <header class="sticky top-0 z-20 glass-effect border-b border-dark-border/50 px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
+            <div class="flex justify-between items-center gap-2">
+                <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <button onclick="toggleMobileSidebar()" class="mobile-menu-btn flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-dark-card hover:bg-dark-hover items-center justify-center text-gray-400 hover:text-white transition">
+                        <i class="fas fa-bars text-sm sm:text-base"></i>
+                    </button>
+                    <div class="min-w-0">
+                        <h2 class="text-lg sm:text-xl lg:text-2xl font-bold text-white truncate">Agenda Operacional</h2>
+                        <p class="text-gray-400 text-xs mt-0.5 hidden md:block">Visão completa do cronograma por consultor</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-1 bg-dark-card rounded-xl p-1">
+                        <button onclick="navegarSemanas(-4)" class="w-8 h-8 rounded-lg hover:bg-dark-hover text-gray-400 hover:text-white flex items-center justify-center transition" title="Mês anterior">
+                            <i class="fas fa-angles-left text-xs"></i>
+                        </button>
+                        <button onclick="navegarSemanas(-1)" class="w-8 h-8 rounded-lg hover:bg-dark-hover text-gray-400 hover:text-white flex items-center justify-center transition" title="Semana anterior">
+                            <i class="fas fa-chevron-left text-xs"></i>
+                        </button>
+                        <button onclick="irParaHojeAgenda()" class="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 text-xs font-medium transition">
+                            Hoje
+                        </button>
+                        <button onclick="navegarSemanas(1)" class="w-8 h-8 rounded-lg hover:bg-dark-hover text-gray-400 hover:text-white flex items-center justify-center transition" title="Próxima semana">
+                            <i class="fas fa-chevron-right text-xs"></i>
+                        </button>
+                        <button onclick="navegarSemanas(4)" class="w-8 h-8 rounded-lg hover:bg-dark-hover text-gray-400 hover:text-white flex items-center justify-center transition" title="Próximo mês">
+                            <i class="fas fa-angles-right text-xs"></i>
+                        </button>
+                    </div>
+                    <div class="hidden sm:flex items-center gap-2 bg-dark-card rounded-xl px-3 py-2">
+                        <span id="periodoAtual" class="text-sm text-white font-medium"></span>
+                    </div>
+                    <button onclick="toggleLegenda()" class="w-9 h-9 rounded-xl bg-dark-card hover:bg-dark-hover text-gray-400 hover:text-white flex items-center justify-center transition" title="Legenda">
+                        <i class="fas fa-palette text-sm"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+        
+        <div id="legendaContainer" class="hidden px-4 py-3 bg-dark-card/50 border-b border-dark-border/30">
+            <div class="flex flex-wrap items-center gap-3">
+                <span class="text-xs text-gray-400 font-medium uppercase">Legenda:</span>
+                <div class="flex flex-wrap gap-2">
+                    <span class="px-2 py-1 rounded text-[10px] font-bold text-white" style="background-color: #22c55e">C - Consultoria</span>
+                    <span class="px-2 py-1 rounded text-[10px] font-bold text-white" style="background-color: #eab308">K - Kick-off</span>
+                    <span class="px-2 py-1 rounded text-[10px] font-bold text-white" style="background-color: #3b82f6">F - Reunião Final</span>
+                    <span class="px-2 py-1 rounded text-[10px] font-bold text-white" style="background-color: #ef4444">M - Mentoria</span>
+                    <span class="px-2 py-1 rounded text-[10px] font-bold text-white" style="background-color: #f97316">T - Diagnóstico</span>
+                    <span class="px-2 py-1 rounded text-[10px] font-bold text-white" style="background-color: #06b6d4">P - Programado</span>
+                    <span class="px-2 py-1 rounded text-[10px] font-bold text-white" style="background-color: #6b7280">O - Outros</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-auto custom-scrollbar" id="schedulerContainer">
+            <div id="schedulerGrid" class="min-w-max">
+                <div class="text-center py-20 text-gray-500">
+                    <i class="fas fa-spinner fa-spin text-3xl mb-4"></i>
+                    <p>Carregando agenda...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<div id="tooltipAgenda" class="hidden fixed z-50 pointer-events-none">
+    <div class="bg-dark-card border border-dark-border/50 rounded-xl shadow-2xl p-4 max-w-xs">
+        <div id="tooltipContent"></div>
+    </div>
+</div>
+
+<div id="modalDetalheEvento" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
+    <div class="glass-effect rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden animate-slide-up">
+        <div class="p-6 border-b border-dark-border/50 flex justify-between items-center">
+            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                <i class="fas fa-calendar-check text-blue-400"></i>
+                Detalhes da Atividade
+            </h3>
+            <button onclick="fecharModalDetalhe()" class="w-8 h-8 rounded-lg bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="modalDetalheConteudo" class="p-6 space-y-4 overflow-y-auto max-h-[60vh]"></div>
+        <div class="p-6 border-t border-dark-border/30 flex gap-3">
+            <button onclick="editarEventoAgenda()" class="flex-1 py-2.5 bg-blue-500/20 text-blue-400 rounded-xl font-medium hover:bg-blue-500/30 transition text-sm">
+                <i class="fas fa-edit mr-2"></i>Editar
+            </button>
+            <button onclick="fecharModalDetalhe()" class="flex-1 py-2.5 bg-dark-card text-gray-300 rounded-xl font-medium hover:bg-dark-hover transition text-sm">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.scheduler-grid {
+    display: grid;
+    border-collapse: collapse;
+}
+
+.scheduler-header-cell {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(17, 24, 39, 0.95);
+    backdrop-filter: blur(8px);
+}
+
+.scheduler-row-header {
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    background: rgba(17, 24, 39, 0.95);
+    backdrop-filter: blur(8px);
+}
+
+.scheduler-corner {
+    position: sticky;
+    top: 0;
+    left: 0;
+    z-index: 15;
+    background: rgba(17, 24, 39, 0.98);
+    backdrop-filter: blur(8px);
+}
+
+.scheduler-cell {
+    min-width: 100px;
+    height: 48px;
+    border: 1px solid rgba(55, 65, 81, 0.3);
+    transition: all 0.15s ease;
+}
+
+.scheduler-cell:hover {
+    transform: scale(1.02);
+    z-index: 2;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.scheduler-cell-content {
+    cursor: pointer;
+    padding: 4px 6px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-radius: 4px;
+    margin: 2px;
+    font-size: 10px;
+    font-weight: 600;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.weekend-col {
+    background: rgba(17, 24, 39, 0.6);
+}
+
+.today-col {
+    background: rgba(59, 130, 246, 0.1);
+    border-left: 2px solid #3b82f6;
+    border-right: 2px solid #3b82f6;
+}
+
+.week-separator {
+    border-left: 3px solid #eab308 !important;
+}
+
+.aniversario-cell {
+    position: relative;
+}
+
+.aniversario-cell::after {
+    content: '🎂';
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 10px;
+}
+</style>
+
+<script src="/static/js/agenda_operacional.js"></script>
+{% endblock %}

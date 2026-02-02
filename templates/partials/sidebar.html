@@ -48,6 +48,13 @@
             <span class="font-medium">Cronograma</span>
         </a>
         
+        <a href="/agenda-operacional" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg mb-1 {% if active_page == 'agenda_operacional' %}active bg-orange-500/10 text-orange-400{% else %}text-gray-400 hover:text-white{% endif %}">
+            <div class="w-9 h-9 rounded-lg {% if active_page == 'agenda_operacional' %}bg-orange-500/20{% else %}bg-dark-card{% endif %} flex items-center justify-center">
+                <i class="fas fa-table-cells {% if active_page == 'agenda_operacional' %}text-orange-400{% else %}text-gray-400{% endif %}"></i>
+            </div>
+            <span class="font-medium">Agenda Operacional</span>
+        </a>
+        
         <a href="/formularios" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg mb-1 {% if active_page == 'formularios' %}active bg-pink-500/10 text-pink-400{% else %}text-gray-400 hover:text-white{% endif %}">
             <div class="w-9 h-9 rounded-lg {% if active_page == 'formularios' %}bg-pink-500/20{% else %}bg-dark-card{% endif %} flex items-center justify-center">
                 <i class="fas fa-file-alt {% if active_page == 'formularios' %}text-pink-400{% else %}text-gray-400{% endif %}"></i>

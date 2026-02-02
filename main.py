@@ -411,6 +411,10 @@ async def chat_page(request: Request):
 async def cronograma_page(request: Request):
     return templates.TemplateResponse("cronograma.html", {"request": request})
 
+@app.get("/agenda-operacional", response_class=HTMLResponse)
+async def agenda_operacional_page(request: Request):
+    return templates.TemplateResponse("agenda_operacional.html", {"request": request})
+
 @app.get("/pipeline", response_class=HTMLResponse)
 async def pipeline_page(request: Request):
     return templates.TemplateResponse("pipeline.html", {"request": request})
