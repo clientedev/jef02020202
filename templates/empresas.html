@@ -1,0 +1,433 @@
+{% extends "base.html" %}
+
+{% block title %}Empresas - Núcleo 1.03{% endblock %}
+
+{% set active_page = 'empresas' %}
+{% block content %}
+<div class="flex h-screen">
+    {% include "partials/sidebar.html" %}
+    
+    <main class="flex-1 overflow-y-auto">
+        <header class="sticky top-0 z-10 glass-effect border-b border-dark-border/50 px-4 sm:px-8 py-4">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleMobileSidebar()" class="mobile-menu-btn w-10 h-10 rounded-xl bg-dark-card hover:bg-dark-hover items-center justify-center text-gray-400 hover:text-white transition">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-bold text-white">Empresas</h2>
+                        <p class="text-gray-400 text-xs sm:text-sm mt-1 hidden sm:block">Gerencie o cadastro de empresas</p>
+                    </div>
+                </div>
+                <div class="flex gap-2 sm:gap-3 w-full sm:w-auto">
+                    <button id="btnUploadExcel" onclick="showUploadExcelModal()" class="btn-success text-white py-2 sm:py-2.5 px-3 sm:px-5 rounded-xl flex items-center gap-2 font-medium text-sm sm:text-base flex-1 sm:flex-initial justify-center">
+                        <i class="fas fa-file-excel"></i>
+                        <span class="hidden xs:inline">Upload</span> Excel
+                    </button>
+                    <button id="btnNovaEmpresa" onclick="showNovaEmpresaModal()" class="btn-primary text-white py-2 sm:py-2.5 px-3 sm:px-5 rounded-xl flex items-center gap-2 font-medium text-sm sm:text-base flex-1 sm:flex-initial justify-center">
+                        <i class="fas fa-plus"></i>
+                        <span class="hidden xs:inline">Nova</span> Empresa
+                    </button>
+                </div>
+            </div>
+        </header>
+        
+        <div class="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
+            <div class="glass-effect rounded-2xl p-4 sm:p-6 border border-dark-border/50 animate-fade-in">
+                <h3 class="text-base sm:text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-filter text-blue-400"></i>
+                    Filtros de Empresas
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Nome da Empresa</label>
+                        <input type="text" id="filtroNome" placeholder="Buscar por nome..." 
+                            class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white rounded-xl focus:outline-none text-sm sm:text-base">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">CNPJ</label>
+                        <input type="text" id="filtroCNPJ" placeholder="00.000.000/0000-00"
+                            class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white rounded-xl focus:outline-none text-sm sm:text-base">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Município</label>
+                        <input type="text" id="filtroMunicipio" placeholder="Cidade..."
+                            class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white rounded-xl focus:outline-none text-sm sm:text-base">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">ER</label>
+                        <input type="text" id="filtroER" placeholder="ER..."
+                            class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white rounded-xl focus:outline-none text-sm sm:text-base">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Carteira</label>
+                        <input type="text" id="filtroCarteira" placeholder="Ex: 1.01"
+                            class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white rounded-xl focus:outline-none text-sm sm:text-base">
+                    </div>
+                    <button onclick="aplicarFiltros()" class="btn-primary text-white py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl flex items-center justify-center gap-2 font-medium self-end text-sm sm:text-base">
+                        <i class="fas fa-search"></i>
+                        <span class="hidden sm:inline">Filtrar</span>
+                    </button>
+                    <button onclick="limparFiltros()" class="bg-dark-card hover:bg-dark-hover text-gray-300 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl flex items-center justify-center gap-2 font-medium self-end transition text-sm sm:text-base">
+                        <i class="fas fa-times"></i>
+                        <span class="hidden sm:inline">Limpar</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="glass-effect rounded-2xl border border-dark-border/50 overflow-hidden animate-slide-up">
+                <div class="table-responsive">
+                    <table class="w-full">
+                        <thead class="bg-dark-card/50">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    <i class="fas fa-building mr-2"></i>Empresa
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    <i class="fas fa-id-card mr-2"></i>CNPJ
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    <i class="fas fa-map-marker-alt mr-2"></i>Município
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">ER</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Carteira</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    <i class="fas fa-cog mr-2"></i>Ações
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaEmpresas" class="divide-y divide-dark-border/30">
+                            <tr>
+                                <td colspan="6" class="px-6 py-12 text-center">
+                                    <div class="flex items-center justify-center">
+                                        <div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="p-6 border-t border-dark-border/50 flex items-center justify-between bg-dark-card/30">
+                    <div class="text-sm text-gray-400" id="paginacaoInfo"></div>
+                    <div class="flex gap-2" id="paginacaoControles"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<div id="novaEmpresaModal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center px-4 z-50 overflow-y-auto">
+    <div class="glass-effect rounded-2xl shadow-2xl w-full max-w-4xl my-8 animate-slide-up">
+        <div class="p-6 border-b border-dark-border/50 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                <i class="fas fa-building text-blue-400"></i>
+                Nova Empresa
+            </h2>
+            <button onclick="hideNovaEmpresaModal()" class="w-8 h-8 rounded-lg bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="novaEmpresaForm" class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Empresa *</label>
+                    <input type="text" id="empresa" required class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">CNPJ</label>
+                    <input type="text" id="cnpj" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Sigla</label>
+                    <input type="text" id="sigla" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Porte</label>
+                    <input type="text" id="porte" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">ER</label>
+                    <input type="text" id="er" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Carteira</label>
+                    <input type="text" id="carteira" placeholder="Ex: 1.01" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Endereço</label>
+                    <input type="text" id="endereco" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Bairro</label>
+                    <input type="text" id="bairro" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Município</label>
+                    <input type="text" id="municipio" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Estado</label>
+                    <input type="text" id="estado" maxlength="2" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Nº de Funcionários</label>
+                    <input type="number" id="numero_funcionarios" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                
+                <div class="md:col-span-2 mt-4">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2 border-t border-dark-border/50 pt-4">
+                        <i class="fas fa-user-tie text-emerald-400"></i>
+                        Dados do Contato
+                    </h3>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Nome do Contato</label>
+                    <input type="text" id="nome_contato" placeholder="Nome completo" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Cargo</label>
+                    <input type="text" id="cargo_contato" placeholder="Ex: Gerente, Diretor" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Telefone</label>
+                    <input type="text" id="telefone_contato" placeholder="(00) 00000-0000" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">E-mail</label>
+                    <input type="email" id="email_contato" placeholder="contato@empresa.com" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Observação</label>
+                    <textarea id="observacao" rows="3" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none resize-none"></textarea>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6 pt-6 border-t border-dark-border/50">
+                <button type="button" onclick="hideNovaEmpresaModal()" class="flex-1 px-4 py-3 bg-dark-card hover:bg-dark-hover text-gray-300 rounded-xl font-medium transition">
+                    Cancelar
+                </button>
+                <button type="submit" class="flex-1 btn-primary text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2">
+                    <i class="fas fa-save"></i>
+                    Salvar Empresa
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="detalhesEmpresaModal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center px-4 z-50 overflow-y-auto">
+    <div class="glass-effect rounded-2xl shadow-2xl w-full max-w-4xl my-8 animate-slide-up">
+        <div class="p-6 border-b border-dark-border/50 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                <i class="fas fa-building text-blue-400"></i>
+                Detalhes da Empresa
+            </h2>
+            <button onclick="hideDetalhesEmpresaModal()" class="w-8 h-8 rounded-lg bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="p-6" id="detalhesEmpresaContent">
+            <div class="flex items-center justify-center py-8">
+                <div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        </div>
+        <div class="p-6 border-t border-dark-border/50 flex justify-end">
+            <button type="button" onclick="hideDetalhesEmpresaModal()" class="px-6 py-3 bg-dark-card hover:bg-dark-hover text-gray-300 rounded-xl font-medium transition">
+                Fechar
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="editarEmpresaModal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center px-4 z-50 overflow-y-auto">
+    <div class="glass-effect rounded-2xl shadow-2xl w-full max-w-4xl my-8 animate-slide-up">
+        <div class="p-6 border-b border-dark-border/50 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                <i class="fas fa-edit text-amber-400"></i>
+                Editar Empresa
+            </h2>
+            <button onclick="hideEditarEmpresaModal()" class="w-8 h-8 rounded-lg bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="editarEmpresaForm" class="p-6">
+            <input type="hidden" id="edit_empresa_id">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Empresa *</label>
+                    <input type="text" id="edit_empresa" required class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">CNPJ</label>
+                    <input type="text" id="edit_cnpj" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Sigla</label>
+                    <input type="text" id="edit_sigla" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Porte</label>
+                    <input type="text" id="edit_porte" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">ER</label>
+                    <input type="text" id="edit_er" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Carteira</label>
+                    <input type="text" id="edit_carteira" placeholder="Ex: 1.01" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Endereço</label>
+                    <input type="text" id="edit_endereco" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Bairro</label>
+                    <input type="text" id="edit_bairro" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Município</label>
+                    <input type="text" id="edit_municipio" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Estado</label>
+                    <input type="text" id="edit_estado" maxlength="2" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">País</label>
+                    <input type="text" id="edit_pais" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Zona</label>
+                    <input type="text" id="edit_zona" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Área</label>
+                    <input type="text" id="edit_area" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">CNAE Principal</label>
+                    <input type="text" id="edit_cnae_principal" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Descrição CNAE</label>
+                    <input type="text" id="edit_descricao_cnae" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Tipo de Empresa</label>
+                    <input type="text" id="edit_tipo_empresa" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Nº de Funcionários</label>
+                    <input type="number" id="edit_numero_funcionarios" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                
+                <div class="md:col-span-2 mt-4">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2 border-t border-dark-border/50 pt-4">
+                        <i class="fas fa-user-tie text-emerald-400"></i>
+                        Dados do Contato
+                    </h3>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Nome do Contato</label>
+                    <input type="text" id="edit_nome_contato" placeholder="Nome completo" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Cargo</label>
+                    <input type="text" id="edit_cargo_contato" placeholder="Ex: Gerente, Diretor" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Telefone</label>
+                    <input type="text" id="edit_telefone_contato" placeholder="(00) 00000-0000" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">E-mail</label>
+                    <input type="email" id="edit_email_contato" placeholder="contato@empresa.com" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Observação</label>
+                    <textarea id="edit_observacao" rows="3" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none resize-none"></textarea>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6 pt-6 border-t border-dark-border/50">
+                <button type="button" onclick="hideEditarEmpresaModal()" class="flex-1 px-4 py-3 bg-dark-card hover:bg-dark-hover text-gray-300 rounded-xl font-medium transition">
+                    Cancelar
+                </button>
+                <button type="submit" class="flex-1 btn-primary text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2">
+                    <i class="fas fa-save"></i>
+                    Salvar Alterações
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="uploadExcelModal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center px-4 z-50">
+    <div class="glass-effect rounded-2xl shadow-2xl w-full max-w-lg animate-slide-up">
+        <div class="p-6 border-b border-dark-border/50 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                <i class="fas fa-file-excel text-emerald-400"></i>
+                Upload de Empresas
+            </h2>
+            <button onclick="hideUploadExcelModal()" class="w-8 h-8 rounded-lg bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="p-6">
+            <div class="mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+                <p class="text-blue-300 text-sm flex items-start gap-2">
+                    <i class="fas fa-info-circle mt-0.5"></i>
+                    <span>Envie um arquivo Excel (.xlsx) com os dados das empresas. Empresas já cadastradas serão ignoradas.</span>
+                </p>
+            </div>
+            <form id="uploadExcelForm" class="space-y-4">
+                <div class="border-2 border-dashed border-dark-border rounded-xl p-8 text-center hover:border-emerald-500/50 transition cursor-pointer" onclick="document.getElementById('excelFile').click()">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
+                    <p class="text-gray-300">Clique para selecionar ou arraste o arquivo</p>
+                    <p class="text-gray-500 text-sm mt-1">Formatos: .xlsx, .xls</p>
+                    <input type="file" id="excelFile" accept=".xlsx,.xls" required class="hidden">
+                </div>
+                <div id="selectedFile" class="hidden p-3 bg-dark-card rounded-xl flex items-center gap-3">
+                    <i class="fas fa-file-excel text-emerald-400 text-xl"></i>
+                    <span class="text-gray-300 flex-1 truncate" id="fileName"></span>
+                    <button type="button" onclick="clearFile()" class="text-gray-400 hover:text-red-400">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="hideUploadExcelModal()" class="flex-1 px-4 py-3 bg-dark-card hover:bg-dark-hover text-gray-300 rounded-xl font-medium transition">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 btn-success text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2">
+                        <i class="fas fa-upload"></i>
+                        Upload
+                    </button>
+                </div>
+            </form>
+            <div id="uploadResult" class="mt-4 hidden"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('excelFile').addEventListener('change', function(e) {
+    if (e.target.files.length > 0) {
+        document.getElementById('selectedFile').classList.remove('hidden');
+        document.getElementById('fileName').textContent = e.target.files[0].name;
+    }
+});
+
+function clearFile() {
+    document.getElementById('excelFile').value = '';
+    document.getElementById('selectedFile').classList.add('hidden');
+}
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/empresas.js"></script>
+{% endblock %}

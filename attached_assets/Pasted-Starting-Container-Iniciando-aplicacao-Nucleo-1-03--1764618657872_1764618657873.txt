@@ -1,0 +1,118 @@
+Starting Container
+=========================================
+Iniciando aplicacao Nucleo 1.03
+=========================================
+DATABASE_URL: configurada
+PORT: 8080
+=========================================
+Iniciando servidor Uvicorn na porta 8080...
+=========================================
+🔗 Conectando ao banco de dados...
+✅ Configuração do banco de dados concluída
+⚠️ SESSION_SECRET não configurada, gerando chave temporária...
+✅ Chave temporária gerada (configure SESSION_SECRET para produção)
+INFO:     Started server process [1]
+INFO:     Waiting for application startup.
+🔄 Verificando banco de dados...
+✅ Tabelas verificadas/criadas
+🔄 Iniciando seed de dados...
+✓ Usuário admin já existe: admin@admin.com
+✓ Consultores já existem no banco
+✓ Empresas padrão já existem no banco
+✓ Estágios do pipeline já existem no banco
+✓ Pipeline já possui dados
+⚠️ Erro ao atualizar prospecções sem código: (psycopg2.errors.UndefinedColumn) column prospeccoes.codigo does not exist
+LINE 1: SELECT prospeccoes.id AS prospeccoes_id, prospeccoes.codigo ...
+                                                 ^
+HINT:  Perhaps you meant to reference the column "prospeccoes.cargo".
+[SQL: SELECT prospeccoes.id AS prospeccoes_id, prospeccoes.codigo AS prospeccoes_codigo, prospeccoes.empresa_id AS prospeccoes_empresa_id, prospeccoes.consultor_id AS prospeccoes_consultor_id, prospeccoes.data_ligacao AS prospeccoes_data_ligacao, prospeccoes.hora_ligacao AS prospeccoes_hora_ligacao, prospeccoes.resultado AS prospeccoes_resultado, prospeccoes.observacoes AS prospeccoes_observacoes, prospeccoes.data_criacao AS prospeccoes_data_criacao, prospeccoes.data_atualizacao AS prospeccoes_data_atualizacao, prospeccoes.porte AS prospeccoes_porte, prospeccoes.lr AS prospeccoes_lr, prospeccoes.id_externo AS prospeccoes_id_externo, prospeccoes.cfr AS prospeccoes_cfr, prospeccoes.tipo_producao AS prospeccoes_tipo_producao, prospeccoes.data_prospeccao AS prospeccoes_data_prospeccao, prospeccoes.follow_up AS prospeccoes_follow_up, prospeccoes.nome_contato AS prospeccoes_nome_contato, prospeccoes.cargo AS prospeccoes_cargo, prospeccoes.celular AS prospeccoes_celular, prospeccoes.telefone AS prospeccoes_telefone, prospeccoes.telefone_contato AS prospeccoes_telefone_contato, prospeccoes.email_contato AS prospeccoes_email_contato, prospeccoes.cargo_contato AS prospeccoes_cargo_contato, prospeccoes.cnpj AS prospeccoes_cnpj, prospeccoes.status_prospeccao AS prospeccoes_status_prospeccao, prospeccoes.responsavel AS prospeccoes_responsavel, prospeccoes.opcoes AS prospeccoes_opcoes, prospeccoes.retorno AS prospeccoes_retorno, prospeccoes.observacoes_prospeccao AS prospeccoes_observacoes_prospeccao, prospeccoes.interesse_treinamento AS prospeccoes_interesse_treinamento, prospeccoes.interesse_consultoria AS prospeccoes_interesse_consultoria, prospeccoes.interesse_certificacao AS prospeccoes_interesse_certificacao, prospeccoes.interesse_eventos AS prospeccoes_interesse_eventos, prospeccoes.interesse_produtos AS prospeccoes_interesse_produtos, prospeccoes.interesse_seguranca AS prospeccoes_interesse_seguranca, prospeccoes.interesse_meio_ambiente AS prospeccoes_interesse_meio_ambiente, prospeccoes.outros_interesses AS prospeccoes_outros_interesses, prospeccoes.potencial_negocio AS prospeccoes_potencial_negocio, prospeccoes.status_follow_up AS prospeccoes_status_follow_up, prospeccoes.proxima_prospeccao_data AS prospeccoes_proxima_prospeccao_data 
+FROM prospeccoes 
+WHERE prospeccoes.codigo IS NULL OR prospeccoes.codigo = %(codigo_1)s]
+[parameters: {'codigo_1': ''}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+✅ Seed de dados concluído
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+(trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/passlib/handlers/bcrypt.py", line 620, in _load_backend_mixin
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 419, in run_asgi
+                                                 ^
+HINT:  Perhaps you meant to reference the column "prospeccoes.cargo".
+    version = _bcrypt.__about__.__version__
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1969, in _exec_single_context
+              ^^^^^^^^^^^^^^^^^
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 922, in do_execute
+AttributeError: module 'bcrypt' has no attribute '__about__'
+The above exception was the direct cause of the following exception:
+    cursor.execute(statement, parameters)
+ERROR:    Exception in ASGI application
+psycopg2.errors.UndefinedColumn: column prospeccoes.codigo does not exist
+Traceback (most recent call last):
+LINE 1: SELECT prospeccoes.id AS prospeccoes_id, prospeccoes.codigo ...
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 84, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 123, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 83, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 762, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 782, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 297, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 77, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 72, in app
+    response = await func(request)
+               ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 299, in app
+    raise e
+  File "/usr/local/lib/python3.11/site-packages/anyio/to_thread.py", line 61, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 294, in app
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    raw_response = await run_endpoint_function(
+  File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 2525, in run_sync_in_worker_thread
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    return await future
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 193, in run_endpoint_function
+           ^^^^^^^^^^^^
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+  File "/usr/local/lib/python3.11/site-packages/starlette/concurrency.py", line 40, in run_in_threadpool
+    result = context.run(func, *args)
+    return await anyio.to_thread.run_sync(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/backend/routers/prospeccoes.py", line 133, in listar_prospeccoes
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2190, in _execute_internal
+    prospeccoes = query.order_by(Prospeccao.data_criacao.desc()).offset(skip).limit(limit).all()
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 293, in orm_execute_statement
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/query.py", line 2693, in all

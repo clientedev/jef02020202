@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Atribuir Empresas - Núcleo 1.03{% endblock %}
+
+{% set active_page = 'admin' %}
+{% block content %}
+<div class="flex h-screen">
+    {% include "partials/sidebar.html" %}
+    
+    <main class="flex-1 overflow-y-auto">
+        <header class="sticky top-0 z-10 glass-effect border-b border-dark-border/50 px-4 sm:px-6 py-4">
+            <div class="flex items-center gap-3">
+                <button onclick="toggleMobileSidebar()" class="mobile-menu-btn w-10 h-10 rounded-xl bg-dark-card hover:bg-dark-hover items-center justify-center text-gray-400 hover:text-white transition">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h2 class="text-xl sm:text-2xl font-semibold text-white">Atribuir Empresas a Consultores</h2>
+            </div>
+        </header>
+        
+        <div class="p-4 sm:p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                <div class="bg-dark-sidebar rounded-lg p-6 shadow-lg">
+                    <h3 class="text-xl font-semibold text-white mb-4">Selecionar Consultor</h3>
+                    <select id="consultorSelect" class="w-full p-3 bg-dark-card text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4">
+                        <option value="">Carregando...</option>
+                    </select>
+
+                    <div class="mb-4">
+                        <input type="text" id="searchEmpresa" placeholder="Buscar empresa..." 
+                               class="w-full p-3 bg-dark-card text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div id="empresasList" class="space-y-2 max-h-96 overflow-y-auto">
+                    </div>
+                </div>
+
+                <div class="bg-dark-sidebar rounded-lg p-6 shadow-lg">
+                    <h3 class="text-xl font-semibold text-white mb-4">Empresas Atribuídas</h3>
+                    <div id="empresasAtribuidas" class="space-y-2 max-h-96 overflow-y-auto">
+                        <p class="text-gray-400">Selecione um consultor para ver suas empresas</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let consultores = [];
+    let empresas = [];
+    let consultorSelecionado = null;
+
+    async function carregarConsultores() {
+        try {
+            const response = await apiRequest('/api/usuarios');
+            const data = await response.json();
+            consultores = data.filter(u => u.tipo === 'consultor');
+            
+            const select = document.getElementById('consultorSelect');
+            select.innerHTML = '<option value="">Selecione um consultor</option>';
+            consultores.forEach(c => {
+                select.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
+            });
+        } catch (error) {
+            console.error('Erro ao carregar consultores:', error);
+        }
+    }
+
+    async function carregarEmpresas() {
+        try {
+            const response = await apiRequest('/api/empresas');
+            const data = await response.json();
+            empresas = data.items || data;
+            renderizarEmpresas();
+        } catch (error) {
+            console.error('Erro ao carregar empresas:', error);
+        }
+    }
+
+    function renderizarEmpresas(filtro = '') {
+        const lista = document.getElementById('empresasList');
+        const empresasFiltradas = empresas.filter(e => 
+            e.empresa.toLowerCase().includes(filtro.toLowerCase()) ||
+            (e.cnpj && e.cnpj.includes(filtro))
+        );
+
+        lista.innerHTML = '';
+        empresasFiltradas.forEach(empresa => {
+            const div = document.createElement('div');
+            div.className = 'bg-dark-card p-3 rounded-lg flex justify-between items-center hover:bg-dark-hover transition';
+            div.innerHTML = `
+                <div>
+                    <div class="font-semibold text-white">${empresa.empresa}</div>
+                    <div class="text-sm text-gray-400">${empresa.cnpj || 'N/A'}</div>
+                </div>
+                <button onclick="atribuirEmpresa(${empresa.id})" 
+                        class="bg-blue-600 px-3 py-1 rounded text-sm hover:bg-blue-500 text-white transition">
+                    Atribuir
+                </button>
+            `;
+            lista.appendChild(div);
+        });
+    }
+
+    async function atribuirEmpresa(empresaId) {
+        if (!consultorSelecionado) {
+            alert('Selecione um consultor primeiro');
+            return;
+        }
+
+        try {
+            const response = await apiRequest('/api/atribuicoes/', {
+                method: 'POST',
+                body: JSON.stringify({
+                    consultor_id: consultorSelecionado,
+                    empresa_id: empresaId,
+                    ativa: true
+                })
+            });
+            
+            if (response && response.ok) {
+                await carregarEmpresasAtribuidas();
+            } else {
+                const error = await response.json();
+                alert('Erro ao atribuir empresa: ' + (error.detail || 'Erro desconhecido'));
+            }
+        } catch (error) {
+            alert('Erro ao atribuir empresa: ' + error.message);
+        }
+    }
+
+    async function carregarEmpresasAtribuidas() {
+        if (!consultorSelecionado) return;
+
+        try {
+            const response = await apiRequest(`/api/atribuicoes/consultor/${consultorSelecionado}`);
+            const atribuicoes = await response.json();
+            const div = document.getElementById('empresasAtribuidas');
+            
+            if (!atribuicoes || atribuicoes.length === 0) {
+                div.innerHTML = '<p class="text-gray-400">Nenhuma empresa atribuída</p>';
+                return;
+            }
+
+            div.innerHTML = '';
+            for (const atr of atribuicoes) {
+                const empresa = atr.empresa;
+                const empresaDiv = document.createElement('div');
+                empresaDiv.className = 'bg-dark-card p-3 rounded-lg flex justify-between items-center hover:bg-dark-hover transition';
+                empresaDiv.innerHTML = `
+                    <div>
+                        <div class="font-semibold text-white">${empresa ? empresa.empresa : 'N/A'}</div>
+                        <div class="text-sm text-gray-400">${empresa ? (empresa.cnpj || 'N/A') : 'N/A'}</div>
+                    </div>
+                    <button onclick="removerAtribuicao(${atr.id})" 
+                            class="bg-red-600 px-3 py-1 rounded text-sm hover:bg-red-500 text-white transition">
+                        Remover
+                    </button>
+                `;
+                div.appendChild(empresaDiv);
+            }
+        } catch (error) {
+            console.error('Erro ao carregar empresas atribuídas:', error);
+        }
+    }
+
+    async function removerAtribuicao(atribuicaoId) {
+        if (!confirm('Deseja realmente remover esta atribuição?')) return;
+
+        try {
+            const response = await apiRequest(`/api/atribuicoes/${atribuicaoId}`, {
+                method: 'DELETE'
+            });
+            if (response && response.ok) {
+                await carregarEmpresasAtribuidas();
+            } else if (response) {
+                try {
+                    const error = await response.json();
+                    alert('Erro ao remover atribuição: ' + (error.detail || 'Erro desconhecido'));
+                } catch {
+                    alert('Erro ao remover atribuição');
+                }
+            } else {
+                alert('Erro de autenticação');
+            }
+        } catch (error) {
+            alert('Erro ao remover atribuição: ' + error.message);
+        }
+    }
+
+    document.getElementById('consultorSelect').addEventListener('change', (e) => {
+        consultorSelecionado = e.target.value ? parseInt(e.target.value) : null;
+        carregarEmpresasAtribuidas();
+    });
+
+    document.getElementById('searchEmpresa').addEventListener('input', (e) => {
+        renderizarEmpresas(e.target.value);
+    });
+
+    carregarConsultores();
+    carregarEmpresas();
+</script>
+{% endblock %}

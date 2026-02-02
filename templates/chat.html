@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+
+{% block title %}Chat - Nucleo 1.03{% endblock %}
+
+{% set active_page = 'chat' %}
+
+{% block content %}
+<style>
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-ring {
+    0% { transform: scale(0.8); opacity: 1; }
+    100% { transform: scale(1.3); opacity: 0; }
+}
+@keyframes typing-dot {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-5px); }
+}
+.message-slide { animation: slideIn 0.3s ease-out forwards; }
+.online-indicator { position: relative; }
+.online-indicator::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    background: #10b981;
+    border: 2px solid #1a1a2e;
+    border-radius: 50%;
+}
+.online-indicator.offline::after { background: #6b7280; }
+.typing-indicator span {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #9ca3af;
+    border-radius: 50%;
+    margin: 0 2px;
+}
+.typing-indicator span:nth-child(1) { animation: typing-dot 1.4s infinite; }
+.typing-indicator span:nth-child(2) { animation: typing-dot 1.4s infinite 0.2s; }
+.typing-indicator span:nth-child(3) { animation: typing-dot 1.4s infinite 0.4s; }
+.emoji-picker {
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    background: #1e1e2e;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 12px;
+    width: 320px;
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.3);
+    z-index: 100;
+}
+.emoji-btn {
+    font-size: 24px;
+    padding: 6px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s;
+    background: transparent;
+    border: none;
+}
+.emoji-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.2); }
+.reaction-bubble {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    background: rgba(59, 130, 246, 0.2);
+    border-radius: 12px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.reaction-bubble:hover { background: rgba(59, 130, 246, 0.4); }
+.message-actions {
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.message-container:hover .message-actions { opacity: 1; }
+.conversa-item {
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+}
+.conversa-item:hover { background: rgba(59, 130, 246, 0.1); }
+.conversa-item.active {
+    background: rgba(59, 130, 246, 0.15);
+    border-left-color: #3b82f6;
+}
+.search-highlight { background: rgba(234, 179, 8, 0.3); padding: 0 2px; border-radius: 2px; }
+.reply-preview {
+    background: rgba(59, 130, 246, 0.1);
+    border-left: 3px solid #3b82f6;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: 0 8px 8px 0;
+    font-size: 13px;
+}
+.unread-badge {
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: white;
+}
+.glass-card {
+    background: rgba(30, 30, 46, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+</style>
+
+<div class="flex h-screen">
+    {% include "partials/sidebar.html" %}
+    
+    <main class="flex-1 flex flex-col overflow-hidden">
+        <header class="glass-effect border-b border-dark-border/50 px-4 sm:px-6 py-4">
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <button onclick="toggleMobileSidebar()" class="mobile-menu-btn w-10 h-10 rounded-xl bg-dark-card hover:bg-dark-hover items-center justify-center text-gray-400 hover:text-white transition flex-shrink-0">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-comments text-white text-sm sm:text-base"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h2 class="text-lg sm:text-xl font-bold text-white truncate">Mensagens</h2>
+                        <p class="text-gray-400 text-xs sm:text-sm hidden sm:block">Comunicação interna</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <div class="relative hidden sm:block">
+                        <input type="text" id="buscarGlobal" class="w-40 lg:w-64 pl-10 pr-4 py-2 input-modern text-white rounded-xl text-sm" placeholder="Buscar...">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                    </div>
+                    <div id="statusConexao" class="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs sm:text-sm">
+                        <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                        <span class="hidden sm:inline">Online</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <div class="flex-1 flex overflow-hidden">
+            <div id="chatSidebar" class="w-full sm:w-72 lg:w-80 glass-effect border-r border-dark-border/50 flex flex-col absolute sm:relative inset-0 sm:inset-auto z-30 sm:z-auto transform transition-transform duration-300 sm:transform-none -translate-x-full sm:translate-x-0" data-chat-sidebar>
+                <div class="p-4 border-b border-dark-border/50">
+                    <div class="flex items-center justify-between mb-3 sm:hidden">
+                        <span class="text-white font-semibold">Conversas</span>
+                        <button onclick="toggleChatSidebar()" class="w-8 h-8 rounded-lg bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <button onclick="abrirModalNovaConversa()" class="w-full btn-primary text-white py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 font-medium mb-3 hover:scale-[1.02] transition-transform">
+                        <i class="fas fa-plus"></i>
+                        Nova Conversa
+                    </button>
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                        <input type="text" id="buscarConversa" class="w-full pl-10 pr-4 py-2.5 input-modern text-white rounded-xl text-sm" placeholder="Filtrar conversas...">
+                    </div>
+                </div>
+                <div id="listaConversas" class="flex-1 overflow-y-auto">
+                    <div class="p-8 text-center">
+                        <div class="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                        <p class="text-gray-400 text-sm">Carregando conversas...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex-1 flex flex-col bg-dark-bg/50">
+                <div id="cabecalhoChat" class="hidden glass-effect border-b border-dark-border/50 p-3 sm:p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2 sm:gap-3">
+                            <button onclick="toggleChatSidebar()" class="sm:hidden w-10 h-10 rounded-xl bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition flex-shrink-0">
+                                <i class="fas fa-bars"></i>
+                            </button>
+                            <div id="avatarContainer" class="online-indicator">
+                                <img id="fotoDestinatario" class="w-12 h-12 rounded-full ring-2 ring-emerald-500/30 object-cover" src="" alt="">
+                            </div>
+                            <div>
+                                <h3 id="nomeDestinatario" class="text-white font-semibold text-lg"></h3>
+                                <p id="statusDestinatario" class="text-gray-400 text-sm flex items-center gap-2">
+                                    <span id="statusTexto">Offline</span>
+                                    <span id="digitandoIndicator" class="hidden typing-indicator text-emerald-400">
+                                        digitando<span></span><span></span><span></span>
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="buscarNaConversa()" class="w-10 h-10 rounded-xl bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition" title="Buscar na conversa">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <button onclick="abrirInfoConversa()" class="w-10 h-10 rounded-xl bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition" title="Informacoes">
+                                <i class="fas fa-info-circle"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="buscarNaConversaContainer" class="hidden glass-effect border-b border-dark-border/50 p-3">
+                    <div class="flex items-center gap-3">
+                        <div class="flex-1 relative">
+                            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                            <input type="text" id="inputBuscarConversa" class="w-full pl-10 pr-4 py-2 input-modern text-white rounded-xl text-sm" placeholder="Buscar nesta conversa...">
+                        </div>
+                        <span id="resultadosBusca" class="text-gray-400 text-sm"></span>
+                        <button onclick="fecharBuscaConversa()" class="text-gray-400 hover:text-white">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="respostaContainer" class="hidden glass-effect border-b border-dark-border/50 p-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-1 h-10 bg-blue-500 rounded"></div>
+                            <div>
+                                <p class="text-blue-400 text-sm font-medium">Respondendo a <span id="respostaNome"></span></p>
+                                <p id="respostaTexto" class="text-gray-400 text-sm truncate max-w-md"></p>
+                            </div>
+                        </div>
+                        <button onclick="cancelarResposta()" class="text-gray-400 hover:text-white">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-4 sm:p-6" id="areaMensagens">
+                    <div class="h-full flex flex-col items-center justify-center text-gray-400">
+                        <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center mb-4">
+                            <i class="fas fa-comments text-3xl sm:text-4xl text-blue-400/50"></i>
+                        </div>
+                        <p class="text-base sm:text-lg font-medium text-white/80">Selecione uma conversa</p>
+                        <p class="text-xs sm:text-sm text-gray-500 mt-1">Escolha um contato para iniciar</p>
+                        <button onclick="toggleChatSidebar()" class="sm:hidden mt-4 btn-primary text-white py-2 px-4 rounded-xl flex items-center gap-2">
+                            <i class="fas fa-list"></i> Ver Conversas
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="anexoPreviewContainer" class="hidden glass-effect border-t border-dark-border/50 p-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div id="anexoPreviewIcon" class="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-file text-blue-400 text-xl"></i>
+                            </div>
+                            <img id="anexoPreviewImagem" class="hidden w-16 h-16 rounded-xl object-cover flex-shrink-0" src="" alt="">
+                            <div class="min-w-0">
+                                <p id="anexoPreviewNome" class="text-white font-medium truncate"></p>
+                                <p id="anexoPreviewTamanho" class="text-gray-400 text-sm"></p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div id="anexoUploadProgress" class="hidden">
+                                <div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                            <button onclick="cancelarAnexo()" class="w-8 h-8 rounded-lg bg-red-500/20 hover:bg-red-500/40 flex items-center justify-center text-red-400 transition" title="Remover anexo">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="formularioMensagem" class="hidden glass-effect border-t border-dark-border/50 p-4">
+                    <input type="file" id="inputArquivo" class="hidden" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv" onchange="handleFileSelect(event)">
+                    <div class="flex items-end gap-3">
+                        <div class="flex-1 relative">
+                            <textarea id="inputMensagem" class="w-full px-4 py-3 pr-24 input-modern text-white rounded-xl resize-none min-h-[48px] max-h-[150px]" rows="1" placeholder="Digite sua mensagem..." oninput="autoResize(this); handleTyping()"></textarea>
+                            <div class="absolute right-3 bottom-3 flex items-center gap-1">
+                                <button onclick="toggleEmojiPicker()" class="w-8 h-8 rounded-lg hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-yellow-400 transition" title="Emojis">
+                                    <i class="fas fa-smile text-lg"></i>
+                                </button>
+                                <button onclick="anexarArquivo()" class="w-8 h-8 rounded-lg hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-blue-400 transition" title="Anexar arquivo">
+                                    <i class="fas fa-paperclip text-lg"></i>
+                                </button>
+                            </div>
+                            <div id="emojiPicker" class="emoji-picker hidden">
+                                <div class="grid grid-cols-8 gap-1">
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="enviarMensagem()" id="btnEnviar" class="btn-primary text-white w-12 h-12 rounded-xl flex items-center justify-center hover:scale-105 transition-transform">
+                            <i class="fas fa-paper-plane text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<div id="modalNovaConversa" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
+    <div class="glass-card rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col animate-slide-up">
+        <div class="p-6 border-b border-dark-border/50 flex justify-between items-center">
+            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                <i class="fas fa-user-plus text-emerald-400"></i>
+                Iniciar Nova Conversa
+            </h3>
+            <button onclick="fecharModalNovaConversa()" class="w-8 h-8 rounded-lg bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="p-4 border-b border-dark-border/50">
+            <div class="relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                <input type="text" id="buscarUsuarioModal" class="w-full pl-10 pr-4 py-3 input-modern text-white rounded-xl" placeholder="Buscar por nome ou email..." oninput="filtrarUsuariosModal()">
+            </div>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto p-4">
+            <div id="listaUsuariosModal" class="space-y-2">
+                <div class="text-center py-8">
+                    <div class="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-4 border-t border-dark-border/50">
+            <button onclick="fecharModalNovaConversa()" class="w-full px-4 py-3 bg-dark-card hover:bg-dark-hover text-gray-300 rounded-xl font-medium transition">
+                Cancelar
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="modalMensagemAcoes" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
+    <div class="glass-card rounded-2xl shadow-2xl w-full max-w-sm animate-slide-up">
+        <div class="p-4 border-b border-dark-border/50">
+            <h3 class="text-lg font-bold text-white">Acoes da Mensagem</h3>
+        </div>
+        <div class="p-2">
+            <button onclick="responderMensagem()" class="w-full p-3 flex items-center gap-3 text-left hover:bg-dark-hover rounded-xl transition">
+                <i class="fas fa-reply text-blue-400 w-6"></i>
+                <span class="text-white">Responder</span>
+            </button>
+            <button onclick="copiarMensagem()" class="w-full p-3 flex items-center gap-3 text-left hover:bg-dark-hover rounded-xl transition">
+                <i class="fas fa-copy text-gray-400 w-6"></i>
+                <span class="text-white">Copiar texto</span>
+            </button>
+            <button id="btnEditarMsg" onclick="editarMensagem()" class="w-full p-3 flex items-center gap-3 text-left hover:bg-dark-hover rounded-xl transition">
+                <i class="fas fa-edit text-yellow-400 w-6"></i>
+                <span class="text-white">Editar</span>
+            </button>
+            <button id="btnDeletarMsg" onclick="deletarMensagem()" class="w-full p-3 flex items-center gap-3 text-left hover:bg-dark-hover rounded-xl transition">
+                <i class="fas fa-trash text-red-400 w-6"></i>
+                <span class="text-white">Apagar</span>
+            </button>
+        </div>
+        <div class="p-4 border-t border-dark-border/50">
+            <button onclick="fecharModalAcoes()" class="w-full px-4 py-2.5 bg-dark-card hover:bg-dark-hover text-gray-300 rounded-xl font-medium transition">
+                Cancelar
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="modalReacoes" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
+    <div class="glass-card rounded-2xl shadow-2xl w-full max-w-xs animate-slide-up">
+        <div class="p-4 border-b border-dark-border/50">
+            <h3 class="text-lg font-bold text-white text-center">Reagir</h3>
+        </div>
+        <div class="p-6">
+            <div class="flex justify-center gap-3 flex-wrap" id="reacoesRapidas">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleChatSidebar() {
+    const sidebar = document.getElementById('chatSidebar');
+    if (sidebar.classList.contains('-translate-x-full')) {
+        sidebar.classList.remove('-translate-x-full');
+        sidebar.classList.add('translate-x-0');
+    } else {
+        sidebar.classList.remove('translate-x-0');
+        sidebar.classList.add('-translate-x-full');
+    }
+}
+
+window.addEventListener('resize', function() {
+    const sidebar = document.getElementById('chatSidebar');
+    if (window.innerWidth >= 640) {
+        sidebar.classList.remove('-translate-x-full');
+        sidebar.classList.add('translate-x-0');
+    }
+});
+</script>
+<script src="/static/js/chat.js"></script>
+{% endblock %}

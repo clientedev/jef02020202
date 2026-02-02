@@ -1,0 +1,144 @@
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleMobileSidebar()"></div>
+<aside id="sidebar" class="w-72 bg-dark-sidebar/95 backdrop-blur-xl shadow-2xl border-r border-dark-border/50 flex flex-col h-screen sidebar-mobile lg:relative lg:transform-none">
+    <div class="p-6 border-b border-dark-border/50">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-glow-blue">
+                    <i class="fas fa-atom text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Núcleo 1.03</h1>
+                    <p class="text-gray-500 text-xs">Sistema de Gestão</p>
+                </div>
+            </div>
+            <button onclick="toggleMobileSidebar()" class="lg:hidden w-8 h-8 rounded-lg bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+    
+    <div class="p-4 mx-4 mt-4 rounded-xl glass-effect">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center" id="userAvatar">
+                <i class="fas fa-user text-white text-sm"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-white truncate" id="userName">Carregando...</p>
+                <p class="text-xs text-gray-400" id="userInfo"></p>
+            </div>
+        </div>
+    </div>
+    
+    <nav class="flex-1 mt-6 px-3 overflow-y-auto">
+        <p class="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Ferramentas</p>
+        
+        <a href="/chat" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg mb-1 {% if active_page == 'chat' %}active bg-emerald-500/10 text-emerald-400{% else %}text-gray-400 hover:text-white{% endif %}">
+            <div class="w-9 h-9 rounded-lg {% if active_page == 'chat' %}bg-emerald-500/20{% else %}bg-dark-card{% endif %} flex items-center justify-center relative">
+                <i class="fas fa-comments {% if active_page == 'chat' %}text-emerald-400{% else %}text-gray-400{% endif %}"></i>
+                <span id="chatBadgeDot" class="hidden absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full notification-badge border-2 border-dark-sidebar"></span>
+            </div>
+            <span class="font-medium">Chat</span>
+            <span id="chatBadge" class="hidden ml-auto px-2 py-0.5 text-xs font-bold bg-red-500 text-white rounded-full notification-badge"></span>
+        </a>
+        
+        <a href="/cronograma" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg mb-1 {% if active_page == 'cronograma' %}active bg-purple-500/10 text-purple-400{% else %}text-gray-400 hover:text-white{% endif %}">
+            <div class="w-9 h-9 rounded-lg {% if active_page == 'cronograma' %}bg-purple-500/20{% else %}bg-dark-card{% endif %} flex items-center justify-center">
+                <i class="fas fa-calendar-alt {% if active_page == 'cronograma' %}text-purple-400{% else %}text-gray-400{% endif %}"></i>
+            </div>
+            <span class="font-medium">Cronograma</span>
+        </a>
+        
+        <a href="/formularios" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg mb-1 {% if active_page == 'formularios' %}active bg-pink-500/10 text-pink-400{% else %}text-gray-400 hover:text-white{% endif %}">
+            <div class="w-9 h-9 rounded-lg {% if active_page == 'formularios' %}bg-pink-500/20{% else %}bg-dark-card{% endif %} flex items-center justify-center">
+                <i class="fas fa-file-alt {% if active_page == 'formularios' %}text-pink-400{% else %}text-gray-400{% endif %}"></i>
+            </div>
+            <span class="font-medium">Formulários</span>
+        </a>
+        
+        <p class="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 mt-6">Menu Principal</p>
+        
+        <a href="/dashboard" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg mb-1 {% if active_page == 'dashboard' %}active bg-blue-500/10 text-blue-400{% else %}text-gray-400 hover:text-white{% endif %}">
+            <div class="w-9 h-9 rounded-lg {% if active_page == 'dashboard' %}bg-blue-500/20{% else %}bg-dark-card{% endif %} flex items-center justify-center">
+                <i class="fas fa-chart-line {% if active_page == 'dashboard' %}text-blue-400{% else %}text-gray-400{% endif %}"></i>
+            </div>
+            <span class="font-medium">Dashboard</span>
+        </a>
+        
+        <a href="/empresas" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg mb-1 {% if active_page == 'empresas' %}active bg-blue-500/10 text-blue-400{% else %}text-gray-400 hover:text-white{% endif %}">
+            <div class="w-9 h-9 rounded-lg {% if active_page == 'empresas' %}bg-blue-500/20{% else %}bg-dark-card{% endif %} flex items-center justify-center">
+                <i class="fas fa-building {% if active_page == 'empresas' %}text-blue-400{% else %}text-gray-400{% endif %}"></i>
+            </div>
+            <span class="font-medium">Empresas</span>
+        </a>
+        
+        <a href="/buscar-empresa" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg mb-1 {% if active_page == 'buscar_empresa' %}active bg-blue-500/10 text-blue-400{% else %}text-gray-400 hover:text-white{% endif %}">
+            <div class="w-9 h-9 rounded-lg {% if active_page == 'buscar_empresa' %}bg-blue-500/20{% else %}bg-dark-card{% endif %} flex items-center justify-center">
+                <i class="fas fa-search {% if active_page == 'buscar_empresa' %}text-blue-400{% else %}text-gray-400{% endif %}"></i>
+            </div>
+            <span class="font-medium">Buscar CNPJ</span>
+        </a>
+        
+        <a href="/prospeccao" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg mb-1 {% if active_page == 'prospeccao' %}active bg-blue-500/10 text-blue-400{% else %}text-gray-400 hover:text-white{% endif %}">
+            <div class="w-9 h-9 rounded-lg {% if active_page == 'prospeccao' %}bg-blue-500/20{% else %}bg-dark-card{% endif %} flex items-center justify-center">
+                <i class="fas fa-handshake {% if active_page == 'prospeccao' %}text-blue-400{% else %}text-gray-400{% endif %}"></i>
+            </div>
+            <span class="font-medium">Prospecções</span>
+        </a>
+        
+        <a href="/pipeline" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg mb-1 {% if active_page == 'pipeline' %}active bg-blue-500/10 text-blue-400{% else %}text-gray-400 hover:text-white{% endif %}">
+            <div class="w-9 h-9 rounded-lg {% if active_page == 'pipeline' %}bg-blue-500/20{% else %}bg-dark-card{% endif %} flex items-center justify-center">
+                <i class="fas fa-project-diagram {% if active_page == 'pipeline' %}text-blue-400{% else %}text-gray-400{% endif %}"></i>
+            </div>
+            <span class="font-medium">Pipeline</span>
+        </a>
+        
+        <a href="/consultores" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg mb-1 {% if active_page == 'consultores' %}active bg-blue-500/10 text-blue-400{% else %}text-gray-400 hover:text-white{% endif %}">
+            <div class="w-9 h-9 rounded-lg {% if active_page == 'consultores' %}bg-blue-500/20{% else %}bg-dark-card{% endif %} flex items-center justify-center">
+                <i class="fas fa-users {% if active_page == 'consultores' %}text-blue-400{% else %}text-gray-400{% endif %}"></i>
+            </div>
+            <span class="font-medium">Consultores</span>
+        </a>
+        
+        <a href="/alertas" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg mb-1 {% if active_page == 'alertas' %}active bg-blue-500/10 text-blue-400{% else %}text-gray-400 hover:text-white{% endif %}">
+            <div class="w-9 h-9 rounded-lg {% if active_page == 'alertas' %}bg-blue-500/20{% else %}bg-dark-card{% endif %} flex items-center justify-center">
+                <i class="fas fa-bell {% if active_page == 'alertas' %}text-blue-400{% else %}text-gray-400{% endif %}"></i>
+            </div>
+            <span class="font-medium">Alertas</span>
+            <span id="alertasBadge" class="hidden ml-auto px-2 py-0.5 text-xs font-bold bg-red-500 text-white rounded-full notification-badge"></span>
+        </a>
+        
+        <a href="/admin/usuarios" id="adminLink" class="hidden sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg mb-1 {% if active_page == 'admin' %}active bg-amber-500/10 text-amber-400{% else %}text-gray-400 hover:text-white{% endif %}">
+            <div class="w-9 h-9 rounded-lg {% if active_page == 'admin' %}bg-amber-500/20{% else %}bg-dark-card{% endif %} flex items-center justify-center">
+                <i class="fas fa-cog {% if active_page == 'admin' %}text-amber-400{% else %}text-gray-400{% endif %}"></i>
+            </div>
+            <span class="font-medium">Administração</span>
+        </a>
+    </nav>
+    
+    <div class="p-4 border-t border-dark-border/50">
+        <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-dark-card hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-all duration-300 group">
+            <i class="fas fa-sign-out-alt group-hover:translate-x-1 transition-transform"></i>
+            <span class="font-medium">Sair do Sistema</span>
+        </button>
+    </div>
+</aside>
+
+<script>
+function toggleMobileSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('active');
+    document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
+}
+
+window.addEventListener('resize', function() {
+    if (window.innerWidth >= 1024) {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+});
+</script>

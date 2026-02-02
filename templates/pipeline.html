@@ -1,0 +1,703 @@
+{% extends "base.html" %}
+
+{% block title %}Pipeline - Núcleo 1.03{% endblock %}
+
+{% set active_page = 'pipeline' %}
+{% block content %}
+<div class="flex h-screen">
+    {% include "partials/sidebar.html" %}
+    
+    <main class="flex-1 overflow-hidden flex flex-col">
+        <header class="sticky top-0 z-10 glass-effect border-b border-dark-border/50 px-8 py-4">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                <div class="flex items-center gap-4">
+                    <button onclick="toggleMobileSidebar()" class="mobile-menu-btn w-10 h-10 rounded-lg bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Pipeline de Vendas</h2>
+                        <p class="text-gray-400 text-sm mt-1">Gerencie suas oportunidades de negócio</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <select id="filtroLinha" class="px-4 py-2 input-modern text-white rounded-xl text-sm">
+                        <option value="">Todas as Linhas</option>
+                        <option value="Tecnologia">Tecnologia</option>
+                        <option value="Educacional">Educacional</option>
+                    </select>
+                    <button onclick="showAdicionarEmpresaModal()" class="btn-primary text-white py-2.5 px-5 rounded-xl flex items-center gap-2 font-medium">
+                        <i class="fas fa-plus"></i>
+                        <span class="hidden sm:inline">Adicionar Empresa</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+        
+        <div class="flex-1 overflow-hidden p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
+                <div class="glass-effect rounded-xl p-4 stat-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-400 text-xs uppercase tracking-wide">Total no Pipeline</p>
+                            <p class="text-2xl font-bold text-white mt-1" id="statTotal">0</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                            <i class="fas fa-chart-bar text-blue-400 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-effect rounded-xl p-4 stat-card stat-card-success">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-400 text-xs uppercase tracking-wide">Valor Total</p>
+                            <p class="text-2xl font-bold text-white mt-1" id="statValor">R$ 0</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                            <i class="fas fa-dollar-sign text-emerald-400 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-effect rounded-xl p-4 stat-card stat-card-warning">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-400 text-xs uppercase tracking-wide">Em Negociação</p>
+                            <p class="text-2xl font-bold text-white mt-1" id="statNegociacao">0</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                            <i class="fas fa-handshake text-amber-400 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-effect rounded-xl p-4 stat-card stat-card-danger">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-400 text-xs uppercase tracking-wide">Paradas (+7 dias)</p>
+                            <p class="text-2xl font-bold text-white mt-1" id="statParadas">0</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center">
+                            <i class="fas fa-exclamation-triangle text-red-400 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="pipelineBoard" class="flex gap-4 overflow-x-auto pb-4 h-full">
+                <div class="flex items-center justify-center w-full">
+                    <div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<div id="adicionarEmpresaModal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center px-4 z-50">
+    <div class="glass-effect rounded-2xl shadow-2xl w-full max-w-2xl animate-slide-up max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b border-dark-border/50 flex justify-between items-center sticky top-0 glass-effect">
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                <i class="fas fa-plus-circle text-blue-400"></i>
+                Adicionar Empresa ao Pipeline
+            </h2>
+            <button onclick="hideAdicionarEmpresaModal()" class="w-8 h-8 rounded-lg bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="adicionarEmpresaForm" class="p-6 space-y-5">
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                    <i class="fas fa-building mr-2 text-gray-400"></i>Empresa *
+                </label>
+                <select id="empresaSelect" required class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                    <option value="">Selecione uma empresa...</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                    <i class="fas fa-layer-group mr-2 text-gray-400"></i>Estágio Inicial *
+                </label>
+                <select id="stageSelect" required class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                    <option value="">Selecione um estágio...</option>
+                </select>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                        <i class="fas fa-tag mr-2 text-gray-400"></i>Linha
+                    </label>
+                    <select id="linhaSelect" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                        <option value="">Selecione...</option>
+                        <option value="Tecnologia">Tecnologia</option>
+                        <option value="Educacional">Educacional</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                        <i class="fas fa-dollar-sign mr-2 text-gray-400"></i>Valor Estimado
+                    </label>
+                    <input type="number" id="valorEstimado" step="0.01" min="0" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none" placeholder="0.00">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                        <i class="fas fa-percent mr-2 text-gray-400"></i>Probabilidade (%)
+                    </label>
+                    <input type="number" id="probabilidade" min="0" max="100" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none" placeholder="50">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                        <i class="fas fa-calendar mr-2 text-gray-400"></i>Previsão Fechamento
+                    </label>
+                    <input type="date" id="dataPrevistaFechamento" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+            </div>
+            <div class="border-t border-dark-border/50 pt-4">
+                <p class="text-sm font-medium text-gray-300 mb-3">
+                    <i class="fas fa-user mr-2 text-gray-400"></i>Informações de Contato
+                </p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <input type="text" id="nomeContato" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none" placeholder="Nome do contato">
+                    </div>
+                    <div>
+                        <input type="text" id="cargoContato" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none" placeholder="Cargo">
+                    </div>
+                    <div>
+                        <input type="email" id="emailContato" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none" placeholder="Email">
+                    </div>
+                    <div>
+                        <input type="tel" id="telefoneContato" class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none" placeholder="Telefone">
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="hideAdicionarEmpresaModal()" class="flex-1 px-4 py-3 bg-dark-card hover:bg-dark-hover text-gray-300 rounded-xl font-medium transition">
+                    Cancelar
+                </button>
+                <button type="submit" class="flex-1 btn-primary text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2">
+                    <i class="fas fa-save"></i>
+                    Adicionar ao Pipeline
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="detalhesEmpresaModal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center px-4 z-50">
+    <div class="glass-effect rounded-2xl shadow-2xl w-full max-w-3xl animate-slide-up max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b border-dark-border/50 flex justify-between items-center sticky top-0 glass-effect">
+            <h2 class="text-xl font-bold text-white flex items-center gap-2" id="detalhesEmpresaTitulo">
+                <i class="fas fa-building text-blue-400"></i>
+                Detalhes da Empresa
+            </h2>
+            <button onclick="hideDetalhesEmpresaModal()" class="w-8 h-8 rounded-lg bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="detalhesEmpresaConteudo" class="p-6">
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let stages = [];
+let empresasPipeline = [];
+let todasEmpresas = [];
+const token = localStorage.getItem('token');
+
+if (!token) {
+    window.location.href = '/';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    carregarPipeline();
+    carregarEmpresas();
+    
+    document.getElementById('adicionarEmpresaForm').addEventListener('submit', adicionarEmpresa);
+    document.getElementById('filtroLinha').addEventListener('change', filtrarPorLinha);
+});
+
+async function carregarPipeline() {
+    try {
+        const [stagesRes, companiesRes, statsRes] = await Promise.all([
+            fetch('/api/pipeline/stages', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }),
+            fetch('/api/pipeline/companies', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }),
+            fetch('/api/pipeline/stats', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+        ]);
+        
+        if (!stagesRes.ok || !companiesRes.ok) {
+            throw new Error('Erro ao carregar dados');
+        }
+        
+        stages = await stagesRes.json();
+        empresasPipeline = await companiesRes.json();
+        
+        if (statsRes.ok) {
+            const stats = await statsRes.json();
+            atualizarEstatisticas(stats);
+        }
+        
+        renderizarBoard();
+        popularSelectStages();
+    } catch (error) {
+        console.error('Erro:', error);
+        document.getElementById('pipelineBoard').innerHTML = `
+            <div class="flex flex-col items-center justify-center w-full py-12">
+                <i class="fas fa-exclamation-circle text-red-400 text-4xl mb-4"></i>
+                <p class="text-gray-400">Erro ao carregar o pipeline</p>
+                <button onclick="carregarPipeline()" class="mt-4 px-4 py-2 btn-primary text-white rounded-lg">
+                    <i class="fas fa-refresh mr-2"></i>Tentar novamente
+                </button>
+            </div>
+        `;
+    }
+}
+
+async function carregarEmpresas() {
+    try {
+        const response = await fetch('/api/empresas/', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            todasEmpresas = await response.json();
+            popularSelectEmpresas();
+        }
+    } catch (error) {
+        console.error('Erro ao carregar empresas:', error);
+    }
+}
+
+function atualizarEstatisticas(stats) {
+    document.getElementById('statTotal').textContent = stats.total_empresas || 0;
+    document.getElementById('statValor').textContent = formatarMoeda(stats.valor_total || 0);
+    document.getElementById('statParadas').textContent = stats.empresas_paradas || 0;
+    
+    let emNegociacao = 0;
+    if (stats.empresas_por_stage) {
+        emNegociacao = stats.empresas_por_stage['Negociação'] || 
+                       stats.empresas_por_stage['Negociacao'] || 0;
+    }
+    document.getElementById('statNegociacao').textContent = emNegociacao;
+}
+
+function formatarMoeda(valor) {
+    return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+    }).format(valor);
+}
+
+function renderizarBoard() {
+    const board = document.getElementById('pipelineBoard');
+    const filtroLinha = document.getElementById('filtroLinha').value;
+    
+    if (stages.length === 0) {
+        board.innerHTML = `
+            <div class="flex flex-col items-center justify-center w-full py-12">
+                <i class="fas fa-columns text-gray-500 text-4xl mb-4"></i>
+                <p class="text-gray-400">Nenhum estágio configurado</p>
+            </div>
+        `;
+        return;
+    }
+    
+    board.innerHTML = stages.map(stage => {
+        const empresasNoStage = empresasPipeline.filter(e => {
+            const matchStage = e.stage_id === stage.id;
+            const matchLinha = !filtroLinha || e.linha === filtroLinha;
+            return matchStage && matchLinha;
+        });
+        
+        return `
+            <div class="flex-shrink-0 w-80 bg-dark-card/50 rounded-xl border border-dark-border/50 flex flex-col h-full"
+                 data-stage-id="${stage.id}"
+                 ondrop="drop(event)" ondragover="allowDrop(event)">
+                <div class="p-4 border-b border-dark-border/50 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full" style="background-color: ${stage.cor}"></div>
+                        <h3 class="font-semibold text-white">${stage.nome}</h3>
+                    </div>
+                    <span class="px-2 py-1 text-xs font-medium text-gray-400 bg-dark-hover rounded-lg">
+                        ${empresasNoStage.length}
+                    </span>
+                </div>
+                <div class="flex-1 p-3 space-y-3 overflow-y-auto min-h-[200px]">
+                    ${empresasNoStage.length === 0 ? `
+                        <div class="flex flex-col items-center justify-center py-8 text-gray-500">
+                            <i class="fas fa-inbox text-2xl mb-2"></i>
+                            <p class="text-sm">Nenhuma empresa</p>
+                        </div>
+                    ` : empresasNoStage.map(empresa => renderizarCard(empresa)).join('')}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderizarCard(empresa) {
+    const diasNoStage = Math.floor((new Date() - new Date(empresa.data_entrada_stage)) / (1000 * 60 * 60 * 24));
+    const alertaParada = diasNoStage > 7;
+    
+    return `
+        <div class="glass-effect rounded-lg p-4 cursor-pointer hover:border-blue-500/50 transition-all duration-200"
+             draggable="true"
+             ondragstart="drag(event)"
+             data-id="${empresa.id}"
+             onclick="verDetalhes(${empresa.id})">
+            <div class="flex items-start justify-between mb-2">
+                <h4 class="font-medium text-white text-sm truncate flex-1">
+                    ${empresa.empresa?.empresa || 'Empresa'}
+                </h4>
+                ${alertaParada ? `
+                    <span class="ml-2 px-2 py-0.5 text-xs bg-red-500/20 text-red-400 rounded-full">
+                        ${diasNoStage}d
+                    </span>
+                ` : ''}
+            </div>
+            ${empresa.linha ? `
+                <span class="inline-block px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded-full mb-2">
+                    ${empresa.linha}
+                </span>
+            ` : ''}
+            ${empresa.valor_estimado ? `
+                <p class="text-sm text-emerald-400 font-medium mb-2">
+                    ${formatarMoeda(empresa.valor_estimado)}
+                </p>
+            ` : ''}
+            ${empresa.probabilidade ? `
+                <div class="mb-2">
+                    <div class="flex justify-between text-xs text-gray-400 mb-1">
+                        <span>Probabilidade</span>
+                        <span>${empresa.probabilidade}%</span>
+                    </div>
+                    <div class="h-1.5 bg-dark-hover rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full" 
+                             style="width: ${empresa.probabilidade}%"></div>
+                    </div>
+                </div>
+            ` : ''}
+            ${empresa.consultor ? `
+                <div class="flex items-center gap-2 text-xs text-gray-400">
+                    <i class="fas fa-user"></i>
+                    <span>${empresa.consultor.nome}</span>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function allowDrop(ev) {
+    ev.preventDefault();
+}
+
+function drag(ev) {
+    ev.dataTransfer.setData("text", ev.target.dataset.id);
+}
+
+async function drop(ev) {
+    ev.preventDefault();
+    const companyPipelineId = ev.dataTransfer.getData("text");
+    const stageColumn = ev.target.closest('[data-stage-id]');
+    
+    if (!stageColumn) return;
+    
+    const novoStageId = parseInt(stageColumn.dataset.stageId);
+    
+    try {
+        const response = await fetch(`/api/pipeline/companies/${companyPipelineId}/mover`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                novo_stage_id: novoStageId
+            })
+        });
+        
+        if (response.ok) {
+            carregarPipeline();
+        } else {
+            const error = await response.json();
+            alert(error.detail || 'Erro ao mover empresa');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao mover empresa');
+    }
+}
+
+function popularSelectStages() {
+    const select = document.getElementById('stageSelect');
+    select.innerHTML = '<option value="">Selecione um estágio...</option>';
+    stages.forEach(stage => {
+        select.innerHTML += `<option value="${stage.id}">${stage.nome}</option>`;
+    });
+}
+
+function popularSelectEmpresas() {
+    const select = document.getElementById('empresaSelect');
+    const empresasNoPipeline = empresasPipeline.map(e => e.empresa_id);
+    const empresasDisponiveis = todasEmpresas.filter(e => !empresasNoPipeline.includes(e.id));
+    
+    select.innerHTML = '<option value="">Selecione uma empresa...</option>';
+    empresasDisponiveis.forEach(empresa => {
+        select.innerHTML += `<option value="${empresa.id}">${empresa.empresa} - ${empresa.cnpj || 'Sem CNPJ'}</option>`;
+    });
+}
+
+function filtrarPorLinha() {
+    renderizarBoard();
+}
+
+function showAdicionarEmpresaModal() {
+    popularSelectEmpresas();
+    document.getElementById('adicionarEmpresaModal').classList.remove('hidden');
+}
+
+function hideAdicionarEmpresaModal() {
+    document.getElementById('adicionarEmpresaModal').classList.add('hidden');
+    document.getElementById('adicionarEmpresaForm').reset();
+}
+
+async function adicionarEmpresa(e) {
+    e.preventDefault();
+    
+    const data = {
+        empresa_id: parseInt(document.getElementById('empresaSelect').value),
+        stage_id: parseInt(document.getElementById('stageSelect').value),
+        linha: document.getElementById('linhaSelect').value || null,
+        valor_estimado: parseFloat(document.getElementById('valorEstimado').value) || null,
+        probabilidade: parseInt(document.getElementById('probabilidade').value) || null,
+        data_prevista_fechamento: document.getElementById('dataPrevistaFechamento').value || null,
+        nome_contato: document.getElementById('nomeContato').value || null,
+        cargo_contato: document.getElementById('cargoContato').value || null,
+        email_contato: document.getElementById('emailContato').value || null,
+        telefone_contato: document.getElementById('telefoneContato').value || null
+    };
+    
+    try {
+        const response = await fetch('/api/pipeline/companies', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+            hideAdicionarEmpresaModal();
+            carregarPipeline();
+        } else {
+            const error = await response.json();
+            alert(error.detail || 'Erro ao adicionar empresa');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao adicionar empresa');
+    }
+}
+
+async function verDetalhes(companyPipelineId) {
+    try {
+        const [companyRes, historyRes, notesRes] = await Promise.all([
+            fetch(`/api/pipeline/companies/${companyPipelineId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }),
+            fetch(`/api/pipeline/companies/${companyPipelineId}/historico`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }),
+            fetch(`/api/pipeline/companies/${companyPipelineId}/notes`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+        ]);
+        
+        if (!companyRes.ok) throw new Error('Erro ao carregar detalhes');
+        
+        const company = await companyRes.json();
+        const history = historyRes.ok ? await historyRes.json() : [];
+        const notes = notesRes.ok ? await notesRes.json() : [];
+        
+        renderizarDetalhes(company, history, notes);
+        document.getElementById('detalhesEmpresaModal').classList.remove('hidden');
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao carregar detalhes');
+    }
+}
+
+function renderizarDetalhes(company, history, notes) {
+    document.getElementById('detalhesEmpresaTitulo').innerHTML = `
+        <i class="fas fa-building text-blue-400"></i>
+        ${company.empresa?.empresa || 'Empresa'}
+    `;
+    
+    document.getElementById('detalhesEmpresaConteudo').innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="glass-effect rounded-xl p-4">
+                <h3 class="text-sm font-semibold text-gray-400 uppercase mb-3">Informações Gerais</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Estágio:</span>
+                        <span class="text-white font-medium">${company.stage?.nome || '-'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Linha:</span>
+                        <span class="text-white">${company.linha || '-'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Valor:</span>
+                        <span class="text-emerald-400 font-medium">${company.valor_estimado ? formatarMoeda(company.valor_estimado) : '-'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Probabilidade:</span>
+                        <span class="text-white">${company.probabilidade ? company.probabilidade + '%' : '-'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Consultor:</span>
+                        <span class="text-white">${company.consultor?.nome || '-'}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="glass-effect rounded-xl p-4">
+                <h3 class="text-sm font-semibold text-gray-400 uppercase mb-3">Contato</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Nome:</span>
+                        <span class="text-white">${company.nome_contato || '-'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Cargo:</span>
+                        <span class="text-white">${company.cargo_contato || '-'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Email:</span>
+                        <span class="text-white">${company.email_contato || '-'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Telefone:</span>
+                        <span class="text-white">${company.telefone_contato || '-'}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="glass-effect rounded-xl p-4 mb-6">
+            <h3 class="text-sm font-semibold text-gray-400 uppercase mb-3">Histórico de Movimentações</h3>
+            ${history.length === 0 ? `
+                <p class="text-gray-500 text-sm">Nenhuma movimentação registrada</p>
+            ` : `
+                <div class="space-y-3">
+                    ${history.map(h => `
+                        <div class="flex items-start gap-3 text-sm">
+                            <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-arrow-right text-blue-400 text-xs"></i>
+                            </div>
+                            <div>
+                                <p class="text-white">
+                                    ${h.stage_anterior ? h.stage_anterior.nome : 'Início'} 
+                                    <i class="fas fa-arrow-right text-gray-500 mx-2"></i>
+                                    ${h.stage_novo?.nome || '-'}
+                                </p>
+                                <p class="text-gray-400 text-xs">
+                                    ${h.usuario?.nome || 'Sistema'} - ${new Date(h.data_movimentacao).toLocaleString('pt-BR')}
+                                </p>
+                                ${h.observacoes ? `<p class="text-gray-500 text-xs mt-1">${h.observacoes}</p>` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `}
+        </div>
+        
+        <div class="glass-effect rounded-xl p-4">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-sm font-semibold text-gray-400 uppercase">Notas</h3>
+                <button onclick="showNotaForm(${company.id})" class="px-3 py-1 text-sm btn-primary text-white rounded-lg">
+                    <i class="fas fa-plus mr-1"></i> Nova Nota
+                </button>
+            </div>
+            <div id="notasContainer">
+                ${notes.length === 0 ? `
+                    <p class="text-gray-500 text-sm">Nenhuma nota registrada</p>
+                ` : `
+                    <div class="space-y-3">
+                        ${notes.map(n => `
+                            <div class="bg-dark-hover rounded-lg p-3">
+                                ${n.titulo ? `<p class="text-white font-medium text-sm mb-1">${n.titulo}</p>` : ''}
+                                <p class="text-gray-300 text-sm">${n.conteudo}</p>
+                                <p class="text-gray-500 text-xs mt-2">
+                                    ${n.usuario?.nome || 'Sistema'} - ${new Date(n.criado_em).toLocaleString('pt-BR')}
+                                </p>
+                            </div>
+                        `).join('')}
+                    </div>
+                `}
+            </div>
+            <div id="notaFormContainer" class="hidden mt-4">
+                <form id="notaForm" onsubmit="salvarNota(event, ${company.id})">
+                    <input type="text" id="notaTitulo" class="w-full px-4 py-2 input-modern text-white rounded-lg mb-2" placeholder="Título (opcional)">
+                    <textarea id="notaConteudo" required class="w-full px-4 py-2 input-modern text-white rounded-lg resize-none" rows="3" placeholder="Conteúdo da nota..."></textarea>
+                    <div class="flex gap-2 mt-2">
+                        <button type="button" onclick="hideNotaForm()" class="px-4 py-2 bg-dark-card text-gray-400 rounded-lg text-sm">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 btn-primary text-white rounded-lg text-sm">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+}
+
+function hideDetalhesEmpresaModal() {
+    document.getElementById('detalhesEmpresaModal').classList.add('hidden');
+}
+
+function showNotaForm(companyPipelineId) {
+    document.getElementById('notaFormContainer').classList.remove('hidden');
+}
+
+function hideNotaForm() {
+    document.getElementById('notaFormContainer').classList.add('hidden');
+    document.getElementById('notaForm').reset();
+}
+
+async function salvarNota(e, companyPipelineId) {
+    e.preventDefault();
+    
+    const data = {
+        company_pipeline_id: companyPipelineId,
+        titulo: document.getElementById('notaTitulo').value || null,
+        conteudo: document.getElementById('notaConteudo').value
+    };
+    
+    try {
+        const response = await fetch('/api/pipeline/notes', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+            verDetalhes(companyPipelineId);
+        } else {
+            const error = await response.json();
+            alert(error.detail || 'Erro ao salvar nota');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao salvar nota');
+    }
+}
+</script>
+{% endblock %}

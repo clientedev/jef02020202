@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Buscar Empresa - Núcleo 1.03{% endblock %}
+
+{% set active_page = 'buscar_empresa' %}
+{% block content %}
+<div class="flex h-screen">
+    {% include "partials/sidebar.html" %}
+    
+    <main class="flex-1 overflow-y-auto">
+        <header class="sticky top-0 z-10 glass-effect border-b border-dark-border/50 px-4 sm:px-8 py-4">
+            <div class="flex items-center gap-3">
+                <button onclick="toggleMobileSidebar()" class="mobile-menu-btn w-10 h-10 rounded-xl bg-dark-card hover:bg-dark-hover items-center justify-center text-gray-400 hover:text-white transition">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-bold text-white">Buscar Empresa por CNPJ</h2>
+                    <p class="text-gray-400 text-xs sm:text-sm mt-1 hidden sm:block">Consulte informações de empresas e adicione à sua carteira</p>
+                </div>
+            </div>
+        </header>
+        
+        <div class="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
+            <div class="glass-effect rounded-2xl p-4 sm:p-6 border border-dark-border/50 animate-fade-in">
+                <h3 class="text-base sm:text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-search text-blue-400"></i>
+                    Consultar CNPJ
+                </h3>
+                
+                <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm text-gray-400 mb-2">CNPJ</label>
+                        <input 
+                            type="text" 
+                            id="cnpjInput" 
+                            placeholder="00.000.000/0000-00" 
+                            maxlength="18"
+                            class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white rounded-xl focus:outline-none text-sm sm:text-base"
+                        >
+                    </div>
+                    <div class="flex items-end">
+                        <button 
+                            onclick="buscarCNPJ()" 
+                            id="btnBuscar"
+                            class="btn-primary text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl flex items-center gap-2 font-medium w-full sm:w-auto justify-center"
+                        >
+                            <i class="fas fa-search"></i>
+                            Buscar
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="loadingMessage" class="hidden mt-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center gap-3">
+                    <div class="w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span class="text-amber-300">Buscando informações...</span>
+                </div>
+                
+                <div id="errorMessage" class="hidden mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
+                    <p class="text-red-400 font-semibold flex items-center gap-2">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Erro
+                    </p>
+                    <p class="text-gray-300 text-sm mt-1" id="errorText"></p>
+                </div>
+            </div>
+            
+            <div id="resultadoContainer" class="hidden animate-slide-up">
+                <div class="glass-effect rounded-2xl p-6 border border-dark-border/50">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <i class="fas fa-building text-emerald-400"></i>
+                            Informações da Empresa
+                        </h3>
+                        <span id="fonteBadge" class="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full font-medium"></span>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <h4 class="text-sm font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fas fa-info-circle text-blue-400"></i>
+                                Dados Principais
+                            </h4>
+                            <div class="space-y-3 bg-dark-card/50 rounded-xl p-4">
+                                <div>
+                                    <label class="text-gray-500 text-xs">Razão Social</label>
+                                    <p class="text-white font-semibold" id="razaoSocial">-</p>
+                                </div>
+                                <div>
+                                    <label class="text-gray-500 text-xs">Nome Fantasia</label>
+                                    <p class="text-white" id="nomeFantasia">-</p>
+                                </div>
+                                <div>
+                                    <label class="text-gray-500 text-xs">CNPJ</label>
+                                    <p class="text-white" id="cnpjDisplay">-</p>
+                                </div>
+                                <div>
+                                    <label class="text-gray-500 text-xs">Situação</label>
+                                    <p class="text-white" id="situacao">-</p>
+                                </div>
+                                <div>
+                                    <label class="text-gray-500 text-xs">Data de Abertura</label>
+                                    <p class="text-white" id="dataAbertura">-</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <h4 class="text-sm font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fas fa-map-marker-alt text-purple-400"></i>
+                                Endereço
+                            </h4>
+                            <div class="space-y-3 bg-dark-card/50 rounded-xl p-4">
+                                <div>
+                                    <label class="text-gray-500 text-xs">Logradouro</label>
+                                    <p class="text-white" id="logradouro">-</p>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="text-gray-500 text-xs">Número</label>
+                                        <p class="text-white" id="numero">-</p>
+                                    </div>
+                                    <div>
+                                        <label class="text-gray-500 text-xs">Complemento</label>
+                                        <p class="text-white" id="complemento">-</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="text-gray-500 text-xs">Bairro</label>
+                                    <p class="text-white" id="bairro">-</p>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="text-gray-500 text-xs">Município</label>
+                                        <p class="text-white" id="municipio">-</p>
+                                    </div>
+                                    <div>
+                                        <label class="text-gray-500 text-xs">Estado</label>
+                                        <p class="text-white" id="estado">-</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="text-gray-500 text-xs">CEP</label>
+                                    <p class="text-white" id="cep">-</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <h4 class="text-sm font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fas fa-phone text-cyan-400"></i>
+                                Contato
+                            </h4>
+                            <div class="space-y-3 bg-dark-card/50 rounded-xl p-4">
+                                <div>
+                                    <label class="text-gray-500 text-xs">Telefone</label>
+                                    <p class="text-white" id="telefone">-</p>
+                                </div>
+                                <div>
+                                    <label class="text-gray-500 text-xs">Email</label>
+                                    <p class="text-white" id="email">-</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <h4 class="text-sm font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fas fa-briefcase text-amber-400"></i>
+                                Informações Adicionais
+                            </h4>
+                            <div class="space-y-3 bg-dark-card/50 rounded-xl p-4">
+                                <div>
+                                    <label class="text-gray-500 text-xs">Atividade Principal</label>
+                                    <p class="text-white text-sm" id="atividadePrincipal">-</p>
+                                </div>
+                                <div>
+                                    <label class="text-gray-500 text-xs">Natureza Jurídica</label>
+                                    <p class="text-white" id="naturezaJuridica">-</p>
+                                </div>
+                                <div>
+                                    <label class="text-gray-500 text-xs">Porte</label>
+                                    <p class="text-white" id="porte">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 pt-6 border-t border-dark-border/50 flex gap-4">
+                        <button 
+                            onclick="salvarNaCarteira()" 
+                            id="btnSalvar"
+                            class="flex-1 btn-success text-white px-6 py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
+                        >
+                            <i class="fas fa-save"></i>
+                            Salvar na Carteira
+                        </button>
+                        <button 
+                            onclick="limparBusca()" 
+                            class="px-6 py-3 bg-dark-card hover:bg-dark-hover text-gray-300 rounded-xl font-medium transition"
+                        >
+                            Nova Busca
+                        </button>
+                    </div>
+                    
+                    <div id="successMessage" class="hidden mt-4 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
+                        <p class="text-emerald-400 font-semibold flex items-center gap-2">
+                            <i class="fas fa-check-circle"></i>
+                            Sucesso!
+                        </p>
+                        <p class="text-gray-300 text-sm mt-1">Empresa salva na carteira com sucesso!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/buscar_empresa.js"></script>
+{% endblock %}

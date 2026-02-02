@@ -1,0 +1,522 @@
+{% extends "base.html" %}
+
+{% block title %}Prospecções - Núcleo 1.03{% endblock %}
+
+{% set active_page = 'prospeccao' %}
+{% block content %}
+<div class="flex h-screen">
+    {% include "partials/sidebar.html" %}
+    
+    <main class="flex-1 overflow-y-auto">
+        <!-- Header Modernizado -->
+        <header class="sticky top-0 z-20 bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 backdrop-blur-xl border-b border-slate-700/50">
+            <div class="px-4 sm:px-6 py-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div class="flex items-center gap-4">
+                        <button onclick="toggleMobileSidebar()" class="mobile-menu-btn w-10 h-10 rounded-xl bg-slate-800/80 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all duration-200 border border-slate-700/50">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <div>
+                            <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-3">
+                                <span class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                    <i class="fas fa-phone-alt text-white text-sm"></i>
+                                </span>
+                                Prospecções
+                            </h1>
+                            <p class="text-slate-400 text-sm mt-0.5 hidden sm:block">Gerencie suas ligações e follow-ups</p>
+                        </div>
+                    </div>
+                    <button onclick="showNovaProspeccaoModal()" class="btn-primary text-white py-2.5 px-5 rounded-xl transition-all duration-200 w-full sm:w-auto flex items-center justify-center gap-2 font-medium shadow-lg shadow-blue-500/25">
+                        <i class="fas fa-plus"></i> 
+                        <span>Nova Prospecção</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- KPI Stats Bar -->
+            <div class="px-4 sm:px-6 pb-4">
+                <div class="flex flex-wrap gap-2 sm:gap-3" id="statsBar">
+                    <div class="stat-pill">
+                        <span class="stat-pill-value text-blue-400" id="totalProspeccoes">0</span>
+                        <span class="stat-pill-label">Total</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="stat-pill-value text-emerald-400" id="totalInteresse">0</span>
+                        <span class="stat-pill-label">Interesse</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="stat-pill-value text-amber-400" id="totalRetornar">0</span>
+                        <span class="stat-pill-label">Retornar</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="stat-pill-value text-purple-400" id="totalNegociacao">0</span>
+                        <span class="stat-pill-label">Negociação</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <div class="p-4 sm:p-6 space-y-5">
+            <!-- Filtros Modernizados -->
+            <div class="card-modern p-5">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-5">
+                    <h3 class="text-base font-semibold text-slate-200 flex items-center gap-2">
+                        <i class="fas fa-filter text-blue-400"></i>
+                        Filtros
+                    </h3>
+                    <div class="flex gap-2 w-full lg:w-auto">
+                        <button onclick="toggleVisualizacao('cards')" id="btnCards" class="flex-1 lg:flex-initial px-4 py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm font-medium bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 border border-slate-600/50">
+                            <i class="fas fa-th-large"></i> 
+                            <span class="hidden sm:inline">Cards</span>
+                        </button>
+                        <button onclick="toggleVisualizacao('lista')" id="btnLista" class="flex-1 lg:flex-initial px-4 py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm font-medium bg-blue-600 text-white border border-blue-500">
+                            <i class="fas fa-list"></i> 
+                            <span class="hidden sm:inline">Lista</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-medium text-slate-400 uppercase tracking-wide">Empresa</label>
+                        <input type="text" id="filtroEmpresa" placeholder="Buscar empresa..." class="w-full input-modern-v2 text-sm">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-medium text-slate-400 uppercase tracking-wide">Consultor</label>
+                        <select id="filtroConsultor" class="w-full input-modern-v2 text-sm">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-medium text-slate-400 uppercase tracking-wide">Resultado</label>
+                        <select id="filtroResultado" class="w-full input-modern-v2 text-sm">
+                            <option value="">Todos</option>
+                            <option value="Interesse">Interesse</option>
+                            <option value="Sem interesse">Sem interesse</option>
+                            <option value="Retornar depois">Retornar depois</option>
+                            <option value="Não atendeu">Não atendeu</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-medium text-slate-400 uppercase tracking-wide">Status Follow-up</label>
+                        <select id="filtroStatus" class="w-full input-modern-v2 text-sm">
+                            <option value="">Todos</option>
+                            <option value="Aguardando retorno">Aguardando retorno</option>
+                            <option value="Em negociação">Em negociação</option>
+                            <option value="Proposta enviada">Proposta enviada</option>
+                            <option value="Fechado">Fechado</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="flex flex-wrap gap-2 mt-5 pt-4 border-t border-slate-700/50">
+                    <button onclick="aplicarFiltros()" class="btn-primary text-white px-5 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium">
+                        <i class="fas fa-search"></i> Filtrar
+                    </button>
+                    <button onclick="limparFiltros()" class="px-5 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 border border-slate-600/50">
+                        <i class="fas fa-times"></i> Limpar
+                    </button>
+                </div>
+            </div>
+            
+            <!-- View Cards -->
+            <div id="viewCards" class="hidden grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div class="col-span-full text-center py-12 text-slate-400">
+                    <i class="fas fa-spinner fa-spin text-2xl mb-3"></i>
+                    <p>Carregando prospecções...</p>
+                </div>
+            </div>
+            
+            <!-- View Lista -->
+            <div id="viewLista" class="">
+                <div class="card-modern overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full table-modern min-w-[900px]" id="tabelaProspeccoesCompacta">
+                            <thead>
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider w-[10%]">Código</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider w-[16%]">Empresa</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider w-[12%]">Consultor</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider w-[10%]">Data</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider w-[12%]">Resultado</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider w-[12%]">Status</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider w-[10%]">Potencial</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider w-[18%] hidden lg:table-cell">Obs.</th>
+                                    <th class="px-4 py-3 text-center text-xs font-semibold text-slate-300 uppercase tracking-wider w-[10%]">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="listaProspeccoesTable" class="divide-y divide-slate-700/30">
+                                <tr>
+                                    <td colspan="9" class="px-4 py-8 text-center text-slate-400">
+                                        <i class="fas fa-spinner fa-spin text-xl mb-2"></i>
+                                        <p>Carregando...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Modal Nova Prospecção -->
+<div id="novaProspeccaoModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-start sm:items-center justify-center px-2 sm:px-4 z-50 overflow-y-auto py-4">
+    <div class="max-w-3xl w-full modal-modern my-2 sm:my-6 max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
+        <!-- Modal Header -->
+        <div class="modal-header flex items-center justify-between flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                    <i class="fas fa-plus text-white"></i>
+                </span>
+                <div>
+                    <h2 class="text-lg sm:text-xl font-bold text-white">Nova Prospecção</h2>
+                    <p class="text-slate-400 text-xs">Registre uma nova ligação</p>
+                </div>
+            </div>
+            <button onclick="hideNovaProspeccaoModal()" class="w-8 h-8 rounded-lg bg-slate-700/50 hover:bg-slate-600 flex items-center justify-center text-slate-400 hover:text-white transition-all">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <!-- Modal Body -->
+        <div class="p-5 sm:p-6 overflow-y-auto flex-1 space-y-5">
+            <form id="novaProspeccaoForm" class="space-y-5">
+                <!-- Seção: Empresa e Consultor -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-building"></i>
+                        Empresa e Consultor
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="relative">
+                            <label class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 block">Empresa *</label>
+                            <input 
+                                type="text" 
+                                id="empresa_search" 
+                                placeholder="Digite o nome da empresa..." 
+                                autocomplete="off"
+                                required
+                                class="w-full input-modern-v2 text-sm"
+                            >
+                            <input type="hidden" id="empresa_id" required>
+                            <div id="empresa_autocomplete" class="absolute z-20 w-full bg-slate-800 border border-slate-600 rounded-lg mt-1 max-h-48 overflow-y-auto hidden shadow-xl">
+                            </div>
+                        </div>
+                        <div id="consultorDiv">
+                            <label class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 block">Consultor *</label>
+                            <select id="consultor_id" required class="w-full input-modern-v2 text-sm">
+                                <option value="">Carregando consultores...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Seção: Dados do Contato -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-user-tie"></i>
+                        Dados do Contato
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 block">Nome do Contato</label>
+                            <input type="text" id="nome_contato" placeholder="Nome completo" class="w-full input-modern-v2 text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 block">Cargo</label>
+                            <input type="text" id="cargo_contato" placeholder="Ex: Gerente de RH" class="w-full input-modern-v2 text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 block">Telefone</label>
+                            <input type="tel" id="telefone_contato" placeholder="(00) 0000-0000" class="w-full input-modern-v2 text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 block">E-mail</label>
+                            <input type="email" id="email_contato" placeholder="contato@empresa.com" class="w-full input-modern-v2 text-sm">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Seção: Detalhes da Ligação -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-phone-alt"></i>
+                        Detalhes da Ligação
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div>
+                            <label class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 block">Data</label>
+                            <input type="date" id="data_ligacao" class="w-full input-modern-v2 text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 block">Hora</label>
+                            <input type="time" id="hora_ligacao" class="w-full input-modern-v2 text-sm">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 block">Resultado</label>
+                            <select id="resultado" class="w-full input-modern-v2 text-sm">
+                                <option value="">Selecione...</option>
+                                <option value="Interesse">Interesse</option>
+                                <option value="Sem interesse">Sem interesse</option>
+                                <option value="Retornar depois">Retornar depois</option>
+                                <option value="Não atendeu">Não atendeu</option>
+                                <option value="Número inválido">Número inválido</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Seção: Status e Potencial -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-chart-line"></i>
+                        Status e Potencial
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 block">Potencial de Negócio</label>
+                            <select id="potencial_negocio" class="w-full input-modern-v2 text-sm">
+                                <option value="">Selecione...</option>
+                                <option value="Baixo">Baixo</option>
+                                <option value="Médio">Médio</option>
+                                <option value="Alto">Alto</option>
+                                <option value="Muito Alto">Muito Alto</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 block">Status de Follow-up</label>
+                            <select id="status_follow_up" class="w-full input-modern-v2 text-sm">
+                                <option value="">Selecione...</option>
+                                <option value="Aguardando retorno">Aguardando retorno</option>
+                                <option value="Em negociação">Em negociação</option>
+                                <option value="Enviar proposta">Enviar proposta</option>
+                                <option value="Proposta enviada">Proposta enviada</option>
+                                <option value="Fechado">Fechado</option>
+                                <option value="Perdido">Perdido</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <label class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 block">Observações</label>
+                        <textarea id="observacoes" rows="3" placeholder="Detalhes da conversa, próximos passos, etc..." class="w-full input-modern-v2 text-sm resize-none"></textarea>
+                    </div>
+                </div>
+                
+                <!-- Seção: Agendamento -->
+                <div class="form-section">
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <div class="relative">
+                            <input type="checkbox" id="agendar_proxima" class="sr-only peer">
+                            <div class="w-10 h-6 bg-slate-700 rounded-full peer-checked:bg-blue-600 transition-colors"></div>
+                            <div class="absolute left-1 top-1 w-4 h-4 bg-slate-400 rounded-full peer-checked:translate-x-4 peer-checked:bg-white transition-all"></div>
+                        </div>
+                        <span class="text-slate-300 font-medium text-sm group-hover:text-white transition-colors">Agendar próxima ligação</span>
+                    </label>
+                    <div id="agendamentoOptions" class="mt-4 hidden">
+                        <label class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 block">Data da próxima ligação *</label>
+                        <input type="date" id="data_proxima_ligacao" class="w-full sm:w-64 input-modern-v2 text-sm">
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Modal Footer -->
+        <div class="modal-footer flex flex-col sm:flex-row gap-3 flex-shrink-0">
+            <button type="submit" form="novaProspeccaoForm" class="flex-1 btn-primary text-white font-semibold py-2.5 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
+                <i class="fas fa-save"></i> Salvar Prospecção
+            </button>
+            <button type="button" onclick="hideNovaProspeccaoModal()" class="flex-1 sm:flex-initial px-6 py-2.5 rounded-lg font-semibold bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 border border-slate-600/50 transition-all">
+                Cancelar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Prospecção -->
+<div id="editarProspeccaoModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-start sm:items-center justify-center px-2 sm:px-4 z-50 overflow-y-auto py-4">
+    <div class="max-w-3xl w-full modal-modern my-2 sm:my-6 max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
+        <!-- Modal Header -->
+        <div class="modal-header flex items-center justify-between flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                    <i class="fas fa-edit text-white"></i>
+                </span>
+                <div>
+                    <h2 class="text-lg sm:text-xl font-bold text-white">Editar Prospecção</h2>
+                    <p class="text-blue-400 text-xs font-mono" id="editCodigoDisplay"></p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="verHistorico()" class="px-3 py-2 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 text-xs font-medium flex items-center gap-2 border border-purple-500/30 transition-all">
+                    <i class="fas fa-history"></i> 
+                    <span class="hidden sm:inline">Histórico</span>
+                </button>
+                <button onclick="hideEditarProspeccaoModal()" class="w-8 h-8 rounded-lg bg-slate-700/50 hover:bg-slate-600 flex items-center justify-center text-slate-400 hover:text-white transition-all">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Modal Body -->
+        <div class="p-5 sm:p-6 overflow-y-auto flex-1 space-y-5">
+            <form id="editarProspeccaoForm" class="space-y-5">
+                <input type="hidden" id="edit_prospeccao_id">
+                
+                <!-- Seção: Empresa e Consultor (readonly) -->
+                <div class="form-section bg-slate-800/30">
+                    <div class="form-section-title">
+                        <i class="fas fa-building"></i>
+                        Empresa e Consultor
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5 block">Empresa</label>
+                            <input type="text" id="edit_empresa_nome" readonly class="w-full input-modern-v2 text-sm bg-slate-800/50 text-slate-400 cursor-not-allowed">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5 block">Consultor</label>
+                            <input type="text" id="edit_consultor_nome" readonly class="w-full input-modern-v2 text-sm bg-slate-800/50 text-slate-400 cursor-not-allowed">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Seção: Dados do Contato -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-user-tie"></i>
+                        Dados do Contato
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 block">Nome do Contato</label>
+                            <input type="text" id="edit_nome_contato" class="w-full input-modern-v2 text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 block">Cargo</label>
+                            <input type="text" id="edit_cargo_contato" class="w-full input-modern-v2 text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 block">Telefone</label>
+                            <input type="tel" id="edit_telefone_contato" class="w-full input-modern-v2 text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 block">E-mail</label>
+                            <input type="email" id="edit_email_contato" class="w-full input-modern-v2 text-sm">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Seção: Detalhes da Ligação -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-phone-alt"></i>
+                        Detalhes da Ligação
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div>
+                            <label class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 block">Data</label>
+                            <input type="date" id="edit_data_ligacao" class="w-full input-modern-v2 text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 block">Hora</label>
+                            <input type="time" id="edit_hora_ligacao" class="w-full input-modern-v2 text-sm">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 block">Resultado</label>
+                            <select id="edit_resultado" class="w-full input-modern-v2 text-sm">
+                                <option value="">Selecione...</option>
+                                <option value="Interesse">Interesse</option>
+                                <option value="Sem interesse">Sem interesse</option>
+                                <option value="Retornar depois">Retornar depois</option>
+                                <option value="Não atendeu">Não atendeu</option>
+                                <option value="Número inválido">Número inválido</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Seção: Status e Potencial -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-chart-line"></i>
+                        Status e Potencial
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 block">Potencial de Negócio</label>
+                            <select id="edit_potencial_negocio" class="w-full input-modern-v2 text-sm">
+                                <option value="">Selecione...</option>
+                                <option value="Baixo">Baixo</option>
+                                <option value="Médio">Médio</option>
+                                <option value="Alto">Alto</option>
+                                <option value="Muito Alto">Muito Alto</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 block">Status de Follow-up</label>
+                            <select id="edit_status_follow_up" class="w-full input-modern-v2 text-sm">
+                                <option value="">Selecione...</option>
+                                <option value="Aguardando retorno">Aguardando retorno</option>
+                                <option value="Em negociação">Em negociação</option>
+                                <option value="Enviar proposta">Enviar proposta</option>
+                                <option value="Proposta enviada">Proposta enviada</option>
+                                <option value="Fechado">Fechado</option>
+                                <option value="Perdido">Perdido</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <label class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5 block">Observações</label>
+                        <textarea id="edit_observacoes" rows="3" class="w-full input-modern-v2 text-sm resize-none"></textarea>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Modal Footer -->
+        <div class="modal-footer flex flex-col sm:flex-row gap-3 flex-shrink-0">
+            <button type="submit" form="editarProspeccaoForm" class="flex-1 btn-success text-white font-semibold py-2.5 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
+                <i class="fas fa-check"></i> Salvar Alterações
+            </button>
+            <button type="button" onclick="hideEditarProspeccaoModal()" class="flex-1 sm:flex-initial px-6 py-2.5 rounded-lg font-semibold bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 border border-slate-600/50 transition-all">
+                Cancelar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Histórico -->
+<div id="historicoModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center px-4 z-50 overflow-y-auto py-4">
+    <div class="max-w-2xl w-full modal-modern my-6 max-h-[85vh] overflow-hidden flex flex-col">
+        <div class="modal-header flex items-center justify-between flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                    <i class="fas fa-history text-white"></i>
+                </span>
+                <div>
+                    <h2 class="text-lg font-bold text-white">Histórico de Alterações</h2>
+                    <p class="text-purple-400 text-xs font-mono" id="historicoCodigoDisplay"></p>
+                </div>
+            </div>
+            <button onclick="hideHistoricoModal()" class="w-8 h-8 rounded-lg bg-slate-700/50 hover:bg-slate-600 flex items-center justify-center text-slate-400 hover:text-white transition-all">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="p-5 overflow-y-auto flex-1" id="historicoContent">
+            <div class="text-center py-8 text-slate-400">
+                <i class="fas fa-spinner fa-spin text-2xl"></i>
+                <p class="mt-2">Carregando histórico...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/prospeccao_nova.js"></script>
+{% endblock %}

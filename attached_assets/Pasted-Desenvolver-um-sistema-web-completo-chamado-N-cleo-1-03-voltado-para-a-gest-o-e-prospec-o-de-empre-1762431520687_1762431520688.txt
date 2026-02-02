@@ -1,0 +1,260 @@
+Desenvolver um sistema web completo chamado Núcleo 1.03, voltado para a gestão e prospecção de empresas.
+O sistema deve permitir o cadastro de empresas, controle de prospecções, acompanhamento de agendamentos, histórico de ligações e delegação de empresas para consultores.
+
+O tema deve ser totalmente escuro, com layout profissional e responsivo, estilo dashboard corporativo.
+A interface precisa ser limpa, funcional e otimizada para uso interno por administradores e consultores.
+
+ARQUITETURA
+
+Backend: Python com FastAPI
+
+Banco de Dados: PostgreSQL
+
+ORM: SQLAlchemy
+
+Frontend: HTML, CSS (ou TailwindCSS) e JavaScript
+
+Autenticação: JWT (JSON Web Token)
+
+Controle de Acesso: Middleware que diferencia permissões entre admin e consultor
+
+Layout: Tema escuro, profissional, com sidebar lateral e cabeçalho fixo
+
+FUNCIONALIDADES
+1. AUTENTICAÇÃO E USUÁRIOS
+
+Tela de login e registro.
+
+Dois tipos de usuário:
+
+Admin: pode cadastrar empresas, criar e delegar prospecções, acompanhar consultores e visualizar todos os alertas.
+
+Consultor: visualiza apenas as empresas e prospecções atribuídas.
+
+Sessão persistente com JWT e expiração automática.
+
+Logout seguro.
+
+2. CADASTRO DE EMPRESAS
+
+Cada empresa deve ter os seguintes campos, conforme a planilha original (com CARTEIRA ajustado):
+
+EMPRESA
+
+CNPJ
+
+ID (gerado automaticamente)
+
+SIGLA
+
+PORTE
+
+ER
+
+CARTEIRA (exemplo: 1.01, 1.02, 1.03)
+
+ENDEREÇO
+
+BAIRRO
+
+ZONA
+
+MUNICÍPIO
+
+ESTADO
+
+PAÍS
+
+ÁREA
+
+CNAE PRINCIPAL
+
+DESCRIÇÃO CNAE
+
+TIPO DE EMPRESA
+
+CADASTRO / ATUALIZAÇÃO
+
+Nº FUNC.
+
+Observação
+
+Funcionalidades adicionais:
+
+Tela de listagem de empresas com filtros (nome, CNPJ, cidade, ER e carteira).
+
+Cada empresa possui uma página de perfil com:
+
+Dados completos.
+
+Histórico de prospecções.
+
+Próximos agendamentos e agendamentos vencidos.
+
+3. MÓDULO DE PROSPECÇÃO
+
+O Admin pode criar novas prospecções e atribuir empresas a consultores.
+
+O Consultor pode:
+
+Registrar ligações (data, hora, resultado e observações).
+
+Criar agendamentos de retorno (data e hora futuras).
+
+Todas as prospecções são vinculadas à empresa e ao consultor responsável.
+
+O histórico de cada empresa deve listar todas as prospecções e interações feitas.
+
+4. MÓDULO DE AGENDAMENTOS
+
+Cada prospecção pode conter múltiplos agendamentos.
+
+Campos:
+
+Empresa
+
+Consultor
+
+Data e hora do agendamento
+
+Status (pendente, realizado, vencido)
+
+Observações
+
+Admin visualiza todos os agendamentos; consultor visualiza apenas os próprios.
+
+5. MÓDULO DE ALERTAS
+
+Tela de alertas automáticos com três categorias:
+
+Vencidos: vermelho
+
+De hoje: amarelo
+
+Futuros: verde
+
+Atualização automática baseada na data atual.
+
+Consultores veem apenas seus agendamentos.
+
+Admin visualiza o panorama geral de todos os consultores.
+
+6. DESIGN E INTERFACE
+
+Tema escuro em todas as telas.
+
+Layout profissional e responsivo, com:
+
+Sidebar fixa para navegação.
+
+Cabeçalho superior com nome do usuário logado e botão de logout.
+
+Páginas principais:
+
+/login – Tela de login
+
+/dashboard – Painel inicial
+
+/empresas – Listagem de empresas
+
+/empresa/{id} – Perfil da empresa
+
+/prospeccao – Gestão de prospecções
+
+/alertas – Tela de alertas
+
+7. ESTRUTURA DE BANCO DE DADOS
+
+Tabelas sugeridas:
+
+usuarios
+
+id
+
+nome
+
+email
+
+senha_hash
+
+tipo (admin | consultor)
+
+empresas
+
+id
+
+empresa
+
+cnpj
+
+sigla
+
+porte
+
+er
+
+carteira
+
+endereco
+
+bairro
+
+zona
+
+municipio
+
+estado
+
+pais
+
+area
+
+cnae_principal
+
+descricao_cnae
+
+tipo_empresa
+
+data_cadastro
+
+numero_funcionarios
+
+observacao
+
+prospeccoes
+
+id
+
+empresa_id
+
+consultor_id
+
+data_ligacao
+
+hora_ligacao
+
+resultado
+
+observacoes
+
+agendamentos
+
+id
+
+prospeccao_id
+
+data_agendada
+
+hora_agendada
+
+status
+
+observacoes
+
+8. EXTRAS OPCIONAIS
+
+Upload de planilha Excel para cadastrar empresas em massa.
+
+Exportação de relatórios em CSV ou PDF.
+
+Dashboard com notificações automáticas de agendamentos vencidos.

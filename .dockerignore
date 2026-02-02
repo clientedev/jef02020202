@@ -1,0 +1,54 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Tests
+.pytest_cache
+.coverage
+htmlcov/
+
+# Docs
+*.md
+!README.md
+
+# Local files
+*.db
+*.sqlite3
+temp.db
+.local/
+
+# Logs
+*.log
+/tmp/
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Railway/Replit specific
+.replit
+replit.nix
+nixpacks.toml

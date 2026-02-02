@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Formulário - Núcleo 1.03</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        :root {
+            --dark-bg: #0a0a0f;
+            --dark-card: #12121a;
+            --dark-sidebar: #0d0d14;
+            --dark-hover: #1a1a24;
+            --dark-border: #2a2a3a;
+            --accent-purple: #8b5cf6;
+            --accent-blue: #3b82f6;
+            --accent-pink: #ec4899;
+        }
+        
+        * { font-family: 'Inter', sans-serif; }
+        body { background: var(--dark-bg); color: #e5e5e5; min-height: 100vh; }
+        
+        .glass-effect {
+            background: rgba(18, 18, 26, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        
+        .card-gradient {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #3b82f6 100%);
+            background-size: 200% 200%;
+            animation: gradient-shift 3s ease infinite;
+        }
+        
+        .btn-primary:hover {
+            box-shadow: 0 0 30px rgba(139, 92, 246, 0.4);
+            transform: translateY(-1px);
+        }
+        
+        @keyframes gradient-shift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        .input-modern {
+            background: rgba(26, 26, 36, 0.6);
+            border: 1px solid rgba(42, 42, 58, 0.5);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .input-modern:focus {
+            outline: none;
+            border-color: rgba(139, 92, 246, 0.5);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+            background: rgba(26, 26, 36, 0.9);
+        }
+        
+        .input-modern::placeholder { color: #6b7280; }
+        
+        .question-card {
+            background: rgba(18, 18, 26, 0.6);
+            border: 1px solid rgba(42, 42, 58, 0.5);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .question-card:hover {
+            border-color: rgba(139, 92, 246, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+        
+        .question-card.dragging {
+            opacity: 0.5;
+            transform: rotate(2deg);
+            box-shadow: 0 20px 60px rgba(139, 92, 246, 0.3);
+        }
+        
+        .question-card.sortable-ghost {
+            opacity: 0.4;
+            background: rgba(139, 92, 246, 0.1);
+        }
+        
+        .drag-handle {
+            cursor: grab;
+            color: #6b7280;
+            transition: color 0.2s;
+        }
+        
+        .drag-handle:hover { color: #8b5cf6; }
+        .drag-handle:active { cursor: grabbing; }
+        
+        .type-selector {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .type-btn {
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            border: 1px solid rgba(42, 42, 58, 0.5);
+            background: rgba(26, 26, 36, 0.6);
+            color: #9ca3af;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .type-btn:hover {
+            border-color: rgba(139, 92, 246, 0.3);
+            color: #e5e5e5;
+        }
+        
+        .type-btn.active {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
+            border-color: rgba(139, 92, 246, 0.5);
+            color: #a78bfa;
+        }
+        
+        .preview-section {
+            background: linear-gradient(180deg, rgba(18, 18, 26, 0.9) 0%, rgba(10, 10, 15, 0.95) 100%);
+            border-left: 1px solid rgba(42, 42, 58, 0.5);
+        }
+        
+        .preview-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 20px;
+        }
+        
+        .template-card {
+            background: rgba(18, 18, 26, 0.6);
+            border: 1px solid rgba(42, 42, 58, 0.5);
+            border-radius: 16px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .template-card:hover {
+            border-color: rgba(139, 92, 246, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .category-tag {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .scale-preview {
+            display: flex;
+            gap: 6px;
+        }
+        
+        .scale-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(42, 42, 58, 0.5);
+            border: 1px solid rgba(42, 42, 58, 0.8);
+            color: #9ca3af;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .scale-btn:hover {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: rgba(139, 92, 246, 0.5);
+            color: #a78bfa;
+        }
+        
+        .option-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: rgba(26, 26, 36, 0.4);
+            border: 1px solid rgba(42, 42, 58, 0.3);
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+        
+        .option-input:hover {
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slide-up 0.3s ease;
+        }
+        
+        @keyframes slide-up {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .animate-fade-in {
+            animation: fade-in 0.4s ease;
+        }
+        
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .step {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .step.active {
+            background: linear-gradient(135deg, #8b5cf6, #3b82f6);
+            color: white;
+        }
+        
+        .step.completed {
+            background: #10b981;
+            color: white;
+        }
+        
+        .step.pending {
+            background: rgba(42, 42, 58, 0.5);
+            color: #6b7280;
+        }
+        
+        .step-line {
+            width: 40px;
+            height: 2px;
+            background: rgba(42, 42, 58, 0.5);
+        }
+        
+        .step-line.completed {
+            background: linear-gradient(90deg, #10b981, #8b5cf6);
+        }
+        
+        .tooltip {
+            position: relative;
+        }
+        
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 6px 12px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            font-size: 12px;
+            border-radius: 6px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.2s;
+            margin-bottom: 8px;
+        }
+        
+        .tooltip:hover::after {
+            opacity: 1;
+        }
+        
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.3); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(139, 92, 246, 0.5); }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen flex flex-col">
+        <header class="glass-effect border-b border-dark-border/50 px-6 py-4 sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <a href="/formularios" class="w-10 h-10 rounded-xl bg-dark-hover hover:bg-purple-500/20 flex items-center justify-center text-gray-400 hover:text-purple-400 transition" title="Voltar">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                            <i class="fas fa-wand-magic-sparkles text-white"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-lg font-bold text-white">Criar Formulário</h1>
+                            <p class="text-xs text-gray-500">Construtor visual de formulários</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <div class="step-indicator hidden md:flex">
+                        <div class="step" id="step1">1</div>
+                        <div class="step-line" id="line1"></div>
+                        <div class="step pending" id="step2">2</div>
+                        <div class="step-line" id="line2"></div>
+                        <div class="step pending" id="step3">3</div>
+                    </div>
+                    
+                    <div class="h-8 w-px bg-dark-border/50 hidden md:block"></div>
+                    
+                    <div class="flex items-center gap-2 text-sm text-gray-400" id="autoSaveStatus">
+                        <i class="fas fa-cloud text-emerald-400"></i>
+                        <span class="hidden sm:inline">Rascunho salvo</span>
+                    </div>
+                    
+                    <button onclick="togglePreview()" class="px-4 py-2.5 rounded-xl bg-dark-hover hover:bg-purple-500/20 text-gray-300 hover:text-purple-400 transition flex items-center gap-2 text-sm font-medium">
+                        <i class="fas fa-eye"></i>
+                        <span class="hidden sm:inline">Preview</span>
+                    </button>
+                    
+                    <button onclick="salvarFormulario()" class="px-5 py-2.5 rounded-xl btn-primary text-white text-sm font-medium flex items-center gap-2 transition-all duration-300">
+                        <i class="fas fa-save"></i>
+                        <span>Salvar</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+        
+        <main class="flex-1 flex">
+            <div class="flex-1 p-6 lg:p-8 overflow-y-auto" id="builderSection">
+                <div class="max-w-3xl mx-auto space-y-8">
+                    <section class="animate-fade-in">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-bold">1</div>
+                            <h2 class="text-lg font-semibold text-white">Informações Básicas</h2>
+                        </div>
+                        
+                        <div class="question-card p-6 space-y-5">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">
+                                    <i class="fas fa-heading text-purple-400 mr-2"></i>
+                                    Título do Formulário
+                                </label>
+                                <input type="text" id="tituloFormulario" class="w-full input-modern text-lg" placeholder="Ex: Avaliação de Liderança 360" oninput="updatePreview()">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">
+                                    <i class="fas fa-align-left text-blue-400 mr-2"></i>
+                                    Descrição
+                                </label>
+                                <textarea id="descricaoFormulario" rows="3" class="w-full input-modern resize-none" placeholder="Descreva o objetivo deste formulário e como as respostas serão utilizadas..." oninput="updatePreview()"></textarea>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        <i class="fas fa-tag text-amber-400 mr-2"></i>
+                                        Categoria
+                                    </label>
+                                    <select id="categoriaFormulario" class="w-full input-modern">
+                                        <option value="">Selecione...</option>
+                                        <option value="lideranca">Liderança</option>
+                                        <option value="satisfacao">Satisfação</option>
+                                        <option value="clima">Clima Organizacional</option>
+                                        <option value="desempenho">Desempenho</option>
+                                        <option value="feedback">Feedback</option>
+                                        <option value="outro">Outro</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        <i class="fas fa-palette text-pink-400 mr-2"></i>
+                                        Cor do Tema
+                                    </label>
+                                    <div class="flex gap-2">
+                                        <button type="button" onclick="setThemeColor('purple')" class="theme-color w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 border-2 border-transparent hover:border-white transition" data-color="purple"></button>
+                                        <button type="button" onclick="setThemeColor('blue')" class="theme-color w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 border-2 border-transparent hover:border-white transition" data-color="blue"></button>
+                                        <button type="button" onclick="setThemeColor('green')" class="theme-color w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 border-2 border-transparent hover:border-white transition" data-color="green"></button>
+                                        <button type="button" onclick="setThemeColor('orange')" class="theme-color w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 border-2 border-transparent hover:border-white transition" data-color="orange"></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <section class="animate-fade-in" style="animation-delay: 0.1s;">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white text-sm font-bold">2</div>
+                                <h2 class="text-lg font-semibold text-white">Perguntas</h2>
+                                <span class="px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-400 text-xs font-medium" id="perguntaCount">0 perguntas</span>
+                            </div>
+                            
+                            <div class="flex items-center gap-2">
+                                <button onclick="abrirTemplates()" class="px-3 py-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-sm font-medium transition flex items-center gap-2">
+                                    <i class="fas fa-magic"></i>
+                                    <span class="hidden sm:inline">Templates</span>
+                                </button>
+                                <button onclick="adicionarPergunta()" class="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-500/30 text-purple-400 hover:bg-purple-500/30 text-sm font-medium transition flex items-center gap-2">
+                                    <i class="fas fa-plus"></i>
+                                    Adicionar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="listaPerguntas" class="space-y-4">
+                            <div class="text-center py-12 border-2 border-dashed border-dark-border/50 rounded-2xl" id="emptyState">
+                                <div class="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center mx-auto mb-4">
+                                    <i class="fas fa-layer-group text-purple-400 text-2xl"></i>
+                                </div>
+                                <h3 class="text-gray-300 font-medium mb-2">Nenhuma pergunta adicionada</h3>
+                                <p class="text-gray-500 text-sm mb-4">Comece adicionando perguntas ou use um template pronto</p>
+                                <div class="flex items-center justify-center gap-3">
+                                    <button onclick="adicionarPergunta()" class="px-4 py-2 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-400 hover:bg-purple-500/30 text-sm font-medium transition">
+                                        <i class="fas fa-plus mr-2"></i>
+                                        Adicionar Pergunta
+                                    </button>
+                                    <button onclick="abrirTemplates()" class="px-4 py-2 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-400 hover:bg-amber-500/30 text-sm font-medium transition">
+                                        <i class="fas fa-magic mr-2"></i>
+                                        Usar Template
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <section class="animate-fade-in" style="animation-delay: 0.2s;">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white text-sm font-bold">3</div>
+                            <h2 class="text-lg font-semibold text-white">Configurações</h2>
+                        </div>
+                        
+                        <div class="question-card p-6 space-y-4">
+                            <label class="flex items-center justify-between p-3 rounded-xl hover:bg-dark-hover/50 transition cursor-pointer">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                                        <i class="fas fa-user-secret text-blue-400"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-200 font-medium">Respostas Anônimas</p>
+                                        <p class="text-gray-500 text-xs">O nome do respondente não será exibido</p>
+                                    </div>
+                                </div>
+                                <input type="checkbox" id="anonimo" class="w-5 h-5 rounded border-dark-border bg-dark-bg text-purple-500 focus:ring-purple-500 focus:ring-offset-0">
+                            </label>
+                            
+                            <label class="flex items-center justify-between p-3 rounded-xl hover:bg-dark-hover/50 transition cursor-pointer">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                                        <i class="fas fa-check-double text-emerald-400"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-200 font-medium">Todas Obrigatórias</p>
+                                        <p class="text-gray-500 text-xs">Usuário deve responder todas as perguntas</p>
+                                    </div>
+                                </div>
+                                <input type="checkbox" id="obrigatorio" checked class="w-5 h-5 rounded border-dark-border bg-dark-bg text-purple-500 focus:ring-purple-500 focus:ring-offset-0">
+                            </label>
+                            
+                            <label class="flex items-center justify-between p-3 rounded-xl hover:bg-dark-hover/50 transition cursor-pointer">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                                        <i class="fas fa-random text-amber-400"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-200 font-medium">Ordem Aleatória</p>
+                                        <p class="text-gray-500 text-xs">Perguntas aparecem em ordem diferente para cada respondente</p>
+                                    </div>
+                                </div>
+                                <input type="checkbox" id="aleatorio" class="w-5 h-5 rounded border-dark-border bg-dark-bg text-purple-500 focus:ring-purple-500 focus:ring-offset-0">
+                            </label>
+                        </div>
+                    </section>
+                    
+                    <div class="flex items-center justify-between pt-6 border-t border-dark-border/50">
+                        <a href="/formularios" class="px-4 py-2.5 rounded-xl bg-dark-hover hover:bg-dark-border text-gray-300 text-sm font-medium transition">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            Voltar
+                        </a>
+                        <button onclick="salvarFormulario()" class="px-6 py-2.5 rounded-xl btn-primary text-white text-sm font-medium flex items-center gap-2 transition-all duration-300">
+                            <i class="fas fa-save"></i>
+                            Criar Formulário
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <aside class="w-96 preview-section hidden lg:block overflow-y-auto" id="previewSection">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider">Preview</h3>
+                        <button onclick="togglePreview()" class="w-8 h-8 rounded-lg bg-dark-hover hover:bg-red-500/20 flex items-center justify-center text-gray-400 hover:text-red-400 transition">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="preview-card" id="previewContent">
+                        <div class="text-center mb-6">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-clipboard-list text-white text-xl"></i>
+                            </div>
+                            <h4 class="text-lg font-semibold text-white" id="previewTitulo">Título do Formulário</h4>
+                            <p class="text-gray-400 text-sm mt-1" id="previewDescricao">Descrição do formulário aparecerá aqui</p>
+                        </div>
+                        
+                        <div id="previewPerguntas" class="space-y-4">
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-eye-slash text-3xl mb-2 opacity-30"></i>
+                                <p class="text-sm">Adicione perguntas para visualizar</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+    
+    <div id="modalTemplates" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="fecharModal('modalTemplates')"></div>
+        <div class="absolute inset-4 sm:inset-8 lg:inset-16 overflow-hidden">
+            <div class="bg-dark-card border border-dark-border/50 rounded-2xl h-full flex flex-col">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-dark-border/50">
+                    <h3 class="text-lg font-semibold text-white flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                            <i class="fas fa-magic text-white text-sm"></i>
+                        </div>
+                        Templates de Perguntas
+                    </h3>
+                    <button onclick="fecharModal('modalTemplates')" class="w-8 h-8 rounded-lg bg-dark-hover hover:bg-red-500/20 flex items-center justify-center text-gray-400 hover:text-red-400 transition">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="template-card" onclick="usarTemplate('lideranca')">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                                    <i class="fas fa-crown text-purple-400"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Avaliação de Liderança</h4>
+                                    <p class="text-xs text-gray-500">36 perguntas</p>
+                                </div>
+                            </div>
+                            <p class="text-gray-400 text-sm mb-3">Questionário completo para avaliação 360 de competências de liderança.</p>
+                            <div class="flex flex-wrap gap-1">
+                                <span class="category-tag bg-purple-500/20 text-purple-400">Comunicação</span>
+                                <span class="category-tag bg-blue-500/20 text-blue-400">Estratégia</span>
+                                <span class="category-tag bg-emerald-500/20 text-emerald-400">Equipe</span>
+                            </div>
+                        </div>
+                        
+                        <div class="template-card" onclick="usarTemplate('satisfacao')">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                                    <i class="fas fa-smile text-emerald-400"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Pesquisa de Satisfação</h4>
+                                    <p class="text-xs text-gray-500">12 perguntas</p>
+                                </div>
+                            </div>
+                            <p class="text-gray-400 text-sm mb-3">Avalie a satisfação de clientes ou colaboradores de forma simples e eficaz.</p>
+                            <div class="flex flex-wrap gap-1">
+                                <span class="category-tag bg-emerald-500/20 text-emerald-400">Atendimento</span>
+                                <span class="category-tag bg-amber-500/20 text-amber-400">Produto</span>
+                            </div>
+                        </div>
+                        
+                        <div class="template-card" onclick="usarTemplate('clima')">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                                    <i class="fas fa-cloud-sun text-blue-400"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Clima Organizacional</h4>
+                                    <p class="text-xs text-gray-500">20 perguntas</p>
+                                </div>
+                            </div>
+                            <p class="text-gray-400 text-sm mb-3">Entenda o ambiente de trabalho e identifique pontos de melhoria.</p>
+                            <div class="flex flex-wrap gap-1">
+                                <span class="category-tag bg-blue-500/20 text-blue-400">Ambiente</span>
+                                <span class="category-tag bg-pink-500/20 text-pink-400">Cultura</span>
+                            </div>
+                        </div>
+                        
+                        <div class="template-card" onclick="usarTemplate('nps')">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                                    <i class="fas fa-chart-line text-amber-400"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-white">NPS - Net Promoter Score</h4>
+                                    <p class="text-xs text-gray-500">3 perguntas</p>
+                                </div>
+                            </div>
+                            <p class="text-gray-400 text-sm mb-3">Medição rápida de lealdade e satisfação do cliente.</p>
+                            <div class="flex flex-wrap gap-1">
+                                <span class="category-tag bg-amber-500/20 text-amber-400">Lealdade</span>
+                            </div>
+                        </div>
+                        
+                        <div class="template-card" onclick="usarTemplate('feedback')">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-10 h-10 rounded-lg bg-pink-500/20 flex items-center justify-center">
+                                    <i class="fas fa-comments text-pink-400"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Feedback 360</h4>
+                                    <p class="text-xs text-gray-500">15 perguntas</p>
+                                </div>
+                            </div>
+                            <p class="text-gray-400 text-sm mb-3">Colete feedback de pares, líderes e subordinados.</p>
+                            <div class="flex flex-wrap gap-1">
+                                <span class="category-tag bg-pink-500/20 text-pink-400">Desenvolvimento</span>
+                            </div>
+                        </div>
+                        
+                        <div class="template-card" onclick="usarTemplate('onboarding')">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                                    <i class="fas fa-user-plus text-cyan-400"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Avaliação de Onboarding</h4>
+                                    <p class="text-xs text-gray-500">10 perguntas</p>
+                                </div>
+                            </div>
+                            <p class="text-gray-400 text-sm mb-3">Avalie a experiência de integração de novos colaboradores.</p>
+                            <div class="flex flex-wrap gap-1">
+                                <span class="category-tag bg-cyan-500/20 text-cyan-400">Integração</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="modalTipoPergunta" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="fecharModal('modalTipoPergunta')"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg">
+            <div class="bg-dark-card border border-dark-border/50 rounded-2xl overflow-hidden">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-dark-border/50">
+                    <h3 class="text-lg font-semibold text-white">Tipo de Pergunta</h3>
+                    <button onclick="fecharModal('modalTipoPergunta')" class="w-8 h-8 rounded-lg bg-dark-hover hover:bg-red-500/20 flex items-center justify-center text-gray-400 hover:text-red-400 transition">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="p-6 grid grid-cols-2 gap-3">
+                    <button onclick="criarPergunta('escala')" class="p-4 rounded-xl bg-dark-hover hover:bg-purple-500/20 border border-dark-border/50 hover:border-purple-500/30 text-left transition group">
+                        <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition">
+                            <i class="fas fa-sliders-h text-purple-400"></i>
+                        </div>
+                        <h4 class="font-medium text-white mb-1">Escala</h4>
+                        <p class="text-xs text-gray-500">Escala numérica de 1 a 5</p>
+                    </button>
+                    
+                    <button onclick="criarPergunta('texto')" class="p-4 rounded-xl bg-dark-hover hover:bg-blue-500/20 border border-dark-border/50 hover:border-blue-500/30 text-left transition group">
+                        <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition">
+                            <i class="fas fa-align-left text-blue-400"></i>
+                        </div>
+                        <h4 class="font-medium text-white mb-1">Texto Livre</h4>
+                        <p class="text-xs text-gray-500">Resposta aberta</p>
+                    </button>
+                    
+                    <button onclick="criarPergunta('multipla')" class="p-4 rounded-xl bg-dark-hover hover:bg-emerald-500/20 border border-dark-border/50 hover:border-emerald-500/30 text-left transition group">
+                        <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition">
+                            <i class="fas fa-check-square text-emerald-400"></i>
+                        </div>
+                        <h4 class="font-medium text-white mb-1">Múltipla Escolha</h4>
+                        <p class="text-xs text-gray-500">Várias opções de resposta</p>
+                    </button>
+                    
+                    <button onclick="criarPergunta('unica')" class="p-4 rounded-xl bg-dark-hover hover:bg-amber-500/20 border border-dark-border/50 hover:border-amber-500/30 text-left transition group">
+                        <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition">
+                            <i class="fas fa-dot-circle text-amber-400"></i>
+                        </div>
+                        <h4 class="font-medium text-white mb-1">Escolha Única</h4>
+                        <p class="text-xs text-gray-500">Apenas uma opção</p>
+                    </button>
+                    
+                    <button onclick="criarPergunta('nota')" class="p-4 rounded-xl bg-dark-hover hover:bg-pink-500/20 border border-dark-border/50 hover:border-pink-500/30 text-left transition group">
+                        <div class="w-10 h-10 rounded-lg bg-pink-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition">
+                            <i class="fas fa-star text-pink-400"></i>
+                        </div>
+                        <h4 class="font-medium text-white mb-1">Nota (0-10)</h4>
+                        <p class="text-xs text-gray-500">Avaliação numérica</p>
+                    </button>
+                    
+                    <button onclick="criarPergunta('sim_nao')" class="p-4 rounded-xl bg-dark-hover hover:bg-cyan-500/20 border border-dark-border/50 hover:border-cyan-500/30 text-left transition group">
+                        <div class="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition">
+                            <i class="fas fa-toggle-on text-cyan-400"></i>
+                        </div>
+                        <h4 class="font-medium text-white mb-1">Sim/Não</h4>
+                        <p class="text-xs text-gray-500">Resposta binária</p>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/form_builder.js"></script>
+</body>
+</html>
