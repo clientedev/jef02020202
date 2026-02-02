@@ -54,8 +54,56 @@ document.addEventListener('DOMContentLoaded', () => {
     
     carregarDados();
     
-    document.getElementById('formEvento').addEventListener('submit', salvarEvento);
+    const inputBusca = document.getElementById('eventoBuscaEmpresa');
+    const inputId = document.getElementById('eventoEmpresaId');
+    const inputSigla = document.getElementById('eventoSigla');
+    const listaSugestoes = document.getElementById('listaSugestoesEmpresa');
+
+    if (inputBusca) {
+        inputBusca.addEventListener('input', async (e) => {
+            const busca = e.target.value;
+            if (busca.length < 2) {
+                listaSugestoes.classList.add('hidden');
+                return;
+            }
+
+            try {
+                const response = await apiRequest(`/api/empresas/?q=${busca}&page_size=5`);
+                const data = await response.json();
+                const empresas = data.items || [];
+
+                if (empresas.length > 0) {
+                    listaSugestoes.innerHTML = empresas.map(emp => `
+                        <div class="p-3 hover:bg-dark-hover cursor-pointer border-b border-dark-border/30 last:border-0" 
+                             onclick="selecionarEmpresaParaEvento(${emp.id}, '${emp.empresa}', '${emp.sigla || ''}')">
+                            <div class="text-white font-medium">${emp.empresa}</div>
+                            <div class="text-xs text-gray-400">${emp.sigla || 'Sem sigla'}</div>
+                        </div>
+                    `).join('');
+                    listaSugestoes.classList.remove('hidden');
+                } else {
+                    listaSugestoes.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Erro ao buscar empresas:', error);
+            }
+        });
+
+        // Fechar sugestões ao clicar fora
+        document.addEventListener('click', (e) => {
+            if (!inputBusca.contains(e.target) && !listaSugestoes.contains(e.target)) {
+                listaSugestoes.classList.add('hidden');
+            }
+        });
+    }
 });
+
+function selecionarEmpresaParaEvento(id, nome, sigla) {
+    document.getElementById('eventoBuscaEmpresa').value = nome;
+    document.getElementById('eventoEmpresaId').value = id;
+    document.getElementById('eventoSigla').value = sigla;
+    document.getElementById('listaSugestoesEmpresa').classList.add('hidden');
+}
 
 async function carregarDados() {
     try {
@@ -622,6 +670,12 @@ function abrirModalNovoEvento() {
     document.getElementById('eventoId').value = '';
     document.getElementById('btnExcluirEvento').classList.add('hidden');
     
+    // Resetar busca de empresa
+    const inputBusca = document.getElementById('eventoBuscaEmpresa');
+    const inputId = document.getElementById('eventoEmpresaId');
+    if (inputBusca) inputBusca.value = '';
+    if (inputId) inputId.value = '';
+
     // Mostrar campo de programa e carregar opções
     const campoPrograma = document.getElementById('campoEventoPrograma');
     const configDist = document.getElementById('configuracaoDistribuicao');
@@ -720,6 +774,8 @@ async function salvarEvento(e) {
     
     const eventoId = document.getElementById('eventoId').value;
     const programId = document.getElementById('eventoPrograma')?.value;
+    const empresaId = document.getElementById('eventoEmpresaId')?.value;
+    const siglaManual = document.getElementById('eventoSigla')?.value;
     
     if (programId) {
         // Fluxo de agendamento automático de programa
@@ -732,6 +788,7 @@ async function salvarEvento(e) {
         const dadosAuto = {
             program_id: parseInt(programId),
             consultor_id: parseInt(document.getElementById('eventoConsultor').value),
+            empresa_id: empresaId ? parseInt(empresaId) : null,
             data_inicio: document.getElementById('eventoData').value,
             dias_semana: Array.from(diasCheckboxes).map(cb => parseInt(cb.value)),
             horas_por_dia: parseFloat(document.getElementById('eventoHorasDia').value || 8)

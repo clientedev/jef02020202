@@ -110,12 +110,10 @@ const formProg = document.getElementById('formPrograma');
 if (formProg) {
     formProg.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const empresaId = document.getElementById('progEmpresa').value;
         const data = {
             nome: document.getElementById('progNome').value,
             carga_horaria: parseFloat(document.getElementById('progCarga').value),
-            descricao: document.getElementById('progDesc').value,
-            empresa_id: empresaId ? parseInt(empresaId) : null
+            descricao: document.getElementById('progDesc').value
         };
         
         try {

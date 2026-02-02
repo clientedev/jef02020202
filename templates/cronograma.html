@@ -246,9 +246,20 @@
                 </select>
             </div>
             
-            <div>
+            <!-- Seleção de Empresa -->
+            <div class="space-y-1.5 relative">
+                <label class="block text-xs sm:text-sm text-gray-400">Empresa *</label>
+                <input type="text" id="eventoBuscaEmpresa" placeholder="Buscar empresa..." class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none" autocomplete="off">
+                <input type="hidden" id="eventoEmpresaId">
+                <div id="listaSugestoesEmpresa" class="hidden absolute z-50 w-full mt-1 bg-dark-card border border-dark-border/50 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
+                    <!-- Sugestões serão inseridas aqui via JS -->
+                </div>
+            </div>
+
+            <!-- Sigla da Empresa -->
+            <div class="hidden">
                 <label class="block text-xs sm:text-sm text-gray-400 mb-1.5">Sigla da Empresa</label>
-                <input type="text" id="eventoSigla" placeholder="Ex: ABAJUR, PRODMEC..." class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none">
+                <input type="text" id="eventoSigla" class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none" readonly>
             </div>
 
             <div id="campoEventoPrograma" class="hidden">
