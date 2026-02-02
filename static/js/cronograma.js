@@ -235,14 +235,139 @@ function abrirDetalhesDia(data, dia) {
     const eventosDoDia = eventos.filter(e => e.data === data);
     
     if (eventosDoDia.length > 0) {
-        // Se houver eventos, abre o primeiro para edição (ou poderíamos abrir uma lista)
-        // Por padrão, vamos abrir o primeiro para mostrar os dados conforme solicitado
         editarEvento(eventosDoDia[0].id);
     } else {
-        // Se não houver eventos, abre o modal de novo evento para aquela data
         document.getElementById('eventoData').value = data;
         abrirModalNovoEvento();
     }
+}
+
+async function editarEvento(id) {
+    try {
+        const response = await apiRequest(`/api/cronograma/eventos/${id}`);
+        if (!response.ok) throw new Error('Falha ao carregar evento');
+        const evento = await response.json();
+        
+        const form = document.getElementById('formEvento');
+        if (form) form.reset();
+        
+        document.getElementById('eventoId').value = evento.id;
+        document.getElementById('eventoData').value = evento.data;
+        document.getElementById('eventoConsultor').value = evento.consultor_id;
+        document.getElementById('eventoBuscaEmpresa').value = evento.empresa_nome || '';
+        document.getElementById('eventoEmpresaId').value = evento.empresa_id || '';
+        document.getElementById('eventoSigla').value = evento.sigla_empresa || '';
+        document.getElementById('eventoCategoria').value = evento.categoria;
+        document.getElementById('eventoDescricao').value = evento.descricao || '';
+        
+        const campoProg = document.getElementById('campoEventoPrograma');
+        const selectProg = document.getElementById('eventoPrograma');
+        
+        if (evento.program_nome) {
+            campoProg.classList.remove('hidden');
+            selectProg.innerHTML = `<option value="${evento.program_id}">${evento.program_nome}</option>`;
+            selectProg.disabled = true;
+        } else {
+            campoProg.classList.add('hidden');
+            selectProg.disabled = false;
+        }
+        
+        document.getElementById('configuracaoDistribuicao').classList.add('hidden');
+        document.getElementById('modalEvento').classList.remove('hidden');
+    } catch (e) {
+        console.error(e);
+        alert('Erro ao carregar detalhes do evento');
+    }
+}
+
+async function salvarEvento(e) {
+    e.preventDefault();
+    const programId = document.getElementById('eventoPrograma')?.value;
+    const empresaId = document.getElementById('eventoEmpresaId')?.value;
+    const eventoId = document.getElementById('eventoId')?.value;
+
+    if (eventoId) {
+        const dados = {
+            data: document.getElementById('eventoData').value,
+            categoria: document.getElementById('eventoCategoria').value,
+            consultor_id: parseInt(document.getElementById('eventoConsultor').value),
+            empresa_id: empresaId ? parseInt(empresaId) : null,
+            sigla_empresa: document.getElementById('eventoSigla').value || null,
+            descricao: document.getElementById('eventoDescricao').value
+        };
+        const response = await apiRequest(`/api/cronograma/eventos/${eventoId}`, { method: 'PUT', body: JSON.stringify(dados) });
+        if (response.ok) {
+            fecharModalEvento(); await carregarEventos(); renderizarCalendario();
+        }
+        return;
+    }
+    
+    if (programId) {
+        const diasCheckboxes = document.querySelectorAll('input[name="eventoDiasSemana"]:checked');
+        if (diasCheckboxes.length === 0) { alert('Selecione os dias'); return; }
+        
+        const dadosAuto = {
+            program_id: parseInt(programId),
+            consultor_id: parseInt(document.getElementById('eventoConsultor').value),
+            empresa_id: empresaId ? parseInt(empresaId) : null,
+            data_inicio: document.getElementById('eventoData').value,
+            dias_semana: Array.from(diasCheckboxes).map(cb => parseInt(cb.value)),
+            horas_por_dia: parseFloat(document.getElementById('eventoHorasDia').value || 8)
+        };
+        
+        const response = await apiRequest('/api/programs/auto-schedule', { method: 'POST', body: JSON.stringify(dadosAuto) });
+        if (response.ok) {
+            fecharModalEvento(); await carregarEventos(); renderizarCalendario();
+        } else {
+            const err = await response.json(); alert(err.detail || 'Erro ao gerar');
+        }
+        return;
+    }
+
+    const dados = {
+        data: document.getElementById('eventoData').value,
+        categoria: document.getElementById('eventoCategoria').value,
+        consultor_id: parseInt(document.getElementById('eventoConsultor').value),
+        empresa_id: empresaId ? parseInt(empresaId) : null,
+        sigla_empresa: document.getElementById('eventoSigla').value || null,
+        descricao: document.getElementById('eventoDescricao').value
+    };
+
+    const response = await apiRequest('/api/cronograma/eventos', { method: 'POST', body: JSON.stringify(dados) });
+    if (response.ok) {
+        fecharModalEvento(); await carregarEventos(); renderizarCalendario();
+    }
+}
+
+function abrirModalNovoEvento() {
+    const form = document.getElementById('formEvento');
+    if (form) form.reset();
+    document.getElementById('eventoId').value = '';
+    document.getElementById('eventoEmpresaId').value = '';
+    document.getElementById('eventoBuscaEmpresa').value = '';
+    const campoProg = document.getElementById('campoEventoPrograma');
+    if (campoProg) campoProg.classList.remove('hidden');
+    const selectProg = document.getElementById('eventoPrograma');
+    if (selectProg) selectProg.disabled = false;
+    const configDist = document.getElementById('configuracaoDistribuicao');
+    if (configDist) configDist.classList.remove('hidden');
+    carregarProgramasNoEvento();
+    document.getElementById('modalEvento').classList.remove('hidden');
+}
+
+function fecharModalEvento() {
+    document.getElementById('modalEvento').classList.add('hidden');
+}
+
+async function carregarProgramasNoEvento() {
+    const select = document.getElementById('eventoPrograma');
+    if (!select) return;
+    try {
+        const response = await apiRequest('/api/programs/');
+        const programs = await response.json();
+        select.innerHTML = '<option value="">Selecione um programa...</option>' + 
+            programs.map(p => `<option value="${p.id}">${p.nome}</option>`).join('');
+    } catch (e) { console.error(e); }
 }
 
 function mesAnterior() {
