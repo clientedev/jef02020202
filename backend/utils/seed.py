@@ -1,10 +1,12 @@
-from sqlalchemy.orm import Session
-from backend.models import Usuario, TipoUsuario, Stage, Prospeccao
+from backend.models import Usuario, TipoUsuario, Stage, Prospeccao, Agendamento, StatusAgendamento
+from backend.models.cronograma import CronogramaProjeto, CronogramaEvento, CategoriaEvento, PeriodoEvento, StatusProjeto
 from backend.models.empresas import Empresa
 from backend.models.pipeline import CompanyPipeline, CompanyStageHistory, Note
 from backend.auth.security import obter_hash_senha
 from datetime import datetime, timedelta, date, time
+import random
 import os
+from sqlalchemy.orm import Session
 
 def criar_usuario_admin_padrao(db: Session):
     admin_email = os.getenv("ADMIN_EMAIL", "admin@admin.com")
@@ -64,7 +66,7 @@ def criar_consultores_padrao(db: Session):
         db.commit()
         print(f"✓ {consultores_criados} consultores criados")
     else:
-        print(f"✓ Consultores já existem no banco")
+        print("✓ Consultores já existem no banco")
 
 def criar_empresas_padrao(db: Session):
     """Cria empresas padrão que permanecerão fixas no banco"""
@@ -144,7 +146,7 @@ def criar_empresas_padrao(db: Session):
         db.commit()
         print(f"✓ {empresas_criadas} empresas padrão criadas")
     else:
-        print(f"✓ Empresas padrão já existem no banco")
+        print("✓ Empresas padrão já existem no banco")
 
 def criar_stages_padrao(db: Session):
     """Cria os estágios padrão do pipeline Kanban"""
@@ -171,14 +173,14 @@ def criar_stages_padrao(db: Session):
         db.commit()
         print(f"✓ {stages_criados} estágios do pipeline criados")
     else:
-        print(f"✓ Estágios do pipeline já existem no banco")
+        print("✓ Estágios do pipeline já existem no banco")
 
 def popular_pipeline(db: Session):
     """Popula o pipeline com as empresas existentes"""
     pipeline_existente = db.query(CompanyPipeline).first()
     
     if pipeline_existente:
-        print(f"✓ Pipeline já possui dados")
+        print("✓ Pipeline já possui dados")
         return
     
     petrobras = db.query(Empresa).filter(Empresa.cnpj == "33000167000101").first()
@@ -317,14 +319,14 @@ def popular_pipeline(db: Session):
         db.add(note)
     
     db.commit()
-    print(f"✓ Pipeline populado com 5 empresas, histórico e notas")
+    print("✓ Pipeline populado com 5 empresas, histórico e notas")
 
 def criar_prospeccoes_padrao(db: Session):
     """Cria prospecções de teste para as empresas existentes"""
     prospeccao_existente = db.query(Prospeccao).first()
     
     if prospeccao_existente:
-        print(f"✓ Prospecções já existem no banco")
+        print("✓ Prospecções já existem no banco")
         return
     
     petrobras = db.query(Empresa).filter(Empresa.cnpj == "33000167000101").first()
@@ -434,3 +436,126 @@ def criar_prospeccoes_padrao(db: Session):
     
     db.commit()
     print(f"✓ {len(prospeccoes)} prospecções criadas")
+
+def criar_agendamentos_fake(db: Session):
+    """Cria agendamentos fake para as prospecções"""
+    agendamento_existente = db.query(Agendamento).first()
+    if agendamento_existente:
+        print("✓ Agendamentos já existem")
+        return
+
+    prospeccoes = db.query(Prospeccao).all()
+    if not prospeccoes:
+        print("⚠ Nenhuma prospecção encontrada para criar agendamentos")
+        return
+
+    hoje = datetime.now()
+    agendamentos = []
+    
+    for i, prosp in enumerate(prospeccoes):
+        # Um agendamento no passado (concluído)
+        agendamentos.append(Agendamento(
+            prospeccao_id=prosp.id,
+            data_agendada=hoje - timedelta(days=random.randint(1, 10)),
+            observacoes=f"Reunião de acompanhamento #{i+1}",
+            status=StatusAgendamento.realizado
+        ))
+        
+        # Um agendamento para hoje ou futuro (pendente)
+        agendamentos.append(Agendamento(
+            prospeccao_id=prosp.id,
+            data_agendada=hoje + timedelta(days=random.randint(0, 5)),
+            observacoes=f"Próximo passo definido para {prosp.nome_contato}",
+            status=StatusAgendamento.pendente
+        ))
+
+    for agend in agendamentos:
+        db.add(agend)
+    db.commit()
+    print(f"✓ {len(agendamentos)} agendamentos fake criados")
+
+def criar_cronograma_fake(db: Session):
+    """Cria projetos e eventos de cronograma fake"""
+    projeto_existente = db.query(CronogramaProjeto).first()
+    if projeto_existente:
+        print("✓ Cronograma já possui dados")
+        return
+
+    empresas = db.query(Empresa).all()
+    consultores = db.query(Usuario).filter(Usuario.tipo == TipoUsuario.consultor).all()
+    
+    if not empresas or not consultores:
+        print("⚠ Empresas ou consultores não encontrados")
+        return
+
+    hoje = date.today()
+    projetos = []
+    
+    for i, emp in enumerate(empresas[:3]):
+        cons = consultores[i % len(consultores)]
+        proj = CronogramaProjeto(
+            proposta=f"PROP-2024-{100+i}",
+            empresa_id=emp.id,
+            cnpj=emp.cnpj,
+            sigla=emp.sigla,
+            solucao="Consultoria Estratégica",
+            consultor_id=cons.id,
+            consultor_nome=cons.nome,
+            data_inicio=hoje - timedelta(days=30),
+            data_termino=hoje + timedelta(days=60),
+            status=StatusProjeto.em_andamento,
+            municipio=emp.municipio,
+            uf=emp.estado
+        )
+        db.add(proj)
+        projetos.append(proj)
+    
+    db.commit()
+    
+    # Criar eventos para os projetos
+    eventos = []
+    categorias = list(CategoriaEvento)
+    
+    for proj in projetos:
+        # Eventos passados
+        for d in range(1, 5):
+            eventos.append(CronogramaEvento(
+                data=hoje - timedelta(days=d*5),
+                categoria=random.choice(categorias),
+                periodo=PeriodoEvento.dia_todo,
+                sigla_empresa=proj.sigla,
+                empresa_id=proj.empresa_id,
+                consultor_id=proj.consultor_id,
+                projeto_id=proj.id,
+                titulo=f"Atividade de Consultoria {proj.sigla}",
+                descricao="Execução de atividades planejadas"
+            ))
+        
+        # Eventos futuros
+        for d in range(1, 5):
+            eventos.append(CronogramaEvento(
+                data=hoje + timedelta(days=d*5),
+                categoria=CategoriaEvento.consultoria,
+                periodo=PeriodoEvento.manha,
+                sigla_empresa=proj.sigla,
+                empresa_id=proj.empresa_id,
+                consultor_id=proj.consultor_id,
+                projeto_id=proj.id,
+                titulo=f"Visita Técnica {proj.sigla}",
+                descricao="Acompanhamento presencial"
+            ))
+
+    for ev in eventos:
+        db.add(ev)
+    db.commit()
+    print(f"✓ {len(projetos)} projetos e {len(eventos)} eventos de cronograma criados")
+
+def run_seed(db: Session):
+    criar_usuario_admin_padrao(db)
+    criar_consultores_padrao(db)
+    criar_empresas_padrao(db)
+    criar_stages_padrao(db)
+    popular_pipeline(db)
+    criar_prospeccoes_padrao(db)
+    criar_agendamentos_fake(db)
+    criar_cronograma_fake(db)
