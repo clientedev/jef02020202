@@ -292,9 +292,7 @@
         <div id="modalDetalhesConteudo" class="p-3 sm:p-4 lg:p-6 overflow-y-auto max-h-[calc(85vh-70px)] sm:max-h-[60vh] space-y-2 sm:space-y-3"></div>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_modals %}
 <div id="modalProgramas" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
     <div class="glass-effect rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden animate-slide-up">
         <div class="p-6 border-b border-dark-border/50 flex justify-between items-center sticky top-0 glass-effect z-10">
@@ -427,6 +425,8 @@
     </div>
 </div>
 {% endblock %}
+
+{% block scripts %}
 <script src="/static/js/cronograma.js"></script>
 <script src="/static/js/programs.js"></script>
 {% endblock %}
