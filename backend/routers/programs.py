@@ -51,6 +51,8 @@ def auto_schedule(request: AutoScheduleRequest, db: Session = Depends(get_db)):
     data_atual = request.data_inicio
     eventos_criados = []
 
+    empresa_id_final = request.empresa_id if request.empresa_id else program.empresa_id
+    
     while horas_restantes > 0:
         if data_atual.weekday() in request.dias_semana:
             horas_hoje = min(request.horas_por_dia, horas_restantes)
@@ -60,7 +62,7 @@ def auto_schedule(request: AutoScheduleRequest, db: Session = Depends(get_db)):
                 categoria=CategoriaEvento.programado,
                 periodo=PeriodoEvento.dia_todo if horas_hoje >= 4 else PeriodoEvento.manha,
                 consultor_id=request.consultor_id,
-                empresa_id=program.empresa_id, # Usar a empresa do programa
+                empresa_id=empresa_id_final,
                 projeto_id=request.projeto_id,
                 program_id=program.id,
                 titulo=f"{program.nome} - Sessão",

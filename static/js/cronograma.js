@@ -217,28 +217,44 @@ function renderizarCalendario() {
         const dataStr = new Date(anoAtual, mesAtual, dia).toISOString().split('T')[0];
         const eventosDoDia = eventos.filter(e => e.data === dataStr);
         const isHoje = new Date(dataStr + 'T12:00:00').getTime() === hoje.getTime();
+        const diaSemana = new Date(anoAtual, mesAtual, dia).getDay();
+        const isFimDeSemana = diaSemana === 0 || diaSemana === 6;
         
-        let classesDia = 'min-h-[120px] rounded-lg p-2 transition cursor-pointer hover:ring-2 hover:ring-blue-500/50 ';
-        if (isHoje) classesDia += 'bg-blue-900/40 ring-2 ring-blue-500 ';
-        else classesDia += 'bg-dark-bg/50 ';
+        let classesDia = 'min-h-[140px] rounded-xl p-2.5 transition cursor-pointer hover:ring-2 hover:ring-blue-500/50 hover:scale-[1.02] ';
+        if (isHoje) classesDia += 'bg-gradient-to-br from-blue-900/60 to-blue-800/40 ring-2 ring-blue-500 shadow-lg shadow-blue-500/20 ';
+        else if (isFimDeSemana) classesDia += 'bg-dark-bg/30 ';
+        else classesDia += 'bg-dark-bg/50 hover:bg-dark-bg/70 ';
         
         html += `<div class="${classesDia}" onclick="abrirDetalhesDia('${dataStr}', ${dia})">`;
-        html += `<div class="text-sm font-bold mb-2 ${isHoje ? 'text-blue-400' : 'text-white'}">${dia}</div>`;
+        html += `<div class="flex justify-between items-center mb-2">
+            <span class="text-sm font-bold ${isHoje ? 'text-blue-400' : isFimDeSemana ? 'text-gray-500' : 'text-white'}">${dia}</span>
+            ${eventosDoDia.length > 0 ? `<span class="w-5 h-5 rounded-full bg-blue-500/30 text-blue-400 text-[10px] font-bold flex items-center justify-center">${eventosDoDia.length}</span>` : ''}
+        </div>`;
         
         if (eventosDoDia.length > 0) {
             html += '<div class="space-y-1.5 pointer-events-none">';
             eventosDoDia.slice(0, 3).forEach(evento => {
                 const consultorCor = getConsultorCor(evento.consultor_id);
-                const titulo = (evento.sigla_empresa || 'Empresa') + (evento.program_nome ? ` - ${evento.program_nome}` : '');
+                const corCat = CATEGORIA_CORES[evento.categoria]?.cor || '#6b7280';
+                const titulo = evento.sigla_empresa || 'Empresa';
+                const programa = evento.program_nome ? evento.program_nome.substring(0, 15) : '';
                 html += `
-                    <div class="flex items-center gap-1 p-1 rounded bg-dark-bg/80 border border-dark-border/30">
-                        <div class="w-4 h-4 rounded text-[8px] flex items-center justify-center text-white font-bold" style="background-color: ${consultorCor}">${getIniciais(evento.consultor_nome)}</div>
-                        <span class="text-[9px] text-gray-200 truncate flex-1">${titulo}</span>
+                    <div class="flex items-center gap-1.5 p-1.5 rounded-lg bg-dark-card/90 border border-dark-border/40 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="w-1 h-8 rounded-full flex-shrink-0" style="background-color: ${corCat}"></div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-1">
+                                <div class="w-5 h-5 rounded-md text-[9px] flex items-center justify-center text-white font-bold flex-shrink-0" style="background-color: ${consultorCor}">${getIniciais(evento.consultor_nome)}</div>
+                                <span class="text-[11px] text-white font-medium truncate">${titulo}</span>
+                            </div>
+                            ${programa ? `<div class="text-[9px] text-gray-400 truncate mt-0.5 pl-6">${programa}</div>` : ''}
+                        </div>
                     </div>
                 `;
             });
-            if (eventosDoDia.length > 3) html += `<div class="text-[9px] text-blue-400 text-center">+${eventosDoDia.length - 3} mais</div>`;
+            if (eventosDoDia.length > 3) html += `<div class="text-[10px] text-blue-400 text-center mt-1 font-medium">+${eventosDoDia.length - 3} mais</div>`;
             html += '</div>';
+        } else if (!isFimDeSemana) {
+            html += '<div class="text-[10px] text-gray-600 text-center mt-4 italic">Sem agendamentos</div>';
         }
         html += '</div>';
     }
@@ -493,43 +509,110 @@ function atualizarMetricasEvolucao() {
             if (!grupos[key]) {
                 grupos[key] = {
                     empresa: ev.empresa_nome || ev.sigla_empresa,
+                    sigla: ev.sigla_empresa || '',
                     programa: ev.program_nome,
+                    consultor: ev.consultor_nome,
+                    consultorId: ev.consultor_id,
                     total: 0,
-                    realizado: 0
+                    realizado: 0,
+                    proximaData: null
                 };
             }
             grupos[key].total++;
             const hoje = new Date();
-            const dataEv = new Date(ev.data + 'T23:59:59');
+            hoje.setHours(0, 0, 0, 0);
+            const dataEv = new Date(ev.data + 'T00:00:00');
             if (dataEv <= hoje) {
                 grupos[key].realizado++;
+            } else if (!grupos[key].proximaData || dataEv < new Date(grupos[key].proximaData + 'T00:00:00')) {
+                grupos[key].proximaData = ev.data;
             }
         }
     });
 
-    const lista = Object.values(grupos);
+    const lista = Object.values(grupos).sort((a, b) => {
+        const progA = (a.realizado / a.total) * 100;
+        const progB = (b.realizado / b.total) * 100;
+        return progA - progB;
+    });
+    
     if (lista.length === 0) {
-        container.innerHTML = '<div class="text-center py-4 text-gray-500 col-span-full">Nenhum programa vinculado encontrado.</div>';
+        container.innerHTML = `
+            <div class="col-span-full flex flex-col items-center justify-center py-8 text-center">
+                <div class="w-16 h-16 rounded-full bg-dark-card/50 flex items-center justify-center mb-4">
+                    <i class="fas fa-chart-line text-2xl text-gray-600"></i>
+                </div>
+                <p class="text-gray-500 text-sm">Nenhum programa vinculado encontrado</p>
+                <p class="text-gray-600 text-xs mt-1">Crie um agendamento com programa para ver a evolução</p>
+            </div>
+        `;
         return;
     }
 
     container.innerHTML = lista.map(item => {
         const porcentagem = Math.round((item.realizado / item.total) * 100);
+        const consultorCor = getConsultorCor(item.consultorId);
+        const proximaFormatada = item.proximaData ? new Date(item.proximaData + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : null;
+        
+        let statusCor = 'blue';
+        let statusTexto = 'Em andamento';
+        let statusIcon = 'fa-clock';
+        if (porcentagem === 100) {
+            statusCor = 'green';
+            statusTexto = 'Concluído';
+            statusIcon = 'fa-check-circle';
+        } else if (porcentagem === 0) {
+            statusCor = 'yellow';
+            statusTexto = 'Não iniciado';
+            statusIcon = 'fa-hourglass-start';
+        } else if (porcentagem >= 75) {
+            statusCor = 'emerald';
+            statusTexto = 'Finalizando';
+            statusIcon = 'fa-flag-checkered';
+        }
+        
         return `
-            <div class="p-4 rounded-xl bg-dark-card border border-dark-border/50 space-y-3">
+            <div class="p-4 rounded-xl bg-gradient-to-br from-dark-card to-dark-card/80 border border-dark-border/50 space-y-3 hover:border-${statusCor}-500/30 transition-all hover:shadow-lg hover:shadow-${statusCor}-500/5">
                 <div class="flex justify-between items-start gap-2">
                     <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-400 text-[10px] font-bold">${item.sigla || 'N/A'}</span>
+                            <span class="px-2 py-0.5 rounded-md bg-${statusCor}-500/20 text-${statusCor}-400 text-[10px] font-medium flex items-center gap-1">
+                                <i class="fas ${statusIcon} text-[8px]"></i>
+                                ${statusTexto}
+                            </span>
+                        </div>
                         <h4 class="text-sm font-bold text-white truncate">${item.empresa}</h4>
-                        <p class="text-[10px] text-gray-400 truncate">${item.programa}</p>
+                        <p class="text-xs text-gray-400 truncate flex items-center gap-1 mt-0.5">
+                            <i class="fas fa-book-open text-[10px]"></i>
+                            ${item.programa}
+                        </p>
                     </div>
-                    <span class="text-lg font-bold text-blue-400 ml-2">${porcentagem}%</span>
+                    <div class="text-right">
+                        <span class="text-2xl font-bold text-${statusCor}-400">${porcentagem}%</span>
+                    </div>
                 </div>
-                <div class="w-full h-2 bg-dark-bg rounded-full overflow-hidden border border-dark-border/30">
-                    <div class="h-full bg-blue-500 transition-all duration-500" style="width: ${porcentagem}%"></div>
+                
+                <div class="w-full h-2.5 bg-dark-bg rounded-full overflow-hidden border border-dark-border/30">
+                    <div class="h-full bg-gradient-to-r from-${statusCor}-600 to-${statusCor}-400 transition-all duration-700 ease-out rounded-full" style="width: ${porcentagem}%"></div>
                 </div>
-                <div class="flex justify-between text-[10px] text-gray-500">
-                    <span>${item.realizado} de ${item.total} sessões</span>
-                    <span>${item.total - item.realizado} restantes</span>
+                
+                <div class="flex justify-between items-center text-[11px]">
+                    <div class="flex items-center gap-2">
+                        <div class="w-5 h-5 rounded-md flex items-center justify-center text-white text-[9px] font-bold" style="background-color: ${consultorCor}">${getIniciais(item.consultor)}</div>
+                        <span class="text-gray-400">${item.realizado}/${item.total} sessões</span>
+                    </div>
+                    ${proximaFormatada ? `
+                        <span class="text-gray-500 flex items-center gap-1">
+                            <i class="fas fa-calendar text-[9px]"></i>
+                            Próx: ${proximaFormatada}
+                        </span>
+                    ` : porcentagem === 100 ? `
+                        <span class="text-green-400 flex items-center gap-1">
+                            <i class="fas fa-check text-[9px]"></i>
+                            Finalizado
+                        </span>
+                    ` : ''}
                 </div>
             </div>
         `;
