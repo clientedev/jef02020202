@@ -1,5 +1,5 @@
 from backend.models import Usuario, TipoUsuario, Stage, Prospeccao, Agendamento, StatusAgendamento
-from backend.models.cronograma import CronogramaProjeto, CronogramaEvento, CategoriaEvento, PeriodoEvento, StatusProjeto
+from backend.models.cronograma import CronogramaProjeto, CronogramaEvento, CategoriaEvento, PeriodoEvento, StatusProjeto, Program
 from backend.models.empresas import Empresa
 from backend.models.pipeline import CompanyPipeline, CompanyStageHistory, Note
 from backend.auth.security import obter_hash_senha
@@ -488,17 +488,29 @@ def criar_cronograma_fake(db: Session):
         print("⚠ Empresas ou consultores não encontrados")
         return
 
+    # Criar alguns programas
+    programas = [
+        Program(nome="Diagnóstico Empresarial", carga_horaria=40.0, descricao="Programa de diagnóstico completo"),
+        Program(nome="Mentoria de Gestão", carga_horaria=20.0, descricao="Mentoria individual para gestores"),
+    ]
+    for p in programas:
+        db.add(p)
+    db.commit()
+    for p in programas:
+        db.refresh(p)
+
     hoje = date.today()
     projetos = []
     
     for i, emp in enumerate(empresas[:3]):
         cons = consultores[i % len(consultores)]
+        prog = programas[i % len(programas)]
         proj = CronogramaProjeto(
             proposta=f"PROP-2024-{100+i}",
             empresa_id=emp.id,
             cnpj=emp.cnpj,
             sigla=emp.sigla,
-            solucao="Consultoria Estratégica",
+            solucao=prog.nome,
             consultor_id=cons.id,
             consultor_nome=cons.nome,
             data_inicio=hoje - timedelta(days=30),
@@ -508,7 +520,7 @@ def criar_cronograma_fake(db: Session):
             uf=emp.estado
         )
         db.add(proj)
-        projetos.append(proj)
+        projetos.append((proj, prog))
     
     db.commit()
     
@@ -516,7 +528,7 @@ def criar_cronograma_fake(db: Session):
     eventos = []
     categorias = list(CategoriaEvento)
     
-    for proj in projetos:
+    for proj, prog in projetos:
         # Eventos passados
         for d in range(1, 5):
             eventos.append(CronogramaEvento(
@@ -527,7 +539,8 @@ def criar_cronograma_fake(db: Session):
                 empresa_id=proj.empresa_id,
                 consultor_id=proj.consultor_id,
                 projeto_id=proj.id,
-                titulo=f"Atividade de Consultoria {proj.sigla}",
+                program_id=prog.id,
+                titulo=f"Atividade de {prog.nome}",
                 descricao="Execução de atividades planejadas"
             ))
         
@@ -541,7 +554,8 @@ def criar_cronograma_fake(db: Session):
                 empresa_id=proj.empresa_id,
                 consultor_id=proj.consultor_id,
                 projeto_id=proj.id,
-                titulo=f"Visita Técnica {proj.sigla}",
+                program_id=prog.id,
+                titulo=f"Visita Técnica {prog.nome}",
                 descricao="Acompanhamento presencial"
             ))
 

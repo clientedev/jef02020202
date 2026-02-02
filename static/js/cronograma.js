@@ -520,7 +520,7 @@ function atualizarMetricasEvolucao() {
             }
             grupos[key].total++;
             const hoje = new Date();
-            hoje.setHours(0, 0, 0, 0);
+            hoje.setHours(23, 59, 59, 999);
             const dataEv = new Date(ev.data + 'T00:00:00');
             if (dataEv <= hoje) {
                 grupos[key].realizado++;
