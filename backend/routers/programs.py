@@ -5,7 +5,7 @@ from datetime import date, timedelta
 from pydantic import BaseModel
 from backend.database import get_db
 from backend.models.cronograma import Program, CronogramaEvento, CategoriaEvento, PeriodoEvento
-from backend.routers.auth import get_current_user
+from backend.auth.security import obter_usuario_admin as get_current_user
 
 router = APIRouter(prefix="/api/programs", tags=["programs"])
 

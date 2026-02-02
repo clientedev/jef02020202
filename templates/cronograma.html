@@ -20,6 +20,9 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
+                    <button onclick="abrirModalProgramas()" class="w-9 h-9 rounded-xl bg-dark-card hover:bg-dark-hover text-gray-400 hover:text-white flex items-center justify-center transition" title="Programas">
+                        <i class="fas fa-list-check text-sm"></i>
+                    </button>
                     <button onclick="toggleFiltros()" class="lg:hidden w-9 h-9 rounded-xl bg-dark-card hover:bg-dark-hover text-gray-400 hover:text-white flex items-center justify-center transition">
                         <i class="fas fa-filter text-sm"></i>
                     </button>
@@ -293,4 +296,5 @@
 
 {% block scripts %}
 <script src="/static/js/cronograma.js"></script>
+<script src="/static/js/programs.js"></script>
 {% endblock %}
