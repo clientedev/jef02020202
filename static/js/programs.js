@@ -26,9 +26,26 @@ async function abrirModalProgramas() {
     const modal = document.getElementById('modalProgramas');
     if (modal) {
         modal.classList.remove('hidden');
-        await carregarProgramas();
+        await Promise.all([
+            carregarProgramas(),
+            carregarEmpresasParaProgramas()
+        ]);
     } else {
         console.error('Modal modalProgramas não encontrado no DOM');
+    }
+}
+
+async function carregarEmpresasParaProgramas() {
+    try {
+        const response = await apiRequest('/api/empresas/');
+        const empresas = await response.json();
+        const select = document.getElementById('progEmpresa');
+        if (select) {
+            select.innerHTML = '<option value="">Selecione uma empresa...</option>' + 
+                empresas.map(e => `<option value="${e.id}">${e.empresa}</option>`).join('');
+        }
+    } catch (error) {
+        console.error('Erro ao carregar empresas:', error);
     }
 }
 
@@ -86,10 +103,12 @@ const formProg = document.getElementById('formPrograma');
 if (formProg) {
     formProg.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const empresaId = document.getElementById('progEmpresa').value;
         const data = {
             nome: document.getElementById('progNome').value,
             carga_horaria: parseFloat(document.getElementById('progCarga').value),
-            descricao: document.getElementById('progDesc').value
+            descricao: document.getElementById('progDesc').value,
+            empresa_id: empresaId ? parseInt(empresaId) : null
         };
         
         try {

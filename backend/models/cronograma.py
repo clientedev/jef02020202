@@ -121,6 +121,8 @@ class Program(Base):
     nome = Column(String(200), nullable=False)
     carga_horaria = Column(Float, nullable=False)  # Horas totais do programa
     descricao = Column(Text)
+    empresa_id = Column(Integer, ForeignKey("empresas.id"), nullable=True)
     data_criacao = Column(DateTime, default=datetime.utcnow)
 
+    empresa = relationship("Empresa")
     eventos = relationship("CronogramaEvento", back_populates="program")
