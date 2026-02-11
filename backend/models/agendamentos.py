@@ -8,6 +8,7 @@ class StatusAgendamento(str, enum.Enum):
     pendente = "pendente"
     realizado = "realizado"
     vencido = "vencido"
+    reagendado = "reagendado"
 
 class Agendamento(Base):
     __tablename__ = "agendamentos"
@@ -18,5 +19,9 @@ class Agendamento(Base):
     status = Column(Enum(StatusAgendamento), default=StatusAgendamento.pendente)
     observacoes = Column(Text)
     data_criacao = Column(DateTime, default=datetime.utcnow)
+    
+    reagendado_de_id = Column(Integer, ForeignKey("agendamentos.id"), nullable=True)
+    reagendado_para_id = Column(Integer, ForeignKey("agendamentos.id"), nullable=True)
 
     prospeccao = relationship("Prospeccao", back_populates="agendamentos")
+    reagendado_de = relationship("Agendamento", remote_side=[id], foreign_keys=[reagendado_de_id], backref="reagendamentos_posteriores")

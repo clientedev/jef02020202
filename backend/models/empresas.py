@@ -37,3 +37,5 @@ class Empresa(Base):
     atribuicoes = relationship("AtribuicaoEmpresa", back_populates="empresa")
     cronograma_projetos = relationship("CronogramaProjeto", back_populates="empresa")
     pipeline_entries = relationship("CompanyPipeline", back_populates="empresa")
+    contatos = relationship("Contato", back_populates="empresa", cascade="all, delete-orphan")
+    historico = relationship("HistoricoEmpresa", back_populates="empresa", cascade="all, delete-orphan")

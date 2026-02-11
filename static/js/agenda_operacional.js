@@ -20,13 +20,13 @@ const MESES_CURTOS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'S
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof checkAuth !== 'undefined') checkAuth();
     if (typeof atualizarSidebar !== 'undefined') atualizarSidebar();
-    
+
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
     const diaSemana = hoje.getDay();
     dataInicioAgenda = new Date(hoje);
     dataInicioAgenda.setDate(hoje.getDate() - diaSemana - 7);
-    
+
     carregarDadosAgenda();
 });
 
@@ -34,22 +34,23 @@ async function carregarDadosAgenda() {
     try {
         const dataFim = new Date(dataInicioAgenda);
         dataFim.setDate(dataInicioAgenda.getDate() + DIAS_EXIBIR);
-        
+
         const params = new URLSearchParams({
             data_inicio: dataInicioAgenda.toISOString().split('T')[0],
             data_fim: dataFim.toISOString().split('T')[0]
         });
-        
+
         const [consultoresRes, eventosRes] = await Promise.all([
             apiRequest('/api/consultores/?page_size=100'),
             apiRequest(`/api/cronograma/eventos?${params}`)
         ]);
-        
+
         const consultoresData = await consultoresRes.json();
         consultoresAgenda = consultoresData.items || [];
         eventosAgenda = await eventosRes.json();
-        
+
         renderizarScheduler();
+        renderizarTabelaMetricas();
         atualizarPeriodoExibido();
     } catch (error) {
         console.error('Erro ao carregar dados:', error);
@@ -65,9 +66,9 @@ async function carregarDadosAgenda() {
 function atualizarPeriodoExibido() {
     const dataFim = new Date(dataInicioAgenda);
     dataFim.setDate(dataInicioAgenda.getDate() + DIAS_EXIBIR - 1);
-    
+
     const formatarData = (d) => `${d.getDate()} ${MESES_CURTOS[d.getMonth()]}`;
-    document.getElementById('periodoAtual').textContent = 
+    document.getElementById('periodoAtual').textContent =
         `${formatarData(dataInicioAgenda)} - ${formatarData(dataFim)} ${dataFim.getFullYear()}`;
 }
 
@@ -75,23 +76,23 @@ function renderizarScheduler() {
     const container = document.getElementById('schedulerGrid');
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
-    
+
     const datas = [];
     for (let i = 0; i < DIAS_EXIBIR; i++) {
         const d = new Date(dataInicioAgenda);
         d.setDate(dataInicioAgenda.getDate() + i);
         datas.push(d);
     }
-    
+
     const numCols = datas.length + 1;
-    
+
     let html = `<div class="scheduler-grid" style="grid-template-columns: 200px repeat(${datas.length}, minmax(90px, 1fr));">`;
-    
+
     html += `<div class="scheduler-corner scheduler-cell p-3 border-b-2 border-r-2 border-dark-border/50">
         <div class="text-sm font-bold text-white">CONSULTORES</div>
         <div class="text-[10px] text-gray-400">NIF / Período</div>
     </div>`;
-    
+
     let ultimoMes = -1;
     datas.forEach((data, idx) => {
         const diaSemana = data.getDay();
@@ -101,23 +102,23 @@ function renderizarScheduler() {
         const mesAtual = data.getMonth();
         const mostraMes = mesAtual !== ultimoMes;
         ultimoMes = mesAtual;
-        
+
         let classes = 'scheduler-header-cell scheduler-cell p-2 text-center border-b-2 border-dark-border/50 ';
         if (isHoje) classes += 'today-col ';
         if (isFimDeSemana) classes += 'weekend-col ';
         if (isInicioSemana && idx > 0) classes += 'week-separator ';
-        
+
         html += `<div class="${classes}">
             ${mostraMes ? `<div class="text-[9px] text-blue-400 font-bold uppercase">${MESES_CURTOS[mesAtual]}</div>` : ''}
             <div class="text-lg font-bold ${isHoje ? 'text-blue-400' : isFimDeSemana ? 'text-gray-500' : 'text-white'}">${data.getDate()}</div>
             <div class="text-[10px] ${isHoje ? 'text-blue-300' : isFimDeSemana ? 'text-gray-600' : 'text-gray-400'}">${DIAS_SEMANA[diaSemana]}</div>
         </div>`;
     });
-    
+
     consultoresAgenda.forEach(consultor => {
         const iniciais = getIniciaisAgenda(consultor.nome);
         const corConsultor = getCorConsultor(consultor.id);
-        
+
         html += `<div class="scheduler-row-header scheduler-cell p-3 border-r-2 border-dark-border/50 flex items-center gap-3">
             <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style="background-color: ${corConsultor}">
                 ${iniciais}
@@ -127,46 +128,49 @@ function renderizarScheduler() {
                 <div class="text-[10px] text-gray-400">${consultor.nif || ''}</div>
             </div>
         </div>`;
-        
+
         datas.forEach((data, idx) => {
             const dataStr = data.toISOString().split('T')[0];
             const diaSemana = data.getDay();
             const isHoje = data.getTime() === hoje.getTime();
             const isFimDeSemana = diaSemana === 0 || diaSemana === 6;
             const isInicioSemana = diaSemana === 0;
-            
-            const eventosCell = eventosAgenda.filter(e => 
+
+            const eventosCell = eventosAgenda.filter(e =>
                 e.consultor_id === consultor.id && e.data === dataStr
             );
-            
+
             let classes = 'scheduler-cell ';
             if (isHoje) classes += 'today-col ';
             if (isFimDeSemana) classes += 'weekend-col ';
             if (isInicioSemana && idx > 0) classes += 'week-separator ';
-            
+
             html += `<div class="${classes}">`;
-            
+
             if (eventosCell.length > 0) {
                 eventosCell.forEach(evento => {
                     const cat = CATEGORIA_CORES_AGENDA[evento.categoria] || CATEGORIA_CORES_AGENDA['O'];
                     const sigla = evento.sigla_empresa || 'N/A';
+                    const empresaPrimeiroNome = evento.empresa_nome ? evento.empresa_nome.split(' ')[0] : sigla;
+                    const consultorPrimeiroNome = evento.consultor_nome ? evento.consultor_nome.split(' ')[0] : 'N/A';
                     const programa = evento.program_nome ? evento.program_nome.substring(0, 12) : '';
-                    
+
                     html += `<div class="scheduler-cell-content" 
                         style="background-color: ${cat.cor}; color: ${cat.corTexto};"
                         onclick="mostrarDetalheEvento(${evento.id})"
                         onmouseenter="mostrarTooltip(event, ${evento.id})"
                         onmouseleave="esconderTooltip()">
-                        <div class="font-bold truncate">${evento.categoria}-${sigla}</div>
-                        ${programa ? `<div class="text-[8px] opacity-80 truncate">${programa}</div>` : ''}
+                        <div class="font-bold truncate text-[11px]">${empresaPrimeiroNome}</div>
+                        <div class="text-[9px] truncate opacity-90">${consultorPrimeiroNome}</div>
+                        ${programa ? `<div class="text-[8px] opacity-80 truncate border-t border-white/20 mt-1 pt-0.5">${programa}</div>` : ''}
                     </div>`;
                 });
             }
-            
+
             html += '</div>';
         });
     });
-    
+
     html += '</div>';
     container.innerHTML = html;
 }
@@ -205,15 +209,15 @@ function toggleLegenda() {
 function mostrarTooltip(event, eventoId) {
     const evento = eventosAgenda.find(e => e.id === eventoId);
     if (!evento) return;
-    
+
     const tooltip = document.getElementById('tooltipAgenda');
     const content = document.getElementById('tooltipContent');
     const cat = CATEGORIA_CORES_AGENDA[evento.categoria] || CATEGORIA_CORES_AGENDA['O'];
-    
+
     const dataFormatada = new Date(evento.data + 'T12:00:00').toLocaleDateString('pt-BR', {
         weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
     });
-    
+
     content.innerHTML = `
         <div class="space-y-2">
             <div class="flex items-center gap-2">
@@ -246,7 +250,7 @@ function mostrarTooltip(event, eventoId) {
             ` : ''}
         </div>
     `;
-    
+
     tooltip.style.left = `${event.pageX + 15}px`;
     tooltip.style.top = `${event.pageY + 10}px`;
     tooltip.classList.remove('hidden');
@@ -261,12 +265,12 @@ async function mostrarDetalheEvento(eventoId) {
         const response = await apiRequest(`/api/cronograma/eventos/${eventoId}`);
         if (!response.ok) throw new Error('Erro ao carregar evento');
         eventoSelecionado = await response.json();
-        
+
         const cat = CATEGORIA_CORES_AGENDA[eventoSelecionado.categoria] || CATEGORIA_CORES_AGENDA['O'];
         const dataFormatada = new Date(eventoSelecionado.data + 'T12:00:00').toLocaleDateString('pt-BR', {
             weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
         });
-        
+
         const content = document.getElementById('modalDetalheConteudo');
         content.innerHTML = `
             <div class="flex items-center gap-3 p-4 rounded-xl" style="background-color: ${cat.cor}20; border: 1px solid ${cat.cor}50;">
@@ -282,7 +286,7 @@ async function mostrarDetalheEvento(eventoId) {
             <div class="grid grid-cols-2 gap-4">
                 <div class="p-4 rounded-xl bg-dark-bg/50 border border-dark-border/30">
                     <div class="text-xs text-gray-400 mb-1">Empresa</div>
-                    <div class="text-white font-medium">${eventoSelecionado.empresa_nome || 'N/A'}</div>
+                    <div class="text-white font-medium text-lg leading-tight mb-0.5">${eventoSelecionado.empresa_nome || 'N/A'}</div>
                     <div class="text-blue-400 text-sm">${eventoSelecionado.sigla_empresa || ''}</div>
                 </div>
                 <div class="p-4 rounded-xl bg-dark-bg/50 border border-dark-border/30">
@@ -291,7 +295,7 @@ async function mostrarDetalheEvento(eventoId) {
                         <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs" style="background-color: ${getCorConsultor(eventoSelecionado.consultor_id)}">
                             ${getIniciaisAgenda(eventoSelecionado.consultor_nome)}
                         </div>
-                        <span class="text-white">${eventoSelecionado.consultor_nome || 'N/A'}</span>
+                        <span class="text-white font-medium text-lg">${eventoSelecionado.consultor_nome || 'N/A'}</span>
                     </div>
                 </div>
             </div>
@@ -310,15 +314,64 @@ async function mostrarDetalheEvento(eventoId) {
             </div>
             ` : ''}
             
-            <div class="flex items-center gap-2 text-xs text-gray-500">
+            <div class="flex items-center gap-2 text-xs text-gray-500 mb-4">
                 <i class="fas fa-clock"></i>
                 <span>Período: ${eventoSelecionado.periodo === 'D' ? 'Dia todo' : eventoSelecionado.periodo === 'M' ? 'Manhã' : 'Tarde'}</span>
             </div>
+
+            <div class="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30">
+                <div class="font-medium text-blue-400 mb-3 flex items-center gap-2">
+                    <i class="fas fa-calendar-alt"></i> Reagendar Atividade
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <input type="date" id="novaDataReagendamento" 
+                        class="bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                        value="${eventoSelecionado.data}">
+                    <button onclick="salvarReagendamento(${eventoSelecionado.id})" 
+                        class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition flex items-center justify-center gap-2">
+                        <i class="fas fa-save"></i> Confirmar Nova Data
+                    </button>
+                </div>
+            </div>
         `;
-        
+
         document.getElementById('modalDetalheEvento').classList.remove('hidden');
     } catch (error) {
         console.error('Erro:', error);
+    }
+}
+
+async function salvarReagendamento(id) {
+    const input = document.getElementById('novaDataReagendamento');
+    const novaData = input.value;
+
+    if (!novaData) return;
+
+    try {
+        const btn = event.target.closest('button');
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+        btn.disabled = true;
+
+        const response = await apiRequest(`/api/cronograma/eventos/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ data: novaData })
+        });
+
+        if (!response.ok) throw new Error('Erro ao reagendar');
+
+        showToast('Sucesso', 'Atividade reagendada com sucesso', 'success');
+        fecharModalDetalhe();
+        carregarDadosAgenda(); // Recarrega o grid
+
+    } catch (error) {
+        console.error('Erro:', error);
+        showToast('Erro', 'Não foi possível reagendar a atividade', 'error');
+        if (event.target.closest('button')) {
+            const btn = event.target.closest('button');
+            btn.innerHTML = originalContent;
+            btn.disabled = false;
+        }
     }
 }
 
@@ -331,4 +384,107 @@ function editarEventoAgenda() {
     if (eventoSelecionado) {
         window.location.href = `/cronograma?edit=${eventoSelecionado.id}`;
     }
+}
+
+function renderizarTabelaMetricas() {
+    const container = document.getElementById('metricsContainer');
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    let html = `
+    <div class="glass-effect rounded-xl overflow-hidden border border-dark-border/30">
+        <div class="bg-dark-card/50 px-6 py-4 border-b border-dark-border/30 flex justify-between items-center">
+            <h3 class="text-white font-bold text-lg"><i class="fas fa-chart-bar mr-2 text-blue-400"></i>Métricas por Consultor e Programa</h3>
+            <div class="text-xs text-gray-400">Total de horas no período selecionado</div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-dark-card/30 text-xs text-gray-400 uppercase border-b border-dark-border/30">
+                        <th class="px-6 py-3 font-semibold">Consultor</th>
+                         <th class="px-6 py-3 font-semibold">Programa</th>
+                        <th class="px-6 py-3 font-semibold text-center">Horas Programadas</th>
+                        <th class="px-6 py-3 font-semibold text-center">Horas Realizadas</th>
+                        <th class="px-6 py-3 font-semibold text-center">Saldo</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-dark-border/10 text-sm">
+    `;
+
+    consultoresAgenda.forEach(consultor => {
+        // Filtrar eventos deste consultor
+        const eventosConsultor = eventosAgenda.filter(e => e.consultor_id === consultor.id);
+
+        // Agrupar por programa
+        const programasMap = new Map();
+
+        eventosConsultor.forEach(evento => {
+            const progNome = evento.program_nome || 'Sem Programa';
+
+            if (!programasMap.has(progNome)) {
+                programasMap.set(progNome, { programmed: 0, realized: 0 });
+            }
+
+            const stats = programasMap.get(progNome);
+
+            // Calcular horas
+            let horasEvento = 0;
+            if (evento.periodo === 'D') horasEvento = 8;
+            else if (evento.periodo === 'M' || evento.periodo === 'T') horasEvento = 4;
+
+            stats.programmed += horasEvento;
+
+            // Check realized
+            const [ano, mes, dia] = evento.data.split('-').map(Number);
+            const dataEvento = new Date(ano, mes - 1, dia);
+            if (dataEvento <= hoje) {
+                stats.realized += horasEvento;
+            }
+        });
+
+        // Se o consultor não tem eventos, ignorar (ou mostrar zerado se preferir)
+        if (programasMap.size === 0) {
+            // Optional: Show a row with 0 hours
+            return;
+        }
+
+        const corConsultor = getCorConsultor(consultor.id);
+
+        // Iterar sobre os programas e gerar linhas
+        let firstRow = true;
+
+        programasMap.forEach((stats, progNome) => {
+            const saldo = stats.programmed - stats.realized;
+
+            html += `
+            <tr class="hover:bg-dark-hover/50 transition duration-150">
+                <td class="px-6 py-3 font-medium text-white">
+                    ${firstRow ? `
+                    <div class="flex items-center gap-3">
+                         <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs" style="background-color: ${corConsultor}">
+                            ${getIniciaisAgenda(consultor.nome)}
+                        </div>
+                        ${consultor.nome}
+                    </div>` : ''}
+                </td>
+                <td class="px-6 py-3 font-medium ${progNome === 'Sem Programa' ? 'text-gray-500 italic' : 'text-green-400'}">
+                    ${progNome}
+                </td>
+                <td class="px-6 py-3 text-center text-blue-300 font-medium">${stats.programmed}h</td>
+                <td class="px-6 py-3 text-center text-green-400 font-medium">${stats.realized}h</td>
+                <td class="px-6 py-3 text-center text-gray-400">${saldo}h</td>
+            </tr>
+            `;
+            firstRow = false;
+        });
+    });
+
+    html += `
+                </tbody>
+            </table>
+        </div>
+    </div>
+    `;
+
+    container.innerHTML = html;
 }

@@ -349,7 +349,9 @@ def obter_evento(
     usuario: Usuario = Depends(obter_usuario_atual)
 ):
     evento = db.query(CronogramaEvento).options(
-        joinedload(CronogramaEvento.consultor)
+        joinedload(CronogramaEvento.consultor),
+        joinedload(CronogramaEvento.empresa),
+        joinedload(CronogramaEvento.program)
     ).filter(CronogramaEvento.id == evento_id).first()
     
     if not evento:
@@ -357,6 +359,11 @@ def obter_evento(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Evento nao encontrado"
         )
+    
+    # Manually populate the additional fields for response
+    evento.empresa_nome = evento.empresa.empresa if evento.empresa else None
+    evento.consultor_nome = evento.consultor.nome if evento.consultor else None
+    evento.program_nome = evento.program.nome if evento.program else None
     
     return evento
 
@@ -450,3 +457,78 @@ def listar_categorias(
         {"codigo": k, "nome": v["nome"], "cor": v["cor"]}
         for k, v in CATEGORIA_CORES.items()
     ]
+@router.get("/evolution")
+def obter_evolucao(
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(obter_usuario_atual)
+):
+    from sqlalchemy import func
+    from backend.models import Program, CronogramaEvento, Empresa
+    
+    # Query to fetch all events with programs, eager load related entities
+    eventos = db.query(CronogramaEvento).options(
+        joinedload(CronogramaEvento.program),
+        joinedload(CronogramaEvento.empresa),
+        joinedload(CronogramaEvento.consultor)
+    ).filter(CronogramaEvento.program_id.isnot(None)).all()
+    
+    # Process in Python (easier for complex grouping logic)
+    grupos = {}
+    hoje = date.today()
+    
+    for evento in eventos:
+        key = f"{evento.empresa_id}-{evento.program_id}"
+        if key not in grupos:
+            grupos[key] = {
+                "empresa": evento.empresa.empresa if evento.empresa else (evento.sigla_empresa or "N/A"),
+                "sigla": evento.sigla_empresa or (evento.empresa.sigla if evento.empresa else ""),
+                "programa": evento.program.nome,
+                "consultor": evento.consultor.nome if evento.consultor else "N/A",
+                "consultor_id": evento.consultor_id,
+                "total": 0,
+                "realizado": 0,
+                "proxima_data": None
+            }
+        
+        grupos[key]["total"] += 1
+        
+        if evento.data <= hoje:
+            grupos[key]["realizado"] += 1
+        elif grupos[key]["proxima_data"] is None or evento.data < grupos[key]["proxima_data"]:
+            grupos[key]["proxima_data"] = evento.data
+            
+    # Convert to list and sort by progress
+    resultado = list(grupos.values())
+    resultado.sort(key=lambda x: (x["realizado"] / x["total"]) if x["total"] > 0 else 0)
+    
+    return resultado
+
+
+@router.get("/metrics")
+def obter_metricas(
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(obter_usuario_atual)
+):
+    from sqlalchemy import func
+    from backend.models import Program, CronogramaEvento
+    
+    # Metrics by Program
+    metrics_program = db.query(
+        Program.nome,
+        func.count(CronogramaEvento.id).label("total_atendimentos"),
+        func.count(func.distinct(CronogramaEvento.data)).label("dias_atendidos"),
+        func.count(func.distinct(CronogramaEvento.empresa_id)).label("empresas_atendidas")
+    ).join(CronogramaEvento, Program.id == CronogramaEvento.program_id).group_by(Program.nome).all()
+    
+    # Metrics by Consultant
+    metrics_consultant = db.query(
+        Usuario.nome,
+        func.count(CronogramaEvento.id).label("total_atendimentos"),
+        func.count(func.distinct(CronogramaEvento.data)).label("dias_atendidos"),
+        func.count(func.distinct(CronogramaEvento.empresa_id)).label("empresas_atendidas")
+    ).join(CronogramaEvento, Usuario.id == CronogramaEvento.consultor_id).group_by(Usuario.nome).all()
+    
+    return {
+        "programas": [dict(m._mapping) for m in metrics_program],
+        "consultores": [dict(m._mapping) for m in metrics_consultant]
+    }

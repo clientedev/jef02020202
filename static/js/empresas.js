@@ -16,28 +16,33 @@ async function carregarEmpresas(filtros = {}, pagina = 1) {
     try {
         paginaAtual = pagina;
         filtrosAtuais = filtros;
-        
+
         let url = `/api/empresas/?page=${pagina}&page_size=${itensPorPagina}`;
         if (filtros.nome) url += `&nome=${filtros.nome}`;
         if (filtros.cnpj) url += `&cnpj=${filtros.cnpj}`;
         if (filtros.municipio) url += `&municipio=${filtros.municipio}`;
         if (filtros.er) url += `&er=${filtros.er}`;
         if (filtros.carteira) url += `&carteira=${filtros.carteira}`;
-        
+
         const response = await apiRequest(url);
         const data = await response.json();
-        
+
         const tbody = document.getElementById('tabelaEmpresas');
-        
+
         if (!data.items || data.items.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-400">Nenhuma empresa encontrada</td></tr>';
-            atualizarPaginacao({total_count: 0, page: 1, page_size: itensPorPagina, total_pages: 0});
+            atualizarPaginacao({ total_count: 0, page: 1, page_size: itensPorPagina, total_pages: 0 });
             return;
         }
-        
+
         tbody.innerHTML = data.items.map(emp => `
             <tr class="hover:bg-dark-hover">
-                <td class="px-6 py-4 text-gray-300">${emp.empresa}</td>
+                <td class="px-6 py-4 text-gray-300">
+                    <a href="/empresa/${emp.id}" class="text-white hover:text-blue-400 font-medium transition flex items-center gap-2">
+                        ${emp.empresa}
+                        <i class="fas fa-external-link-alt text-[10px] opacity-50"></i>
+                    </a>
+                </td>
                 <td class="px-6 py-4 text-gray-300">${emp.cnpj || '-'}</td>
                 <td class="px-6 py-4 text-gray-300">${emp.municipio || '-'}</td>
                 <td class="px-6 py-4 text-gray-300">${emp.er || '-'}</td>
@@ -62,11 +67,11 @@ async function carregarEmpresas(filtros = {}, pagina = 1) {
                 </td>
             </tr>
         `).join('');
-        
+
         atualizarPaginacao(data);
     } catch (error) {
         console.error('Erro ao carregar empresas:', error);
-        document.getElementById('tabelaEmpresas').innerHTML = 
+        document.getElementById('tabelaEmpresas').innerHTML =
             '<tr><td colspan="6" class="px-6 py-8 text-center text-red-400">Erro ao carregar empresas</td></tr>';
     }
 }
@@ -74,35 +79,35 @@ async function carregarEmpresas(filtros = {}, pagina = 1) {
 function atualizarPaginacao(data) {
     const info = document.getElementById('paginacaoInfo');
     const controles = document.getElementById('paginacaoControles');
-    
+
     if (!info || !controles) return;
-    
+
     if (data.total_count === 0) {
         info.textContent = 'Nenhuma empresa encontrada';
         controles.innerHTML = '';
         return;
     }
-    
+
     const inicio = (data.page - 1) * data.page_size + 1;
     const fim = Math.min(data.page * data.page_size, data.total_count);
-    
+
     info.textContent = `Mostrando ${inicio} a ${fim} de ${data.total_count} empresas`;
-    
+
     let botoesHTML = '';
-    
+
     if (data.page > 1) {
         botoesHTML += `<button onclick="carregarEmpresas(filtrosAtuais, 1)" class="px-3 py-1 bg-dark-card text-gray-300 rounded hover:bg-dark-hover">Primeira</button>`;
         botoesHTML += `<button onclick="carregarEmpresas(filtrosAtuais, ${data.page - 1})" class="px-3 py-1 bg-dark-card text-gray-300 rounded hover:bg-dark-hover">Anterior</button>`;
     }
-    
+
     const maxBotoes = 5;
     let inicioPagina = Math.max(1, data.page - Math.floor(maxBotoes / 2));
     let fimPagina = Math.min(data.total_pages, inicioPagina + maxBotoes - 1);
-    
+
     if (fimPagina - inicioPagina < maxBotoes - 1) {
         inicioPagina = Math.max(1, fimPagina - maxBotoes + 1);
     }
-    
+
     for (let i = inicioPagina; i <= fimPagina; i++) {
         if (i === data.page) {
             botoesHTML += `<button class="px-3 py-1 bg-blue-600 text-white rounded">${i}</button>`;
@@ -110,12 +115,12 @@ function atualizarPaginacao(data) {
             botoesHTML += `<button onclick="carregarEmpresas(filtrosAtuais, ${i})" class="px-3 py-1 bg-dark-card text-gray-300 rounded hover:bg-dark-hover">${i}</button>`;
         }
     }
-    
+
     if (data.page < data.total_pages) {
         botoesHTML += `<button onclick="carregarEmpresas(filtrosAtuais, ${data.page + 1})" class="px-3 py-1 bg-dark-card text-gray-300 rounded hover:bg-dark-hover">Próxima</button>`;
         botoesHTML += `<button onclick="carregarEmpresas(filtrosAtuais, ${data.total_pages})" class="px-3 py-1 bg-dark-card text-gray-300 rounded hover:bg-dark-hover">Última</button>`;
     }
-    
+
     controles.innerHTML = botoesHTML;
 }
 
@@ -150,7 +155,7 @@ function hideNovaEmpresaModal() {
 
 document.getElementById('novaEmpresaForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     const empresa = {
         empresa: document.getElementById('empresa').value,
         cnpj: document.getElementById('cnpj').value || null,
@@ -169,17 +174,17 @@ document.getElementById('novaEmpresaForm').addEventListener('submit', async (e) 
         telefone_contato: document.getElementById('telefone_contato').value || null,
         email_contato: document.getElementById('email_contato').value || null
     };
-    
+
     try {
         const response = await apiRequest('/api/empresas/', {
             method: 'POST',
             body: JSON.stringify(empresa)
         });
-        
+
         if (response.ok) {
             const resultado = await response.json();
             const empresaId = resultado.id || resultado.empresa_id;
-            
+
             if (empresaId) {
                 alert('Empresa cadastrada com sucesso!');
                 hideNovaEmpresaModal();
@@ -210,18 +215,18 @@ function hideUploadExcelModal() {
 
 document.getElementById('uploadExcelForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     const fileInput = document.getElementById('excelFile');
     const file = fileInput.files[0];
-    
+
     if (!file) {
         alert('Selecione um arquivo');
         return;
     }
-    
+
     const formData = new FormData();
     formData.append('file', file);
-    
+
     try {
         const response = await fetch('/api/empresas/upload-excel', {
             method: 'POST',
@@ -230,11 +235,11 @@ document.getElementById('uploadExcelForm').addEventListener('submit', async (e) 
             },
             body: formData
         });
-        
+
         const result = await response.json();
-        
+
         if (!response.ok) throw new Error(result.detail || 'Erro no upload');
-        
+
         const resultDiv = document.getElementById('uploadResult');
         resultDiv.className = 'bg-green-900/30 border border-green-500 text-green-300 p-4 rounded';
         resultDiv.innerHTML = `
@@ -246,7 +251,7 @@ document.getElementById('uploadExcelForm').addEventListener('submit', async (e) 
             </ul>
         `;
         resultDiv.classList.remove('hidden');
-        
+
         setTimeout(() => {
             hideUploadExcelModal();
             carregarEmpresas();
@@ -267,15 +272,15 @@ async function abrirDetalhesEmpresa(empresaId) {
             <div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
     `;
-    
+
     try {
         const response = await apiRequest(`/api/empresas/${empresaId}`);
         if (!response.ok) {
             throw new Error('Erro ao carregar dados da empresa');
         }
-        
+
         const emp = await response.json();
-        
+
         document.getElementById('detalhesEmpresaContent').innerHTML = `
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="space-y-4">
@@ -430,9 +435,9 @@ async function abrirEditarEmpresa(empresaId) {
         if (!response.ok) {
             throw new Error('Erro ao carregar dados da empresa');
         }
-        
+
         const empresa = await response.json();
-        
+
         document.getElementById('edit_empresa_id').value = empresa.id;
         document.getElementById('edit_empresa').value = empresa.empresa || '';
         document.getElementById('edit_cnpj').value = empresa.cnpj || '';
@@ -456,7 +461,7 @@ async function abrirEditarEmpresa(empresaId) {
         document.getElementById('edit_telefone_contato').value = empresa.telefone_contato || '';
         document.getElementById('edit_email_contato').value = empresa.email_contato || '';
         document.getElementById('edit_observacao').value = empresa.observacao || '';
-        
+
         document.getElementById('editarEmpresaModal').classList.remove('hidden');
     } catch (error) {
         console.error('Erro ao carregar empresa:', error);
@@ -471,9 +476,9 @@ function hideEditarEmpresaModal() {
 
 document.getElementById('editarEmpresaForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     const empresaId = document.getElementById('edit_empresa_id').value;
-    
+
     const empresaData = {
         empresa: document.getElementById('edit_empresa').value,
         cnpj: document.getElementById('edit_cnpj').value || null,
@@ -498,13 +503,13 @@ document.getElementById('editarEmpresaForm').addEventListener('submit', async (e
         email_contato: document.getElementById('edit_email_contato').value || null,
         observacao: document.getElementById('edit_observacao').value || null
     };
-    
+
     try {
         const response = await apiRequest(`/api/empresas/${empresaId}`, {
             method: 'PUT',
             body: JSON.stringify(empresaData)
         });
-        
+
         if (response.ok) {
             alert('Empresa atualizada com sucesso!');
             hideEditarEmpresaModal();
@@ -523,12 +528,12 @@ async function confirmarExcluirEmpresa(empresaId, empresaNome) {
     if (!confirm(`Tem certeza que deseja excluir a empresa "${empresaNome}"?\n\nEsta ação não pode ser desfeita.`)) {
         return;
     }
-    
+
     try {
         const response = await apiRequest(`/api/empresas/${empresaId}`, {
             method: 'DELETE'
         });
-        
+
         if (response.ok) {
             alert('Empresa excluída com sucesso!');
             carregarEmpresas(filtrosAtuais, paginaAtual);

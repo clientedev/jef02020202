@@ -263,3 +263,75 @@ async def upload_excel(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro ao processar arquivo: {str(e)}"
         )
+@router.get("/{empresa_id}/historico")
+def obter_historico_empresa(
+    empresa_id: int,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(obter_usuario_atual)
+):
+    from backend.models.historico import HistoricoEmpresa
+    from backend.models.usuarios import Usuario
+    
+    historico = db.query(HistoricoEmpresa).join(Usuario).filter(
+        HistoricoEmpresa.empresa_id == empresa_id
+    ).order_by(HistoricoEmpresa.data.desc()).all()
+    
+    return [
+        {
+            "id": h.id,
+            "data": h.data,
+            "tipo_acao": h.tipo_acao,
+            "detalhes": h.detalhes,
+            "usuario_nome": h.usuario.nome
+        } for h in historico
+    ]
+
+@router.get("/{empresa_id}/programas")
+def obter_programas_empresa(
+    empresa_id: int,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(obter_usuario_atual)
+):
+    from backend.models import CronogramaEvento, Program
+    from sqlalchemy import func
+    
+    # Busca eventos da empresa agrupados por programa
+    eventos = db.query(
+        Program.nome,
+        CronogramaEvento.program_id,
+        func.count(CronogramaEvento.id).label("total"),
+        func.min(CronogramaEvento.data).label("primeira_sessao"),
+        func.max(CronogramaEvento.data).label("ultima_sessao")
+    ).join(Program).filter(
+        CronogramaEvento.empresa_id == empresa_id
+    ).group_by(CronogramaEvento.program_id, Program.nome).all()
+    
+    resultados = []
+    hoje = datetime.now().strftime("%Y-%m-%d")
+    
+    for ev in eventos:
+        # Calcular realizados e próxima data
+        total = ev.total
+        
+        realizados = db.query(func.count(CronogramaEvento.id)).filter(
+            CronogramaEvento.empresa_id == empresa_id,
+            CronogramaEvento.program_id == ev.program_id,
+            CronogramaEvento.data <= hoje
+        ).scalar()
+        
+        proxima = db.query(CronogramaEvento.data).filter(
+            CronogramaEvento.empresa_id == empresa_id,
+            CronogramaEvento.program_id == ev.program_id,
+            CronogramaEvento.data > hoje
+        ).order_by(CronogramaEvento.data).first()
+        
+        resultados.append({
+            "nome": ev.nome,
+            "total_sessoes": total,
+            "sessoes_realizadas": realizados,
+            "progresso": round((realizados / total) * 100) if total > 0 else 0,
+            "proxima_sessao": proxima[0] if proxima else None,
+            "status": "Concluído" if realizados == total else "Em Andamento"
+        })
+        
+    return resultados

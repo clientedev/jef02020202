@@ -6,17 +6,18 @@
 {% block content %}
 <div class="flex h-screen">
     {% include "partials/sidebar.html" %}
-    
+
     <main class="flex-1 overflow-y-auto">
         <header class="sticky top-0 z-10 glass-effect border-b border-dark-border/50 px-4 sm:px-6 py-4">
             <div class="flex items-center gap-3">
-                <button onclick="toggleMobileSidebar()" class="mobile-menu-btn w-10 h-10 rounded-xl bg-dark-card hover:bg-dark-hover items-center justify-center text-gray-400 hover:text-white transition">
+                <button onclick="toggleMobileSidebar()"
+                    class="mobile-menu-btn w-10 h-10 rounded-xl bg-dark-card hover:bg-dark-hover items-center justify-center text-gray-400 hover:text-white transition">
                     <i class="fas fa-bars"></i>
                 </button>
                 <h2 class="text-xl sm:text-2xl font-semibold text-white truncate" id="empresaNome">Carregando...</h2>
             </div>
         </header>
-        
+
         <div class="p-4 sm:p-6">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 <div class="glass-effect rounded-2xl border border-dark-border/50 p-4 sm:p-6">
@@ -28,18 +29,43 @@
                         <p>Carregando informações...</p>
                     </div>
                 </div>
-                
+
                 <div class="glass-effect rounded-2xl border border-dark-border/50 p-4 sm:p-6">
-                    <h3 class="text-lg sm:text-xl font-semibold text-white mb-4 flex items-center gap-2">
-                        <i class="fas fa-history text-purple-400"></i>
-                        Histórico de Prospecções
-                    </h3>
-                    <div id="historicoProspeccoes" class="space-y-3">
-                        <p class="text-gray-400 text-sm sm:text-base">Carregando histórico...</p>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg sm:text-xl font-semibold text-white flex items-center gap-2">
+                            <i class="fas fa-address-book text-orange-400"></i>
+                            Contatos
+                        </h3>
+                        <button onclick="abrirModalContato()" class="btn-primary py-1 px-3 text-sm rounded-lg">
+                            <i class="fas fa-plus mr-1"></i> Novo
+                        </button>
+                    </div>
+                    <div id="listaContatos" class="space-y-3">
+                        <p class="text-gray-400 text-sm sm:text-base">Carregando contatos...</p>
                     </div>
                 </div>
             </div>
-            
+
+            <div class="mt-4 sm:mt-6 glass-effect rounded-2xl border border-dark-border/50 p-4 sm:p-6">
+                <h3 class="text-lg sm:text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-stream text-purple-400"></i>
+                    Linha do Tempo (Histórico)
+                </h3>
+                <div id="linhaDoTempo" class="space-y-4">
+                    <p class="text-gray-400 text-sm sm:text-base">Carregando histórico...</p>
+                </div>
+            </div>
+
+            <div class="mt-4 sm:mt-6 glass-effect rounded-2xl border border-dark-border/50 p-4 sm:p-6">
+                <h3 class="text-lg sm:text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-chart-pie text-pink-400"></i>
+                    Programas em Andamento
+                </h3>
+                <div id="programasEmpresa" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <p class="text-gray-400 text-sm sm:text-base col-span-full">Carregando programas...</p>
+                </div>
+            </div>
+
             <div class="mt-4 sm:mt-6 glass-effect rounded-2xl border border-dark-border/50 p-4 sm:p-6">
                 <h3 class="text-lg sm:text-xl font-semibold text-white mb-4 flex items-center gap-2">
                     <i class="fas fa-calendar-alt text-emerald-400"></i>

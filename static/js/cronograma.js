@@ -21,8 +21,8 @@ const CONSULTOR_CORES = [
     '#EF4444', '#6366F1', '#84CC16', '#F97316', '#14B8A6'
 ];
 
-const MESES = ['Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho', 
-               'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+const MESES = ['Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
 function getConsultorCor(consultorId) {
     return CONSULTOR_CORES[consultorId % CONSULTOR_CORES.length];
@@ -43,15 +43,15 @@ function getPrimeiroNome(nome) {
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof checkAuth !== 'undefined') checkAuth();
     if (typeof atualizarSidebar !== 'undefined') atualizarSidebar();
-    
+
     const hoje = new Date();
     const filtroMesAno = document.getElementById('filtroMesAno');
     if (filtroMesAno) {
         filtroMesAno.value = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
     }
-    
+
     carregarDados();
-    
+
     const formEvento = document.getElementById('formEvento');
     if (formEvento) formEvento.addEventListener('submit', salvarEvento);
 
@@ -102,7 +102,7 @@ function selecionarEmpresaParaEvento(id, nome, sigla) {
     const eid = document.getElementById('eventoEmpresaId');
     const sig = document.getElementById('eventoSigla');
     const sug = document.getElementById('listaSugestoesEmpresa');
-    
+
     if (bus) bus.value = nome;
     if (eid) eid.value = id;
     if (sig) sig.value = sigla;
@@ -116,14 +116,14 @@ async function carregarDados() {
             carregarCategorias()
         ]);
         await carregarEventos();
-        
+
         const timelineActive = document.getElementById('timelineDesktop') && !document.getElementById('timelineDesktop').classList.contains('hidden');
         const listActive = document.getElementById('listaDesktop') && !document.getElementById('listaDesktop').classList.contains('hidden');
-        
+
         if (timelineActive) renderizarTimeline();
         else if (listActive) renderizarLista();
         else renderizarCalendario();
-        
+
     } catch (error) {
         console.error('Erro ao carregar dados:', error);
     }
@@ -134,13 +134,13 @@ async function carregarConsultores() {
         const response = await apiRequest('/api/consultores/?page_size=100');
         const data = await response.json();
         consultores = data.items || [];
-        
+
         const selectFiltro = document.getElementById('filtroConsultor');
         const selectEvento = document.getElementById('eventoConsultor');
-        
+
         if (selectFiltro) selectFiltro.innerHTML = '<option value="">Todos os consultores</option>';
         if (selectEvento) selectEvento.innerHTML = '<option value="">Selecione o consultor...</option>';
-        
+
         consultores.forEach(c => {
             if (selectFiltro) {
                 const opt = document.createElement('option');
@@ -199,41 +199,41 @@ function renderizarCalendario() {
     if (!container) return;
     const mesAnoAtual = document.getElementById('mesAnoAtual');
     if (mesAnoAtual) mesAnoAtual.textContent = `${MESES[mesAtual]} ${anoAtual}`;
-    
+
     const primeiroDia = new Date(anoAtual, mesAtual, 1);
     const ultimoDia = new Date(anoAtual, mesAtual + 1, 0);
     const diasNoMes = ultimoDia.getDate();
     const diaSemanaInicio = primeiroDia.getDay();
-    
+
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
-    
+
     let html = '';
     for (let i = 0; i < diaSemanaInicio; i++) {
         html += '<div class="min-h-[120px] bg-dark-bg/30 rounded-lg"></div>';
     }
-    
+
     for (let dia = 1; dia <= diasNoMes; dia++) {
         const dataStr = new Date(anoAtual, mesAtual, dia).toISOString().split('T')[0];
         const eventosDoDia = eventos.filter(e => e.data === dataStr);
         const isHoje = new Date(dataStr + 'T12:00:00').getTime() === hoje.getTime();
         const diaSemana = new Date(anoAtual, mesAtual, dia).getDay();
         const isFimDeSemana = diaSemana === 0 || diaSemana === 6;
-        
+
         const hasAlterado = eventosDoDia.some(e => e.alterado);
-        
+
         let classesDia = 'min-h-[140px] rounded-xl p-2.5 transition cursor-pointer hover:ring-2 hover:ring-blue-500/50 hover:scale-[1.02] ';
         if (isHoje) classesDia += 'bg-gradient-to-br from-blue-900/60 to-blue-800/40 ring-2 ring-blue-500 shadow-lg shadow-blue-500/20 ';
         else if (hasAlterado) classesDia += 'bg-red-900/20 border-2 border-red-500/50 ';
         else if (isFimDeSemana) classesDia += 'bg-dark-bg/30 ';
         else classesDia += 'bg-dark-bg/50 hover:bg-dark-bg/70 ';
-        
+
         html += `<div class="${classesDia}" onclick="abrirDetalhesDia('${dataStr}', ${dia})">`;
         html += `<div class="flex justify-between items-center mb-2">
             <span class="text-sm font-bold ${isHoje ? 'text-blue-400' : isFimDeSemana ? 'text-gray-500' : 'text-white'}">${dia}</span>
             ${eventosDoDia.length > 0 ? `<span class="w-5 h-5 rounded-full bg-blue-500/30 text-blue-400 text-[10px] font-bold flex items-center justify-center">${eventosDoDia.length}</span>` : ''}
         </div>`;
-        
+
         if (eventosDoDia.length > 0) {
             html += '<div class="space-y-1.5 pointer-events-none">';
             eventosDoDia.slice(0, 3).forEach(evento => {
@@ -246,12 +246,13 @@ function renderizarCalendario() {
                     <div class="flex items-center gap-1.5 p-1.5 rounded-lg bg-dark-card/90 border ${evento.alterado ? 'border-red-500/50' : 'border-dark-border/40'} shadow-sm hover:shadow-md transition-shadow">
                         <div class="w-1 h-8 rounded-full flex-shrink-0" style="background-color: ${corCat}"></div>
                         <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-1">
-                                <div class="w-5 h-5 rounded-md text-[9px] flex items-center justify-center text-white font-bold flex-shrink-0" style="background-color: ${consultorCor}">${getIniciais(evento.consultor_nome)}</div>
-                                <span class="text-[11px] text-white font-bold truncate">${titulo}</span>
+                            <div class="font-bold text-[11px] text-white truncate" title="${evento.empresa_nome || evento.sigla_empresa}">${evento.empresa_nome || evento.sigla_empresa}</div>
+                             <div class="flex items-center gap-1 mt-0.5">
+                                <div class="w-4 h-4 rounded-md text-[8px] flex items-center justify-center text-white font-bold flex-shrink-0" style="background-color: ${consultorCor}">${getIniciais(evento.consultor_nome)}</div>
+                                <span class="text-[10px] text-gray-300 truncate" title="${evento.consultor_nome}">${evento.consultor_nome}</span>
                                 ${alteradoBadge}
                             </div>
-                            ${programa ? `<div class="text-[9px] text-blue-400 font-medium truncate mt-0.5 pl-6">${programa}</div>` : ''}
+                            ${programa ? `<div class="text-[9px] text-blue-400 font-medium truncate mt-0.5 border-t border-white/10 pt-0.5">${programa}</div>` : ''}
                         </div>
                     </div>
                 `;
@@ -271,11 +272,11 @@ function setVisualizacao(tipo) {
     const cal = document.getElementById('calendarioDesktop');
     const list = document.getElementById('listaDesktop');
     const timeline = document.getElementById('timelineDesktop');
-    
+
     if (cal) cal.classList.add('hidden');
     if (list) list.classList.add('hidden');
     if (timeline) timeline.classList.add('hidden');
-    
+
     if (tipo === 'calendario') {
         if (cal) cal.classList.remove('hidden');
         renderizarCalendario();
@@ -291,14 +292,14 @@ function setVisualizacao(tipo) {
 function renderizarLista() {
     const container = document.getElementById('listaDesktop');
     if (!container) return;
-    
+
     const eventosOrdenados = [...eventos].sort((a, b) => new Date(a.data) - new Date(b.data));
-    
+
     if (eventosOrdenados.length === 0) {
         container.innerHTML = '<div class="text-center py-10 text-gray-500">Nenhum evento agendado para este período.</div>';
         return;
     }
-    
+
     let html = `
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
@@ -312,7 +313,7 @@ function renderizarLista() {
                 </thead>
                 <tbody class="text-sm">
     `;
-    
+
     eventosOrdenados.forEach(e => {
         const dataFormatada = new Date(e.data + 'T12:00:00').toLocaleDateString('pt-BR');
         html += `
@@ -335,7 +336,7 @@ function renderizarLista() {
             </tr>
         `;
     });
-    
+
     html += '</tbody></table></div>';
     container.innerHTML = html;
     atualizarMetricasEvolucao();
@@ -344,11 +345,11 @@ function renderizarLista() {
 function renderizarTimeline() {
     const container = document.getElementById('timelineDesktop');
     if (!container) return;
-    
+
     const primeiroDia = new Date(anoAtual, mesAtual, 1);
     const ultimoDia = new Date(anoAtual, mesAtual + 1, 0);
     const diasNoMes = ultimoDia.getDate();
-    
+
     let html = `
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse table-fixed min-w-[1200px]">
@@ -356,13 +357,13 @@ function renderizarTimeline() {
                     <tr class="border-b border-dark-border/50 text-gray-400 text-[10px]">
                         <th class="py-3 px-4 w-[200px] sticky left-0 bg-dark-card z-10">CONSULTOR</th>
     `;
-    
+
     for (let d = 1; d <= diasNoMes; d++) {
         html += `<th class="py-3 text-center border-l border-dark-border/30">${d}</th>`;
     }
-    
+
     html += '</tr></thead><tbody class="text-[10px]">';
-    
+
     consultores.forEach(c => {
         html += `
             <tr class="border-b border-dark-border/20 group">
@@ -375,11 +376,11 @@ function renderizarTimeline() {
                     </div>
                 </td>
         `;
-        
+
         for (let d = 1; d <= diasNoMes; d++) {
             const dataStr = new Date(anoAtual, mesAtual, d).toISOString().split('T')[0];
             const ev = eventos.find(e => e.consultor_id === c.id && e.data === dataStr);
-            
+
             if (ev) {
                 const corCat = CATEGORIA_CORES[ev.categoria]?.cor || '#6b7280';
                 html += `
@@ -399,7 +400,7 @@ function renderizarTimeline() {
         }
         html += '</tr>';
     });
-    
+
     html += '</tbody></table></div>';
     container.innerHTML = html;
     atualizarMetricasEvolucao();
@@ -412,14 +413,14 @@ function abrirDetalhesDia(data, dia) {
     } else {
         const inputData = document.getElementById('eventoData');
         if (inputData) inputData.value = data;
-        
+
         // Limpar campos de empresa antes de abrir para novo agendamento
         const inputEmpresaId = document.getElementById('eventoEmpresaId');
         if (inputEmpresaId) inputEmpresaId.value = '';
-        
+
         const inputBusca = document.getElementById('eventoBuscaEmpresa');
         if (inputBusca) inputBusca.value = '';
-        
+
         const inputSigla = document.getElementById('eventoSigla');
         if (inputSigla) inputSigla.value = '';
 
@@ -433,10 +434,10 @@ async function exibirDetalhesAgendamento(id) {
         const response = await apiRequest(`/api/cronograma/eventos/${id}`);
         if (!response.ok) throw new Error('Falha ao carregar evento');
         const evento = await response.json();
-        
+
         const conteudo = document.getElementById('conteudoDetalhesEvento');
         const btnEditar = document.getElementById('btnEditarDesdeDetalhes');
-        
+
         if (btnEditar) {
             btnEditar.onclick = () => {
                 fecharModalDetalhes();
@@ -495,6 +496,12 @@ async function exibirDetalhesAgendamento(id) {
                     </div>
                 </div>
                 ` : ''}
+                <div class="p-4 border-t border-dark-border/30 mt-4 flex gap-2">
+                    <button onclick="reagendarAgendamento(${evento.id})" class="flex-1 py-2 bg-orange-500/20 text-orange-400 rounded-lg font-bold hover:bg-orange-500/30 transition text-xs">
+                        <i class="fas fa-calendar-plus mr-1"></i> REAGENDAR
+                    </button>
+                    <button onclick="fecharModalDetalhes()" class="px-4 py-2 bg-dark-card text-gray-400 rounded-lg text-xs">Fechar</button>
+                </div>
             `;
         }
 
@@ -508,126 +515,39 @@ function fecharModalDetalhes() {
     document.getElementById('modalDetalhesEvento').classList.add('hidden');
 }
 
-function atualizarMetricasEvolucao() {
-    const container = document.getElementById('metricasEvolucao');
-    if (!container) return;
 
-    const grupos = {};
-    eventos.forEach(ev => {
-        if (ev.program_id && ev.empresa_id) {
-            const key = `${ev.empresa_id}-${ev.program_id}`;
-            if (!grupos[key]) {
-                grupos[key] = {
-                    empresa: ev.empresa_nome || ev.sigla_empresa,
-                    sigla: ev.sigla_empresa || '',
-                    programa: ev.program_nome,
-                    consultor: ev.consultor_nome,
-                    consultorId: ev.consultor_id,
-                    total: 0,
-                    realizado: 0,
-                    proximaData: null
-                };
-            }
-            grupos[key].total++;
-            const hoje = new Date();
-            hoje.setHours(23, 59, 59, 999);
-            const dataEv = new Date(ev.data + 'T00:00:00');
-            if (dataEv <= hoje) {
-                grupos[key].realizado++;
-            } else if (!grupos[key].proximaData || dataEv < new Date(grupos[key].proximaData + 'T00:00:00')) {
-                grupos[key].proximaData = ev.data;
-            }
+
+async function reagendarAgendamento(agendamentoId) {
+    const novaDataStr = prompt("Informe a nova data (AAAA-MM-DD):");
+    if (!novaDataStr) return;
+
+    const observacoes = prompt("Observações do reagendamento:");
+
+    try {
+        const response = await fetch(`/api/agendamentos/${agendamentoId}/reagendar?nova_data=${novaDataStr}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                nova_data: novaDataStr,
+                observacoes: observacoes
+            })
+        });
+
+        if (response.ok) {
+            alert("Agendamento reagendado com sucesso!");
+            carregarEventos();
+            renderizarCalendario();
+        } else {
+            const err = await response.json();
+            alert("Erro ao reagendar: " + (err.detail || "Erro desconhecido"));
         }
-    });
-
-    const lista = Object.values(grupos).sort((a, b) => {
-        const progA = (a.realizado / a.total) * 100;
-        const progB = (b.realizado / b.total) * 100;
-        return progA - progB;
-    });
-    
-    if (lista.length === 0) {
-        container.innerHTML = `
-            <div class="col-span-full flex flex-col items-center justify-center py-8 text-center">
-                <div class="w-16 h-16 rounded-full bg-dark-card/50 flex items-center justify-center mb-4">
-                    <i class="fas fa-chart-line text-2xl text-gray-600"></i>
-                </div>
-                <p class="text-gray-500 text-sm">Nenhum programa vinculado encontrado</p>
-                <p class="text-gray-600 text-xs mt-1">Crie um agendamento com programa para ver a evolução</p>
-            </div>
-        `;
-        return;
+    } catch (error) {
+        console.error('Erro ao reagendar:', error);
     }
-
-    container.innerHTML = lista.map(item => {
-        const porcentagem = Math.round((item.realizado / item.total) * 100);
-        const consultorCor = getConsultorCor(item.consultorId);
-        const proximaFormatada = item.proximaData ? new Date(item.proximaData + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : null;
-        
-        let statusCor = 'blue';
-        let statusTexto = 'Em andamento';
-        let statusIcon = 'fa-clock';
-        if (porcentagem === 100) {
-            statusCor = 'green';
-            statusTexto = 'Concluído';
-            statusIcon = 'fa-check-circle';
-        } else if (porcentagem === 0) {
-            statusCor = 'yellow';
-            statusTexto = 'Não iniciado';
-            statusIcon = 'fa-hourglass-start';
-        } else if (porcentagem >= 75) {
-            statusCor = 'emerald';
-            statusTexto = 'Finalizando';
-            statusIcon = 'fa-flag-checkered';
-        }
-        
-        return `
-            <div class="p-4 rounded-xl bg-gradient-to-br from-dark-card to-dark-card/80 border border-dark-border/50 space-y-3 hover:border-${statusCor}-500/30 transition-all hover:shadow-lg hover:shadow-${statusCor}-500/5">
-                <div class="flex justify-between items-start gap-2">
-                    <div class="min-w-0 flex-1">
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-400 text-[10px] font-bold">${item.sigla || 'N/A'}</span>
-                            <span class="px-2 py-0.5 rounded-md bg-${statusCor}-500/20 text-${statusCor}-400 text-[10px] font-medium flex items-center gap-1">
-                                <i class="fas ${statusIcon} text-[8px]"></i>
-                                ${statusTexto}
-                            </span>
-                        </div>
-                        <h4 class="text-sm font-bold text-white truncate">${item.empresa}</h4>
-                        <p class="text-xs text-gray-400 truncate flex items-center gap-1 mt-0.5">
-                            <i class="fas fa-book-open text-[10px]"></i>
-                            ${item.programa}
-                        </p>
-                    </div>
-                    <div class="text-right">
-                        <span class="text-2xl font-bold text-${statusCor}-400">${porcentagem}%</span>
-                    </div>
-                </div>
-                
-                <div class="w-full h-2.5 bg-dark-bg rounded-full overflow-hidden border border-dark-border/30">
-                    <div class="h-full bg-gradient-to-r from-${statusCor}-600 to-${statusCor}-400 transition-all duration-700 ease-out rounded-full" style="width: ${porcentagem}%"></div>
-                </div>
-                
-                <div class="flex justify-between items-center text-[11px]">
-                    <div class="flex items-center gap-2">
-                        <div class="w-5 h-5 rounded-md flex items-center justify-center text-white text-[9px] font-bold" style="background-color: ${consultorCor}">${getIniciais(item.consultor)}</div>
-                        <span class="text-gray-400">${item.realizado}/${item.total} sessões</span>
-                    </div>
-                    ${proximaFormatada ? `
-                        <span class="text-gray-500 flex items-center gap-1">
-                            <i class="fas fa-calendar text-[9px]"></i>
-                            Próx: ${proximaFormatada}
-                        </span>
-                    ` : porcentagem === 100 ? `
-                        <span class="text-green-400 flex items-center gap-1">
-                            <i class="fas fa-check text-[9px]"></i>
-                            Finalizado
-                        </span>
-                    ` : ''}
-                </div>
-            </div>
-        `;
-    }).join('');
 }
+
+// Hooks para inicializar as métricas
+
 
 async function editarEvento(id) {
     if (!id) return;
@@ -635,10 +555,10 @@ async function editarEvento(id) {
         const response = await apiRequest(`/api/cronograma/eventos/${id}`);
         if (!response.ok) throw new Error('Falha ao carregar evento');
         const evento = await response.json();
-        
+
         const form = document.getElementById('formEvento');
         if (form) form.reset();
-        
+
         const setVal = (id, val) => {
             const el = document.getElementById(id);
             if (el) el.value = val || '';
@@ -652,10 +572,10 @@ async function editarEvento(id) {
         setVal('eventoSigla', evento.sigla_empresa || '');
         setVal('eventoCategoria', evento.categoria);
         setVal('eventoDescricao', evento.descricao || '');
-        
+
         const campoProg = document.getElementById('campoEventoPrograma');
         const selectProg = document.getElementById('eventoPrograma');
-        
+
         if (evento.program_nome && campoProg && selectProg) {
             campoProg.classList.remove('hidden');
             selectProg.innerHTML = `<option value="${evento.program_id}">${evento.program_nome}</option>`;
@@ -664,10 +584,10 @@ async function editarEvento(id) {
             campoProg.classList.add('hidden');
             selectProg.disabled = false;
         }
-        
+
         const configDist = document.getElementById('configuracaoDistribuicao');
         if (configDist) configDist.classList.add('hidden');
-        
+
         const modal = document.getElementById('modalEvento');
         if (modal) modal.classList.remove('hidden');
     } catch (e) {
@@ -697,11 +617,11 @@ async function salvarEvento(e) {
         }
         return;
     }
-    
+
     if (programId) {
         const diasCheckboxes = document.querySelectorAll('input[name="eventoDiasSemana"]:checked');
         if (diasCheckboxes.length === 0) { alert('Selecione os dias'); return; }
-        
+
         const dadosAuto = {
             program_id: parseInt(programId),
             consultor_id: parseInt(document.getElementById('eventoConsultor').value),
@@ -710,7 +630,7 @@ async function salvarEvento(e) {
             dias_semana: Array.from(diasCheckboxes).map(cb => parseInt(cb.value)),
             horas_por_dia: parseFloat(document.getElementById('eventoHorasDia').value || 8)
         };
-        
+
         const response = await apiRequest('/api/programs/auto-schedule', { method: 'POST', body: JSON.stringify(dadosAuto) });
         if (response.ok) {
             fecharModalEvento(); await carregarEventos(); await carregarDados();
@@ -744,25 +664,25 @@ function abrirModalNovoEvento() {
     }
     const form = document.getElementById('formEvento');
     if (form) form.reset();
-    
+
     const inputId = document.getElementById('eventoId');
     if (inputId) inputId.value = '';
-    
+
     const inputEmpresaId = document.getElementById('eventoEmpresaId');
     if (inputEmpresaId) inputEmpresaId.value = '';
-    
+
     const inputBusca = document.getElementById('eventoBuscaEmpresa');
     if (inputBusca) inputBusca.value = '';
-    
+
     const cp = document.getElementById('campoEventoPrograma');
     if (cp) cp.classList.remove('hidden');
-    
+
     const sp = document.getElementById('eventoPrograma');
     if (sp) sp.disabled = false;
-    
+
     const cd = document.getElementById('configuracaoDistribuicao');
     if (cd) cd.classList.remove('hidden');
-    
+
     carregarProgramasNoEvento();
     modal.classList.remove('hidden');
 }
@@ -777,7 +697,7 @@ async function carregarProgramasNoEvento() {
     try {
         const response = await apiRequest('/api/programs/');
         const programs = await response.json();
-        select.innerHTML = '<option value="">Selecione um programa...</option>' + 
+        select.innerHTML = '<option value="">Selecione um programa...</option>' +
             programs.map(p => `<option value="${p.id}">${p.nome}</option>`).join('');
     } catch (e) { console.error(e); }
 }
@@ -799,9 +719,9 @@ function irParaHoje() {
     carregarDados();
 }
 
-function renderizarCalendarioMobile() {}
-function atualizarResumo() {}
-function renderizarLegendaConsultores() {}
+function renderizarCalendarioMobile() { }
+function atualizarResumo() { }
+function renderizarLegendaConsultores() { }
 function aplicarFiltros() { carregarDados(); }
 function limparFiltros() {
     const fc = document.getElementById('filtroConsultor');

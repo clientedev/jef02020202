@@ -24,9 +24,13 @@ if DATABASE_URL:
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     print("✅ Configuração do banco de dados concluída")
 else:
-    print("⚠️ DATABASE_URL não configurada - usando configuração lazy")
-    engine = None
-    SessionLocal = None
+    print("⚠️ DATABASE_URL não configurada - usando SQLite local (temp.db)")
+    DATABASE_URL = "sqlite:///./temp.db"
+    engine = create_engine(
+        DATABASE_URL, connect_args={"check_same_thread": False}
+    )
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    print("✅ SQLite configurado com sucesso")
 
 def get_db():
     if SessionLocal is None:

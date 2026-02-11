@@ -167,6 +167,10 @@ class CronogramaEventoResposta(CronogramaEventoBase):
     data_original: Optional[date] = None
     alterado: int = 0
     consultor: Optional[ConsultorSimples] = None
+    
+    empresa_nome: Optional[str] = None
+    consultor_nome: Optional[str] = None
+    program_nome: Optional[str] = None
 
 
 class EventoCalendario(BaseModel):

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
-from typing import List
+from typing import List, Optional
 from datetime import datetime, date
 from backend.database import get_db
 from backend.models import Agendamento, Prospeccao, Usuario, StatusAgendamento
@@ -111,3 +111,47 @@ def atualizar_agendamento(
     db.commit()
     db.refresh(agendamento)
     return agendamento
+@router.post("/{agendamento_id}/reagendar", response_model=AgendamentoResposta)
+def reagendar_agendamento(
+    agendamento_id: int,
+    nova_data: datetime,
+    observacoes: Optional[str] = None,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(obter_usuario_atual)
+):
+    agendamento_antigo = db.query(Agendamento).filter(Agendamento.id == agendamento_id).first()
+    if not agendamento_antigo:
+        raise HTTPException(status_code=404, detail="Agendamento não encontrado")
+    
+    # Create new agendamento
+    novo_agendamento = Agendamento(
+        prospeccao_id=agendamento_antigo.prospeccao_id,
+        data_agendada=nova_data,
+        status=StatusAgendamento.pendente,
+        observacoes=observacoes or agendamento_antigo.observacoes,
+        reagendado_de_id=agendamento_antigo.id
+    )
+    db.add(novo_agendamento)
+    db.flush() # Get ID
+    
+    # Update old agendamento
+    agendamento_antigo.status = StatusAgendamento.reagendado
+    agendamento_antigo.reagendado_para_id = novo_agendamento.id
+    
+    # Log to history
+    from backend.models.historico import HistoricoEmpresa
+    from backend.models.prospeccoes import Prospeccao
+    
+    prospeccao = db.query(Prospeccao).filter(Prospeccao.id == agendamento_antigo.prospeccao_id).first()
+    if prospeccao:
+        historico = HistoricoEmpresa(
+            empresa_id=prospeccao.empresa_id,
+            usuario_id=usuario.id,
+            tipo_acao="Reagendamento",
+            detalhes=f"Reagendado de {agendamento_antigo.data_agendada} para {nova_data}. Motivo: {observacoes or 'Não informado'}"
+        )
+        db.add(historico)
+    
+    db.commit()
+    db.refresh(novo_agendamento)
+    return novo_agendamento
