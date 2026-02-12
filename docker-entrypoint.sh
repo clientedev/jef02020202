@@ -1,17 +1,9 @@
 #!/bin/bash
 set -e
 
-echo "========================================="
-echo "Nucleo 1.03 - Railway Quick Start"
-echo "========================================="
+echo "Starting Application with Uvicorn..."
 
-# Set default port
 PORT="${PORT:-8000}"
-# Run database initialization
-echo "Running database initialization script..."
-python pre_start.py || echo "Warning: Database initialization script failed, continuing anyway..."
-
-echo "Starting Application with Uvicorn on port $PORT..."
 
 exec uvicorn main:app \
     --host 0.0.0.0 \
