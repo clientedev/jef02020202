@@ -12,3 +12,4 @@ def fix_line_endings(filename):
 if __name__ == "__main__":
     fix_line_endings('docker-entrypoint.sh')
     fix_line_endings('main_ghost.py')
+    fix_line_endings('start.sh')

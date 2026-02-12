@@ -19,7 +19,15 @@ fi
 
 # Definir porta - Railway define automaticamente via variável PORT
 export PORT="${PORT:-8000}"
+# Remove any non-digit characters from PORT (sanitization)
+export PORT=$(echo $PORT | tr -cd '0-9')
+
 echo "PORT: $PORT"
+
+if [ -z "$PORT" ]; then
+  echo "ERROR: PORT is empty after sanitization"
+  exit 1
+fi
 
 # Iniciar servidor diretamente com configurações otimizadas para Railway
 echo ""
@@ -30,7 +38,7 @@ echo "========================================="
 # Usar exec para que o processo uvicorn receba os sinais diretamente
 exec python -m uvicorn main:app \
     --host 0.0.0.0 \
-    --port "$PORT" \
+    --port $PORT \
     --log-level info \
     --no-access-log \
     --timeout-keep-alive 30
