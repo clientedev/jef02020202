@@ -29,16 +29,17 @@ if [ -z "$PORT" ]; then
   exit 1
 fi
 
-# Iniciar servidor diretamente com configurações otimizadas para Railway
+# Iniciar servidor com Gunicorn (Produção)
 echo ""
 echo "========================================="
-echo "Iniciando servidor Uvicorn na porta $PORT..."
+echo "Iniciando Gunicorn (Uvicorn Worker) na porta $PORT..."
+echo "Workers: 2 | Timeout: 120s"
 echo "========================================="
 
-# Usar exec para que o processo uvicorn receba os sinais diretamente
-exec python -m uvicorn main:app \
-    --host 0.0.0.0 \
-    --port $PORT \
-    --log-level info \
-    --no-access-log \
-    --timeout-keep-alive 30
+exec gunicorn main:app \
+    --bind "0.0.0.0:$PORT" \
+    --workers 2 \
+    --worker-class uvicorn.workers.UvicornWorker \
+    --timeout 120 \
+    --access-logfile - \
+    --error-logfile -
