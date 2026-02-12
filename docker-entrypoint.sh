@@ -7,6 +7,10 @@ echo "========================================="
 
 # Set default port
 PORT="${PORT:-8000}"
+# Run database initialization
+echo "Running database initialization script..."
+python pre_start.py || echo "Warning: Database initialization script failed, continuing anyway..."
+
 echo "Starting Application with Uvicorn on port $PORT..."
 
 exec uvicorn main:app \

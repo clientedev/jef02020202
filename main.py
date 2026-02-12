@@ -66,6 +66,10 @@ def deferred_startup(app_instance):
         for r in routers:
             app_instance.include_router(r)
 
+        # 2d. Auto-init DB in background (if not already done by prestart)
+        from pre_start import init_db
+        init_db()
+
         is_fully_loaded = True
         print("✅ [HYPERSONIC] Sistema pronto para uso!")
         
