@@ -24,16 +24,8 @@ COPY . .
 # Create uploads directory
 RUN mkdir -p static/uploads
 
-# Make entrypoint executable
-RUN chmod +x docker-entrypoint.sh
+# Make scripts executable
+RUN chmod +x start.sh
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PORT=8000
-
-# Expose port (documentation only)
-EXPOSE ${PORT}
-
-# Run entrypoint script
-ENTRYPOINT ["./docker-entrypoint.sh"]
+# Run startup script
+ENTRYPOINT ["./start.sh"]
