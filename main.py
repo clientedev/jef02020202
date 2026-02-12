@@ -262,51 +262,9 @@ def adicionar_colunas_faltantes_eventos():
 
 @app.on_event("startup")
 async def startup_event():
-    """Cria tabelas se necessário e executa seed de dados iniciais"""
-    import os
-    import threading
-    
-    # Executa a inicialização em uma thread separada para não bloquear o loop de eventos
-    # Isso permite que /health responda imediatamente
-    def init_db():
-        if engine is None:
-            return
-        
-        try:
-            print("Verificando banco de dados...")
-            Base.metadata.create_all(bind=engine)
-            print("Tabelas verificadas/criadas")
-            
-            # Adiciona colunas faltantes (fallback para quando não se usa Alembic direto)
-            adicionar_colunas_faltantes_empresas()
-            adicionar_colunas_faltantes_contatos()
-            adicionar_colunas_faltantes_prospeccoes()
-            adicionar_colunas_faltantes_eventos()
-            criar_tabela_prospeccoes_historico()
-            
-            db = SessionLocal()
-            try:
-                print("🔄 Iniciando seed de dados iniciais...")
-                criar_usuario_admin_padrao(db)
-                criar_consultores_padrao(db)
-                criar_empresas_padrao(db)
-                criar_stages_padrao(db)
-                popular_pipeline(db)
-                criar_prospeccoes_padrao(db)
-                atualizar_prospeccoes_sem_codigo(db)
-                print("✅ Seed de dados concluído")
-            except Exception as e:
-                print(f"⚠️ Erro no seed: {e}")
-            finally:
-                db.close()
-        except Exception as e:
-            print(f"❌ Erro fatal na inicialização: {e}")
-
-    # Inicia a thread de inicialização
-    thread = threading.Thread(target=init_db)
-    thread.daemon = True
-    thread.start()
-    print("🚀 Processo de inicialização do banco iniciado em background")
+    """Startup event - DB initialization disabled to ensure fast boot on Railway"""
+    print("🚀 Aplicação iniciada (Inicialização de banco via startup desativada)")
+    # Para criar as tabelas remotamente, use os scripts de seed separadamente
 
 app.add_middleware(
     CORSMiddleware,
