@@ -1,27 +1,31 @@
 from fastapi import FastAPI, Request
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from backend.database import SessionLocal, Base, engine
+from fastapi.responses import JSONResponse
 
 app = FastAPI(title="Núcleo 1.03", version="1.0.0")
 
-# --- EARLY ENDPOINTS (Health and Setup) ---
-# Register these before routers to ensure availability even if a router fails to load
-
 @app.get("/health")
 async def health_check():
-    """Health check endpoint - must respond quickly and independently of database state"""
+    """Ultra-fast health check - no dependencies"""
     return JSONResponse(
-        content={
-            "status": "healthy", 
-            "app": "Nucleo 1.03",
-            "version": "1.0.0"
-        }, 
-        status_code=200,
-        headers={"Cache-Control": "no-cache"}
+        content={"status": "healthy", "version": "1.0.0"}, 
+        status_code=200
     )
+
+# Defer all other imports to ensure the app boots instantly
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
+import os
+
+# Now import our modules
+try:
+    from backend.database import SessionLocal, Base, engine
+except Exception as e:
+    print(f"⚠️ Warning: Database initialization deferred or failed: {e}")
+    SessionLocal = None
+    Base = None
+    engine = None
 
 @app.get("/setup-db")
 async def setup_db_endpoint():

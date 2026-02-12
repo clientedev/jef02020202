@@ -7,12 +7,11 @@ echo "========================================="
 
 # Set default port
 PORT="${PORT:-8000}"
-echo "Starting Application on port $PORT..."
+echo "Starting Application with Uvicorn on port $PORT..."
 
-exec gunicorn main:app \
-    --bind "0.0.0.0:$PORT" \
-    --workers 2 \
-    --worker-class uvicorn.workers.UvicornWorker \
-    --timeout 120 \
-    --access-logfile - \
-    --error-logfile -
+exec uvicorn main:app \
+    --host 0.0.0.0 \
+    --port "$PORT" \
+    --workers 1 \
+    --timeout-keep-alive 60 \
+    --log-level info
