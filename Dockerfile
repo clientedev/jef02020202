@@ -32,9 +32,8 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PORT=8000
 
-# Health check using curl (kept in image)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:${PORT}/health || exit 1
+# Expose port (documentation only)
+EXPOSE ${PORT}
 
 # Run entrypoint script
 ENTRYPOINT ["./docker-entrypoint.sh"]
