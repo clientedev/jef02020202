@@ -16,4 +16,3 @@ reportlab==4.0.8
 httpx==0.26.0
 alembic==1.13.1
 python-magic==0.4.27
-starlette==0.35.1
