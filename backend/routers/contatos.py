@@ -155,6 +155,8 @@ async def importar_contatos(
             continue
             
         cnpj = get_val(row, 'CNPJ')
+        if cnpj:
+            cnpj = cnpj[:50]
         
         # Buscar ou criar empresa
         empresa_nome_search = empresa_nome.strip()
@@ -172,9 +174,9 @@ async def importar_contatos(
             empresa_id=empresa.id,
             nome=contato_nome,
             email=get_val(row, 'EMAIL', 'E-MAIL'),
-            celular=get_val(row, 'CELULAR'),
-            celular2=get_val(row, 'CELULAR2'),
-            telefone_fixo=get_val(row, 'TELEFONE FIXO', 'TELEFONE'),
+            celular=(get_val(row, 'CELULAR') or "")[:50],
+            celular2=(get_val(row, 'CELULAR2') or "")[:50],
+            telefone_fixo=(get_val(row, 'TELEFONE FIXO', 'TELEFONE') or "")[:50],
             cargo=get_val(row, 'CARGO'),
             ponto_focal=is_true(get_val(row, 'PONTO FOCAL')),
             proprietario_socio=is_true(get_val(row, 'PROPRIETÁRIO / SÓCIO', 'PROPRIETARIO', 'SOCIO')),
