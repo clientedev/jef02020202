@@ -8,16 +8,22 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 Base = declarative_base()
 
 if DATABASE_URL:
-    print(f"Conectando ao banco de dados...")
+    # SQLAlchemy 1.4+ requires postgresql+psycopg2:// for Postgres
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
+    elif DATABASE_URL.startswith("postgresql://"):
+        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
+        
+    print(f"Conectando ao banco de dados: {DATABASE_URL.split('@')[-1]}")
     
-    # Configurações para melhor compatibilidade com Railway/Postgres
     engine = create_engine(
         DATABASE_URL,
         pool_pre_ping=True,
         pool_recycle=300,
+        pool_size=10,
+        max_overflow=20,
         connect_args={
-            "connect_timeout": 10,
-            "options": "-c timezone=utc"
+            "connect_timeout": 30
         }
     )
     

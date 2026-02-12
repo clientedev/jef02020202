@@ -235,11 +235,6 @@ async def health_check():
         headers={"Cache-Control": "no-cache"}
     )
 
-@app.get("/healthz")
-async def healthz():
-    """Alternative health check endpoint for Kubernetes/Railway compatibility"""
-    return {"status": "ok"}
-
 def adicionar_colunas_faltantes_eventos():
     """Adiciona colunas faltantes à tabela cronograma_eventos se não existirem"""
     from sqlalchemy import text
@@ -269,11 +264,49 @@ def adicionar_colunas_faltantes_eventos():
 async def startup_event():
     """Cria tabelas se necessário e executa seed de dados iniciais"""
     import os
+    import threading
     
-    # Skip if running via Docker (entrypoint already handled this)
-    if os.getenv("SKIP_STARTUP_SEED") == "true":
-        print("✅ Startup seed skipped (handled by entrypoint)")
-        return
+    # Executa a inicialização em uma thread separada para não bloquear o loop de eventos
+    # Isso permite que /health responda imediatamente
+    def init_db():
+        if engine is None:
+            return
+        
+        try:
+            print("Verificando banco de dados...")
+            Base.metadata.create_all(bind=engine)
+            print("Tabelas verificadas/criadas")
+            
+            # Adiciona colunas faltantes (fallback para quando não se usa Alembic direto)
+            adicionar_colunas_faltantes_empresas()
+            adicionar_colunas_faltantes_contatos()
+            adicionar_colunas_faltantes_prospeccoes()
+            adicionar_colunas_faltantes_eventos()
+            criar_tabela_prospeccoes_historico()
+            
+            db = SessionLocal()
+            try:
+                print("🔄 Iniciando seed de dados iniciais...")
+                criar_usuario_admin_padrao(db)
+                criar_consultores_padrao(db)
+                criar_empresas_padrao(db)
+                criar_stages_padrao(db)
+                popular_pipeline(db)
+                criar_prospeccoes_padrao(db)
+                atualizar_prospeccoes_sem_codigo(db)
+                print("✅ Seed de dados concluído")
+            except Exception as e:
+                print(f"⚠️ Erro no seed: {e}")
+            finally:
+                db.close()
+        except Exception as e:
+            print(f"❌ Erro fatal na inicialização: {e}")
+
+    # Inicia a thread de inicialização
+    thread = threading.Thread(target=init_db)
+    thread.daemon = True
+    thread.start()
+    print("🚀 Processo de inicialização do banco iniciado em background")
     
     if engine is None:
         print("⚠️ DATABASE_URL não configurada - pulando inicialização do banco")
@@ -403,10 +436,6 @@ app.include_router(programs.router)
 app.include_router(contatos.router)
 app.include_router(formularios_router)
 app.include_router(formularios_public_router)
-
-@app.get("/health")
-async def health_check():
-    return {"status": "ok", "version": "1.0.0"}
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
