@@ -404,6 +404,10 @@ app.include_router(contatos.router)
 app.include_router(formularios_router)
 app.include_router(formularios_public_router)
 
+@app.get("/health")
+async def health_check():
+    return {"status": "ok", "version": "1.0.0"}
+
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
