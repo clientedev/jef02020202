@@ -7,40 +7,43 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 Base = declarative_base()
 
-if DATABASE_URL:
-    # SQLAlchemy 1.4+ requires postgresql+psycopg2:// for Postgres
-    if DATABASE_URL.startswith("postgres://"):
-        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
-    elif DATABASE_URL.startswith("postgresql://"):
-        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
+# Lazy loaded objects
+engine = None
+SessionLocal = None
+
+def get_engine():
+    global engine, SessionLocal
+    if engine is not None:
+        return engine
+    
+    url = DATABASE_URL
+    if not url:
+        url = "sqlite:///./temp.db"
+    
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql+psycopg2://", 1)
+    elif url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
         
-    print(f"Conectando ao banco de dados: {DATABASE_URL.split('@')[-1]}")
+    print(f"🚀 [INIT] Database engine starting with URL: {url.split('@')[-1]}")
     
     engine = create_engine(
-        DATABASE_URL,
+        url,
         pool_pre_ping=True,
         pool_recycle=300,
-        pool_size=10,
-        max_overflow=20,
-        connect_args={
-            "connect_timeout": 30
-        }
+        pool_size=5, # Reduced for faster start
+        max_overflow=10,
+        connect_args={"connect_timeout": 10} if "sqlite" not in url else {}
     )
     
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    print("Configuracao do banco de dados concluida")
-else:
-    print("DATABASE_URL nao configurada - usando SQLite local (temp.db)")
-    DATABASE_URL = "sqlite:///./temp.db"
-    engine = create_engine(
-        DATABASE_URL, connect_args={"check_same_thread": False}
-    )
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    print("SQLite configurado com sucesso")
+    return engine
 
 def get_db():
+    global SessionLocal
     if SessionLocal is None:
-        raise RuntimeError("Database not configured - DATABASE_URL is missing")
+        get_engine()
+    
     db = SessionLocal()
     try:
         yield db

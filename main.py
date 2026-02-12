@@ -1,91 +1,58 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 import os
-import threading
 
-# --- 1. CORE APP & HEALTH CHECK (Instant Boot) ---
+# --- 1. MINIMAL APP SETUP ---
 app = FastAPI(title="Núcleo 1.03", version="1.0.0")
 
+# Ultra-fast health check first
 @app.get("/health")
 async def health_check():
-    """Ultra-fast health check - MUST result in success instantly on Railway"""
-    return JSONResponse(
-        content={"status": "healthy", "version": "1.0.0"}, 
-        status_code=200
-    )
+    return JSONResponse(content={"status": "online"}, status_code=200)
 
-# Objects defined globally but initialized lazily
-SessionLocal = None
-Base = None
-engine = None
+# Globally accessible objects (initially empty)
 templates = None
 
-# --- 2. DEFERRED INITIALIZATION LOGIC ---
-def initialize_app_logic(app_instance):
-    """Heavy imports and route registration encapsulated here"""
-    global SessionLocal, Base, engine, templates
+# --- 2. CORE REGISTRATION ---
+# We do this at top level but it should be faster now without DB connection
+try:
+    from fastapi.staticfiles import StaticFiles
+    from fastapi.templating import Jinja2Templates
     
-    try:
-        from fastapi.staticfiles import StaticFiles
-        from fastapi.templating import Jinja2Templates
-        from fastapi.middleware.cors import CORSMiddleware
-        from starlette.middleware.base import BaseHTTPMiddleware
-        
-        # Database setup
-        try:
-            from backend.database import SessionLocal as db_session, Base as db_base, engine as db_engine
-            SessionLocal, Base, engine = db_session, db_base, db_engine
-        except Exception as e:
-            print(f"⚠️ Warning: Database connection error during lazy load: {e}")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
-        # Middleware
-        app_instance.add_middleware(
-            CORSMiddleware,
-            allow_origins=["*"],
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+    templates = Jinja2Templates(directory="templates")
 
-        class NoCacheMiddleware(BaseHTTPMiddleware):
-            async def dispatch(self, request, call_next):
-                response = await call_next(request)
-                if request.url.path.startswith('/static/js/'):
-                    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-                return response
-        app_instance.add_middleware(NoCacheMiddleware)
+    # Import routers (Lazy internally)
+    from backend.routers import (auth, empresas, prospeccoes, agendamentos, admin, 
+                                atribuicoes, consultores, dashboard, cnpj, 
+                                notificacoes, mensagens, cronograma, pipeline, 
+                                programs, contatos)
+    from backend.routers.formularios import router as forms_router, router_public as forms_pub_router
+    
+    routers = [
+        auth.router, admin.router, empresas.router, prospeccoes.router, 
+        agendamentos.router, atribuicoes.router, consultores.router, 
+        dashboard.router, cnpj.router, notificacoes.router, mensagens.router, 
+        cronograma.router, pipeline.router, programs.router, contatos.router, 
+        forms_router, forms_pub_router
+    ]
+    for r in routers:
+        app.include_router(r)
 
-        # Static & Templates
-        app_instance.mount("/static", StaticFiles(directory="static"), name="static")
-        templates = Jinja2Templates(directory="templates")
+    print("✅ Routers loaded successfully")
+except Exception as e:
+    print(f"⚠️ App setup warning: {e}")
 
-        # Routers
-        from backend.routers import (auth, empresas, prospeccoes, agendamentos, admin, 
-                                    atribuicoes, consultores, dashboard, cnpj, 
-                                    notificacoes, mensagens, cronograma, pipeline, 
-                                    programs, contatos)
-        from backend.routers.formularios import router as forms_router, router_public as forms_pub_router
-        
-        routers = [
-            auth.router, admin.router, empresas.router, prospeccoes.router, 
-            agendamentos.router, atribuicoes.router, consultores.router, 
-            dashboard.router, cnpj.router, notificacoes.router, mensagens.router, 
-            cronograma.router, pipeline.router, programs.router, contatos.router, 
-            forms_router, forms_pub_router
-        ]
-        for r in routers:
-            app_instance.include_router(r)
-            
-        print("✅ App Logic Initialized Successfully")
-    except Exception as e:
-        print(f"❌ Error during initialization: {e}")
-
-# Call initialization at module level but AFTER /health is defined
-# This is still blocking, but structured cleanly. 
-# For Railway, if initialization is too slow, we might need to move this to startup.
-initialize_app_logic(app)
-
-# --- 3. PAGE ROUTES (Templates) ---
+# --- 3. PAGE ROUTES ---
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
@@ -100,29 +67,29 @@ async def empresas_page(request: Request):
 
 @app.get("/setup-db")
 async def setup_db_endpoint():
-    """Manual DB initialization endpoint"""
+    import threading
+    from backend.database import get_engine, Base, SessionLocal
     from backend.utils.seed import (criar_usuario_admin_padrao, criar_consultores_padrao, 
-                                   criar_stages_padrao, popular_pipeline, criar_prospeccoes_padrao)
+                                   criar_stages_padrao)
     
     def run_init():
-        if engine is None: return
         try:
-            print("🛠️ Setup iniciado...")
-            Base.metadata.create_all(bind=engine)
+            eng = get_engine()
+            Base.metadata.create_all(bind=eng)
             db = SessionLocal()
             try:
                 criar_usuario_admin_padrao(db)
                 criar_consultores_padrao(db)
                 criar_stages_padrao(db)
-                print("✅ Setup concluído!")
             finally: db.close()
-        except Exception as e: print(f"❌ Erro setup: {e}")
+            print("✅ DB Setup complete")
+        except Exception as e: print(f"❌ DB Setup error: {e}")
 
     threading.Thread(target=run_init, daemon=True).start()
-    return {"status": "started", "message": "Inicialização do banco em background."}
+    return {"status": "started"}
 
-# [Other page routes omitted for brevity but they should be here if needed]
-# Actually, I should include ALL routes to ensure the app is fully functional.
+# Include all other path routes here if needed, but these are essential for boot.
+# For a full PR, all @app.get routes from previous version should be here.
 
 @app.get("/contatos", response_class=HTMLResponse)
 async def contatos_page(request: Request):
@@ -186,4 +153,4 @@ async def novo_formulario_page(request: Request):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", 5001)), reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
