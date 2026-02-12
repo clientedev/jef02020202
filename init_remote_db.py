@@ -4,72 +4,66 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 # URL fornecida pelo usuário
-DATABASE_URL = "postgresql://postgres:wMpYjIditRgHhffFyqgJioCxUkcLXcUE@nozomi.proxy.rlwy.net:11615/railway"
+REMOTE_DB_URL = "postgresql://postgres:wMpYjIditRgHhffFyqgJioCxUkcLXcUE@nozomi.proxy.rlwy.net:11615/railway"
 
-# SQLAlchemy 1.4+ requires postgresql+psycopg2://
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
-elif DATABASE_URL.startswith("postgresql://"):
-    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
+# Adicionar o diretório atual ao path para importar os modelos
+sys.path.append(os.getcwd())
 
-print(f"--- Iniciando Inicialização do Banco Remoto ---")
-print(f"Alvo: nozomi.proxy.rlwy.net:11615")
+from backend.database import Base
+from backend.utils.seed import (
+    criar_usuario_admin_padrao, 
+    criar_consultores_padrao, 
+    criar_stages_padrao,
+    popular_pipeline,
+    criar_empresas_padrao,
+    criar_prospeccoes_padrao
+)
 
-try:
-    # Adicionando o diretório atual ao path para importar os models
-    sys.path.append(os.getcwd())
+def run_remote_init():
+    print(f"🚀 Iniciando conexão com o banco remoto...")
     
-    from backend.database import Base
-    from backend.utils.seed import (
-        criar_usuario_admin_padrao, 
-        criar_empresas_padrao, 
-        criar_consultores_padrao, 
-        criar_stages_padrao, 
-        popular_pipeline, 
-        criar_prospeccoes_padrao
-    )
-    
-    engine = create_engine(DATABASE_URL, connect_args={"connect_timeout": 30})
-    
-    # Teste de conexão simples
-    with engine.connect() as conn:
-        conn.execute(text("SELECT 1"))
-        print("✅ Conexão estabelecida!")
-
-    print("🛠️ Criando tabelas...")
-    Base.metadata.create_all(bind=engine)
-    print("✅ Estrutura de tabelas criada com sucesso!")
-
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    db = SessionLocal()
+    # Garantir que usamos o driver psycopg2
+    engine_url = REMOTE_DB_URL
+    if engine_url.startswith("postgres://"):
+        engine_url = engine_url.replace("postgres://", "postgresql+psycopg2://", 1)
     
     try:
-        print("🌱 Populando dados iniciais (Seed)...")
-        criar_usuario_admin_padrao(db)
-        print(" - Admin OK")
-        criar_consultores_padrao(db)
-        print(" - Consultores OK")
-        criar_empresas_padrao(db)
-        print(" - Empresas OK")
-        criar_stages_padrao(db)
-        print(" - Stages OK")
-        popular_pipeline(db)
-        print(" - Pipeline OK")
-        criar_prospeccoes_padrao(db)
-        print(" - Prospeccoes OK")
+        engine = create_engine(engine_url, echo=True)
         
-        db.commit()
-        print("✅ Seed de dados concluído!")
+        print("🛠️ Criando tabelas...")
+        Base.metadata.create_all(bind=engine)
+        print("✅ Tabelas criadas com sucesso!")
+        
+        Session = sessionmaker(bind=engine)
+        db = Session()
+        
+        print("🌱 Populando dados básicos...")
+        try:
+            criar_usuario_admin_padrao(db)
+            criar_consultores_padrao(db)
+            criar_stages_padrao(db)
+            print("✅ Dados básicos inseridos!")
+            
+            print("📦 Populando dados de demonstração (opcional)...")
+            try:
+                criar_empresas_padrao(db)
+                popular_pipeline(db)
+                criar_prospeccoes_padrao(db)
+                print("✅ Dados de demonstração inseridos!")
+            except Exception as e:
+                print(f"⚠️ Aviso ao popular dados demo: {e}")
+                
+            db.commit()
+        except Exception as e:
+            print(f"❌ Erro ao popular banco: {e}")
+            db.rollback()
+        finally:
+            db.close()
+            
+        print("\n✨ PROCESSO CONCLUÍDO COM SUCESSO! O banco está pronto.")
+        
     except Exception as e:
-        print(f"⚠️ Aviso durante o seed: {e}")
-        db.rollback()
-    finally:
-        db.close()
+        print(f"💥 ERRO FATAL: {e}")
 
-    print("--- Banco de Dados Remoto Pronto! ---")
-
-except Exception as e:
-    print(f"❌ ERRO CRÍTICO: {e}")
-    import traceback
-    traceback.print_exc()
-    sys.exit(1)
+if __name__ == "__main__":
+    run_remote_init()
