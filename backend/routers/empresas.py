@@ -183,46 +183,63 @@ async def upload_excel(
         wb = openpyxl.load_workbook(BytesIO(contents))
         ws = wb.active
         
+        headers = [str(cell.value).strip().upper() if cell in ws[1] and cell.value else "" for cell in ws[1]]
+        
+        def get_col_val(row, *possible_names):
+            for name in possible_names:
+                name_upper = name.upper()
+                if name_upper in headers:
+                    idx = headers.index(name_upper)
+                    val = row[idx]
+                    return str(val).strip() if val is not None and str(val).strip().lower() != 'nan' else None
+            return None
+
         empresas_criadas = 0
-        empresas_atualizadas = 0
         empresas_ignoradas = 0
         cnpjs_processados = set()
         
         for row in ws.iter_rows(min_row=2, values_only=True):
-            if not row[0]:
+            empresa_nome = get_col_val(row, 'EMPRESA', 'NOME DA EMPRESA', 'NOME')
+            cnpj = get_col_val(row, 'CNPJ')
+            
+            if not empresa_nome:
                 continue
             
-            empresa_nome = str(row[0]) if row[0] else None
-            cnpj = str(row[1]) if row[1] else None
-            
-            if not cnpj or cnpj in cnpjs_processados:
+            if cnpj and cnpj in cnpjs_processados:
                 empresas_ignoradas += 1
                 continue
                 
-            cnpjs_processados.add(cnpj)
+            if cnpj:
+                cnpjs_processados.add(cnpj)
             
-            sigla = str(row[3]) if len(row) > 3 and row[3] else None
-            porte = str(row[4]) if len(row) > 4 and row[4] else None
-            er = str(row[5]) if len(row) > 5 and row[5] else None
-            carteira = str(row[6]) if len(row) > 6 and row[6] else None
-            endereco = str(row[7]) if len(row) > 7 and row[7] else None
-            bairro = str(row[8]) if len(row) > 8 and row[8] else None
-            municipio = str(row[10]) if len(row) > 10 and row[10] else None
-            estado = str(row[11]) if len(row) > 11 and row[11] else None
-            pais = str(row[12]) if len(row) > 12 and row[12] else None
-            area = str(row[13]) if len(row) > 13 and row[13] else None
-            cnae_principal = str(row[14]) if len(row) > 14 and row[14] else None
-            descricao_cnae = str(row[15]) if len(row) > 15 and row[15] else None
-            tipo_empresa = str(row[16]) if len(row) > 16 and row[16] else None
+            sigla = get_col_val(row, 'SIGLA')
+            porte = get_col_val(row, 'PORTE')
+            er = get_col_val(row, 'ER')
+            carteira = get_col_val(row, 'CARTEIRA')
+            endereco = get_col_val(row, 'ENDEREÇO', 'ENDERECO', 'LOGRADOURO')
+            bairro = get_col_val(row, 'BAIRRO')
+            municipio = get_col_val(row, 'MUNICIPIO', 'CIDADE')
+            estado = get_col_val(row, 'ESTADO', 'UF')
+            pais = get_col_val(row, 'PAIS', 'PAÍS')
+            area = get_col_val(row, 'AREA', 'ÁREA')
+            cnae_principal = get_col_val(row, 'CNAE PRINCIPAL', 'CNAE')
+            descricao_cnae = get_col_val(row, 'DESCRIÇÃO CNAE', 'DESCRICAO CNAE')
+            tipo_empresa = get_col_val(row, 'TIPO EMPRESA', 'TIPO')
+            cep = get_col_val(row, 'CEP')
             
             try:
-                numero_funcionarios = int(row[18]) if len(row) > 18 and row[18] and isinstance(row[18], (int, float)) else None
+                num_func_val = get_col_val(row, 'NÚMERO FUNCIONÁRIOS', 'NUMERO FUNCIONARIOS', 'FUNCIONARIOS')
+                numero_funcionarios = int(float(num_func_val)) if num_func_val else None
             except (ValueError, TypeError):
                 numero_funcionarios = None
                 
-            observacao = str(row[19]) if len(row) > 19 and row[19] else None
+            observacao = get_col_val(row, 'OBSERVAÇÃO', 'OBSERVACAO', 'OBS')
             
-            empresa_existente = db.query(Empresa).filter(Empresa.cnpj == cnpj).first()
+            empresa_existente = None
+            if cnpj:
+                empresa_existente = db.query(Empresa).filter(Empresa.cnpj == cnpj).first()
+            else:
+                empresa_existente = db.query(Empresa).filter(Empresa.empresa.ilike(empresa_nome)).first()
             
             if empresa_existente:
                 empresas_ignoradas += 1
@@ -244,7 +261,8 @@ async def upload_excel(
                     descricao_cnae=descricao_cnae,
                     tipo_empresa=tipo_empresa,
                     numero_funcionarios=numero_funcionarios,
-                    observacao=observacao
+                    observacao=observacao,
+                    cep=cep
                 )
                 db.add(nova_empresa)
                 empresas_criadas += 1

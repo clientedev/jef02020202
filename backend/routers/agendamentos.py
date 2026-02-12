@@ -59,31 +59,8 @@ def obter_alertas(
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(obter_usuario_atual)
 ):
-    hoje = datetime.now().date()
-    hoje_inicio = datetime.combine(hoje, datetime.min.time())
-    hoje_fim = datetime.combine(hoje, datetime.max.time())
-    
-    query = db.query(Agendamento).join(Prospeccao)
-    
-    if usuario.tipo != "admin":
-        query = query.filter(Prospeccao.consultor_id == usuario.id)
-    
-    query = query.filter(Agendamento.status == StatusAgendamento.pendente)
-    
-    vencidos = query.filter(Agendamento.data_agendada < hoje_inicio).all()
-    hoje_agendamentos = query.filter(
-        and_(
-            Agendamento.data_agendada >= hoje_inicio,
-            Agendamento.data_agendada <= hoje_fim
-        )
-    ).all()
-    futuros = query.filter(Agendamento.data_agendada > hoje_fim).all()
-    
-    return {
-        "vencidos": [{"id": a.id, "prospeccao_id": a.prospeccao_id, "data_agendada": a.data_agendada, "observacoes": a.observacoes} for a in vencidos],
-        "hoje": [{"id": a.id, "prospeccao_id": a.prospeccao_id, "data_agendada": a.data_agendada, "observacoes": a.observacoes} for a in hoje_agendamentos],
-        "futuros": [{"id": a.id, "prospeccao_id": a.prospeccao_id, "data_agendada": a.data_agendada, "observacoes": a.observacoes} for a in futuros]
-    }
+    from backend.utils.alertas import agregar_todos_alertas
+    return agregar_todos_alertas(db, usuario)
 
 @router.put("/{agendamento_id}", response_model=AgendamentoResposta)
 def atualizar_agendamento(

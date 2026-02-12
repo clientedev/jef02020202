@@ -13,6 +13,33 @@ from backend.models.prospeccoes import gerar_codigo_prospeccao
 
 app = FastAPI(title="Núcleo 1.03", version="1.0.0")
 
+def get_existing_columns(conn, table_name):
+    """Retorna um conjunto com os nomes das colunas existentes na tabela"""
+    from sqlalchemy import text
+    if engine.dialect.name == 'sqlite':
+        result = conn.execute(text(f"PRAGMA table_info('{table_name}')"))
+        return {row[1] for row in result.fetchall()}
+    else:
+        result = conn.execute(text("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = :table
+        """), {"table": table_name})
+        return {row[0] for row in result.fetchall()}
+
+def get_existing_tables(conn):
+    """Retorna um conjunto com os nomes das tabelas existentes"""
+    from sqlalchemy import text
+    if engine.dialect.name == 'sqlite':
+        result = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
+        return {row[0] for row in result.fetchall()}
+    else:
+        result = conn.execute(text("""
+            SELECT table_name FROM information_schema.tables 
+            WHERE table_schema = 'public'
+        """))
+        return {row[0] for row in result.fetchall()}
+
 def adicionar_colunas_faltantes_empresas():
     """Adiciona colunas faltantes à tabela empresas se não existirem"""
     from sqlalchemy import text
@@ -25,28 +52,52 @@ def adicionar_colunas_faltantes_empresas():
         'cargo_contato': 'VARCHAR(200)',
         'telefone_contato': 'VARCHAR(50)',
         'email_contato': 'VARCHAR(200)',
+        'cep': 'VARCHAR(20)',
+        'proxima_etapa': 'VARCHAR(500)',
+        'data_proxima_etapa': 'DATE',
     }
     
     with engine.connect() as conn:
-        result = conn.execute(text("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'empresas'
-        """))
-        colunas_existentes = {row[0] for row in result.fetchall()}
+        colunas_existentes = get_existing_columns(conn, 'empresas')
         
         for coluna, tipo in colunas_necessarias.items():
             if coluna not in colunas_existentes:
-                print(f"🔄 Adicionando coluna '{coluna}' à tabela empresas...")
+                print(f"Adicionando coluna '{coluna}' à tabela empresas...")
                 try:
-                    conn.execute(text(f"""
-                        ALTER TABLE empresas 
-                        ADD COLUMN {coluna} {tipo}
-                    """))
+                    conn.execute(text(f"ALTER TABLE empresas ADD COLUMN {coluna} {tipo}"))
                     conn.commit()
-                    print(f"✅ Coluna '{coluna}' adicionada com sucesso à empresas")
+                    print(f"Coluna '{coluna}' adicionada com sucesso à empresas")
                 except Exception as e:
                     print(f"⚠️ Erro ao adicionar coluna '{coluna}' à empresas: {e}")
+
+def adicionar_colunas_faltantes_contatos():
+    """Adiciona colunas faltantes à tabela contatos se não existirem"""
+    from sqlalchemy import text
+    
+    if engine is None:
+        return
+    
+    colunas_necessarias = {
+        'ponto_focal': 'BOOLEAN DEFAULT FALSE',
+        'proprietario_socio': 'BOOLEAN DEFAULT FALSE',
+        'telefone_fixo': 'VARCHAR(50)',
+        'celular2': 'VARCHAR(50)',
+        'emails_voltaram': 'BOOLEAN DEFAULT FALSE',
+        'observacoes': 'TEXT',
+    }
+    
+    with engine.connect() as conn:
+        colunas_existentes = get_existing_columns(conn, 'contatos')
+        
+        for coluna, tipo in colunas_necessarias.items():
+            if coluna not in colunas_existentes:
+                print(f"Adicionando coluna '{coluna}' à tabela contatos...")
+                try:
+                    conn.execute(text(f"ALTER TABLE contatos ADD COLUMN {coluna} {tipo}"))
+                    conn.commit()
+                    print(f"Coluna '{coluna}' adicionada com sucesso à contatos")
+                except Exception as e:
+                    print(f"⚠️ Erro ao adicionar coluna '{coluna}' à contatos: {e}")
 
 def criar_tabela_prospeccoes_historico():
     """Cria a tabela prospeccoes_historico se não existir"""
@@ -56,30 +107,33 @@ def criar_tabela_prospeccoes_historico():
         return
     
     with engine.connect() as conn:
-        result = conn.execute(text("""
-            SELECT table_name FROM information_schema.tables 
-            WHERE table_name = 'prospeccoes_historico'
-        """))
-        if not result.fetchone():
-            print("🔄 Criando tabela prospeccoes_historico...")
+        tabelas_existentes = get_existing_tables(conn)
+        if 'prospeccoes_historico' not in tabelas_existentes:
+            print("Criando tabela prospeccoes_historico...")
             try:
-                conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS prospeccoes_historico (
-                        id SERIAL PRIMARY KEY,
+                # Usando sintaxe compatível com SQLite e Postgres
+                id_type = "SERIAL" if engine.dialect.name != 'sqlite' else "INTEGER PRIMARY KEY AUTOINCREMENT"
+                timestamp_type = "TIMESTAMP" if engine.dialect.name != 'sqlite' else "DATETIME"
+                now_func = "CURRENT_TIMESTAMP"
+                
+                query = f"""
+                    CREATE TABLE prospeccoes_historico (
+                        id {id_type},
                         prospeccao_id INTEGER NOT NULL REFERENCES prospeccoes(id),
                         usuario_id INTEGER NOT NULL REFERENCES usuarios(id),
-                        data_alteracao TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        data_alteracao {timestamp_type} NOT NULL DEFAULT {now_func},
                         tipo_alteracao VARCHAR(50) NOT NULL,
                         campo_alterado VARCHAR(100),
                         valor_anterior TEXT,
                         valor_novo TEXT,
                         descricao TEXT
                     )
-                """))
+                """
+                conn.execute(text(query))
                 conn.commit()
-                print("✅ Tabela prospeccoes_historico criada com sucesso")
+                print("Tabela prospeccoes_historico criada com sucesso")
             except Exception as e:
-                print(f"⚠️ Erro ao criar tabela prospeccoes_historico: {e}")
+                print(f"Erro ao criar tabela prospeccoes_historico: {e}")
 
 def adicionar_colunas_faltantes_prospeccoes():
     """Adiciona colunas faltantes à tabela prospeccoes se não existirem"""
@@ -125,25 +179,17 @@ def adicionar_colunas_faltantes_prospeccoes():
     }
     
     with engine.connect() as conn:
-        result = conn.execute(text("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'prospeccoes'
-        """))
-        colunas_existentes = {row[0] for row in result.fetchall()}
+        colunas_existentes = get_existing_columns(conn, 'prospeccoes')
         
         for coluna, tipo in colunas_necessarias.items():
             if coluna not in colunas_existentes:
-                print(f"🔄 Adicionando coluna '{coluna}' à tabela prospeccoes...")
+                print(f"Adicionando coluna '{coluna}' à tabela prospeccoes...")
                 try:
-                    conn.execute(text(f"""
-                        ALTER TABLE prospeccoes 
-                        ADD COLUMN {coluna} {tipo}
-                    """))
+                    conn.execute(text(f"ALTER TABLE prospeccoes ADD COLUMN {coluna} {tipo}"))
                     conn.commit()
-                    print(f"✅ Coluna '{coluna}' adicionada com sucesso")
+                    print(f"Coluna '{coluna}' adicionada com sucesso")
                 except Exception as e:
-                    print(f"⚠️ Erro ao adicionar coluna '{coluna}': {e}")
+                    print(f"Erro ao adicionar coluna '{coluna}': {e}")
         
         if 'codigo' not in colunas_existentes:
             print("🔄 Criando índice único para coluna 'codigo'...")
@@ -174,7 +220,7 @@ def atualizar_prospeccoes_sem_codigo(db):
                 UPDATE prospeccoes SET codigo = :codigo WHERE id = :id
             """), {"codigo": novo_codigo, "id": pid})
         db.commit()
-        print(f"✅ {len(ids_sem_codigo)} prospecções atualizadas com código único")
+        print(f"Prospeccoes atualizadas com codigo unico")
 
 @app.get("/health")
 async def health_check():
@@ -203,24 +249,17 @@ def adicionar_colunas_faltantes_eventos():
     
     colunas_necessarias = {
         'program_id': 'INTEGER REFERENCES programs(id)',
+        'carga_horaria': 'FLOAT DEFAULT 0',
     }
     
     with engine.connect() as conn:
-        result = conn.execute(text("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'cronograma_eventos'
-        """))
-        colunas_existentes = {row[0] for row in result.fetchall()}
+        colunas_existentes = get_existing_columns(conn, 'cronograma_eventos')
         
         for coluna, tipo in colunas_necessarias.items():
             if coluna not in colunas_existentes:
                 print(f"🔄 Adicionando coluna '{coluna}' à tabela cronograma_eventos...")
                 try:
-                    conn.execute(text(f"""
-                        ALTER TABLE cronograma_eventos 
-                        ADD COLUMN {coluna} {tipo}
-                    """))
+                    conn.execute(text(f"ALTER TABLE cronograma_eventos ADD COLUMN {coluna} {tipo}"))
                     conn.commit()
                     print(f"✅ Coluna '{coluna}' adicionada com sucesso à cronograma_eventos")
                 except Exception as e:
@@ -241,16 +280,21 @@ async def startup_event():
         return
     
     try:
-        print("🔄 Verificando banco de dados...")
+        print("Verificando banco de dados...")
         Base.metadata.create_all(bind=engine)
-        print("✅ Tabelas verificadas/criadas")
+        print("Tabelas verificadas/criadas")
     except Exception as e:
-        print(f"⚠️ Erro ao verificar tabelas: {e}")
+        print(f"Erro ao verificar tabelas: {e}")
     
     try:
         adicionar_colunas_faltantes_empresas()
     except Exception as e:
         print(f"⚠️ Erro ao adicionar colunas faltantes em empresas: {e}")
+    
+    try:
+        adicionar_colunas_faltantes_contatos()
+    except Exception as e:
+        print(f"⚠️ Erro ao adicionar colunas faltantes em contatos: {e}")
     
     try:
         adicionar_colunas_faltantes_prospeccoes()
@@ -372,6 +416,10 @@ async def dashboard_page(request: Request):
 async def empresas_page(request: Request):
     return templates.TemplateResponse("empresas.html", {"request": request})
 
+@app.get("/contatos", response_class=HTMLResponse)
+async def contatos_page(request: Request):
+    return templates.TemplateResponse("contatos.html", {"request": request})
+
 @app.get("/empresa/{empresa_id}", response_class=HTMLResponse)
 async def empresa_perfil(request: Request, empresa_id: int):
     return templates.TemplateResponse("empresa_perfil.html", {"request": request, "empresa_id": empresa_id})
@@ -430,4 +478,4 @@ async def novo_formulario_page(request: Request):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5001)
+    uvicorn.run("main:app", host="0.0.0.0", port=5001, reload=True)

@@ -33,7 +33,7 @@
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                     <h3 class="text-base sm:text-lg font-semibold text-white flex items-center gap-2">
                         <i class="fas fa-bell text-amber-400"></i>
-                        Alertas Recentes
+                        Alertas de Hoje
                     </h3>
                     <a href="/alertas" class="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1">
                         Ver todos <i class="fas fa-arrow-right text-xs"></i>
@@ -47,22 +47,37 @@
                 </div>
             </div>
 
-            <!-- Cronograma Evolution Section -->
+            <!-- Gestão Global de Programa Section -->
             <div class="glass-effect rounded-2xl p-4 sm:p-6 border border-dark-border/50 animate-slide-up"
                 style="animation-delay: 0.05s;">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                        <i class="fas fa-chart-line text-green-400"></i>
-                        Evolução dos Programas
+                        <i class="fas fa-chart-bar text-green-400"></i>
+                        Gestão Global de Programa
                     </h3>
                 </div>
-                <div id="metricasEvolucao" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="text-center py-8 text-gray-500 col-span-full flex flex-col items-center">
-                        <div
-                            class="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin mb-2">
-                        </div>
-                        <span>Carregando evolução...</span>
-                    </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-dark-card/30 text-xs text-gray-400 uppercase border-b border-dark-border/30">
+                                <th class="px-6 py-3 font-semibold">Consultor</th>
+                                <th class="px-6 py-3 font-semibold">Empresa</th>
+                                <th class="px-6 py-3 font-semibold text-center">Início</th>
+                                <th class="px-6 py-3 font-semibold text-center">Dias</th>
+                                <th class="px-6 py-3 font-semibold">Programa</th>
+                                <th class="px-6 py-3 font-semibold text-center">Meta Total</th>
+                                <th class="px-6 py-3 font-semibold text-center">Horas Agendadas</th>
+                                <th class="px-6 py-3 font-semibold text-center">Saldo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gestaoGlobalTableBody" class="divide-y divide-dark-border/10 text-sm">
+                            <tr>
+                                <td colspan="8" class="px-6 py-10 text-center text-gray-500 italic">
+                                    Carregando gestão de programas...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 

@@ -109,6 +109,7 @@ class CronogramaEvento(Base):
     data_atualizacao = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     data_original = Column(Date, nullable=True)
     alterado = Column(Integer, default=0) # 0: original, 1: alterado
+    carga_horaria = Column(Float, default=0) # Horas da sessão
     
     empresa = relationship("Empresa")
     consultor = relationship("Usuario", back_populates="eventos_cronograma")

@@ -1,4 +1,4 @@
-const empresaId = window.location.pathname.split('/').pop();
+const empresaId = window.location.pathname.split('/').filter(Boolean).pop();
 
 document.addEventListener('DOMContentLoaded', () => {
     carregarDadosEmpresa();
@@ -60,12 +60,7 @@ async function carregarProgramas() {
     }
 }
 
-async function deletarContato(id) {
-    if (confirm("Deseja remover este contato?")) {
-        await fetch(`/api/contatos/${id}`, { method: 'DELETE' });
-        carregarContatos();
-    }
-}
+// ... (existing functions)
 
 async function carregarDadosEmpresa() {
     try {
@@ -102,6 +97,21 @@ async function carregarDadosEmpresa() {
                     <span class="text-white">${empresa.email_contato || '-'}</span>
                 </div>
             </div>
+            <div class="mt-4 p-4 rounded-xl bg-blue-500/10 border border-blue-500/30">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-blue-400 block text-xs uppercase font-bold flex items-center gap-1">
+                        <i class="fas fa-rocket"></i> Próxima Etapa Estratégica
+                    </span>
+                    <button onclick="abrirModalEtapa()" class="text-xs text-blue-300 hover:text-white underline">
+                        <i class="fas fa-edit"></i> Alterar
+                    </button>
+                </div>
+                <p class="text-white text-base font-medium">${empresa.proxima_etapa || 'Definir próxima etapa...'}</p>
+                <div class="mt-2 flex items-center gap-2 text-xs text-blue-300/70">
+                    <i class="far fa-calendar-alt"></i>
+                    <span>Executar em: ${empresa.data_proxima_etapa ? new Date(empresa.data_proxima_etapa).toLocaleDateString() : 'A definir'}</span>
+                </div>
+            </div>
             <div class="mt-4">
                 <span class="text-gray-500 block text-xs uppercase">Observações</span>
                 <p class="text-white text-sm mt-1">${empresa.observacao || 'Sem observações'}</p>
@@ -109,6 +119,47 @@ async function carregarDadosEmpresa() {
         `;
     } catch (error) {
         console.error('Erro ao carregar empresa:', error);
+    }
+}
+
+function abrirModalEtapa() {
+    const modal = document.getElementById('modalEtapa');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function fecharModalEtapa() {
+    const modal = document.getElementById('modalEtapa');
+    if (modal) modal.classList.add('hidden');
+}
+
+async function salvarEtapa(event) {
+    event.preventDefault();
+    const btn = event.submitter;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+
+    const dados = {
+        proxima_etapa: document.getElementById('etapaDescricao').value,
+        data_proxima_etapa: document.getElementById('etapaData').value
+    };
+
+    try {
+        const response = await apiRequest(`/api/empresas/${empresaId}`, {
+            method: 'PUT',
+            body: JSON.stringify(dados)
+        });
+
+        if (response.ok) {
+            fecharModalEtapa();
+            carregarDadosEmpresa();
+        } else {
+            alert("Erro ao salvar etapa");
+        }
+    } catch (error) {
+        console.error('Erro ao salvar:', error);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Salvar Etapa';
     }
 }
 
@@ -200,20 +251,42 @@ async function carregarAgendamentos() {
 }
 
 function abrirModalContato() {
-    const nome = prompt("Nome do contato:");
-    if (!nome) return;
-    const email = prompt("Email:");
-    const celular = prompt("Celular:");
-    const cargo = prompt("Cargo:");
-
-    apiRequest('/api/contatos/', {
-        method: 'POST',
-        body: JSON.stringify({
-            empresa_id: parseInt(empresaId),
-            nome, email, celular, cargo
-        })
-    }).then(() => carregarContatos());
+    document.getElementById('modalContato').classList.remove('hidden');
+    document.getElementById('contatoNome').focus();
 }
+
+function fecharModalContato() {
+    document.getElementById('modalContato').classList.add('hidden');
+    document.getElementById('formContato').reset();
+}
+
+document.getElementById('formContato').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const dados = {
+        empresa_id: parseInt(empresaId),
+        nome: document.getElementById('contatoNome').value,
+        email: document.getElementById('contatoEmail').value,
+        celular: document.getElementById('contatoCelular').value,
+        cargo: document.getElementById('contatoCargo').value
+    };
+
+    try {
+        const response = await apiRequest('/api/contatos/', {
+            method: 'POST',
+            body: JSON.stringify(dados)
+        });
+
+        if (response.ok) {
+            fecharModalContato();
+            carregarContatos();
+        } else {
+            alert("Erro ao salvar contato");
+        }
+    } catch (error) {
+        console.error('Erro ao salvar contato:', error);
+    }
+});
 
 async function deletarContato(id) {
     if (confirm("Deseja remover este contato?")) {

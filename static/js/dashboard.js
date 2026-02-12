@@ -283,50 +283,46 @@ function criarProspeccaoRapida(empresaId) {
 function mostrarAlertasRecentes(alertas) {
     const container = document.getElementById('alertasRecentes');
 
-    if (!alertas || (alertas.vencidos.length === 0 && alertas.hoje.length === 0 && alertas.futuros.length === 0)) {
-        container.innerHTML = '<p class="text-gray-400 text-center py-4">Nenhum alerta no momento</p>';
+    if (!alertas || alertas.hoje.length === 0) {
+        container.innerHTML = '<p class="text-gray-400 text-center py-4">Nenhum alerta agendado para hoje</p>';
         return;
     }
 
     let html = '';
 
-    alertas.vencidos.forEach(alerta => {
-        html += `
-            <div class="bg-red-900/30 border-l-4 border-red-500 p-4 rounded cursor-pointer hover:bg-red-900/40 transition" onclick="window.location.href='/empresas'">
-                <div class="flex items-center justify-between">
-                    <p class="text-red-300 font-semibold">⚠️ Agendamento Vencido</p>
-                    <span class="text-xs text-red-400">${new Date(alerta.data_agendada).toLocaleDateString('pt-BR')}</span>
-                </div>
-                <p class="text-gray-300 text-sm mt-1">${alerta.observacoes || 'Sem observações'}</p>
-            </div>
-        `;
-    });
+    // Cores e ícones por tipo
+    const configTipo = {
+        'ligacao': { icon: 'fa-phone', color: 'blue' },
+        'etapa': { icon: 'fa-rocket', color: 'purple' },
+        'cronograma': { icon: 'fa-calendar-alt', color: 'emerald' }
+    };
 
     alertas.hoje.forEach(alerta => {
+        const config = configTipo[alerta.tipo] || { icon: 'fa-bell', color: 'gray' };
         html += `
-            <div class="bg-yellow-900/30 border-l-4 border-yellow-500 p-4 rounded cursor-pointer hover:bg-yellow-900/40 transition" onclick="window.location.href='/empresas'">
+            <div class="bg-amber-900/20 border-l-4 border-amber-500 p-4 rounded cursor-pointer hover:bg-amber-900/30 transition mb-3" onclick="window.location.href='/alertas'">
                 <div class="flex items-center justify-between">
-                    <p class="text-yellow-300 font-semibold">📅 Agendamento Hoje</p>
-                    <span class="text-xs text-yellow-400">${new Date(alerta.data_agendada).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                    <p class="text-amber-300 font-semibold flex items-center gap-2">
+                        <i class="fas ${config.icon}"></i>
+                        ${alerta.titulo}
+                    </p>
+                    <span class="text-xs text-amber-400 font-bold">Hoje</span>
                 </div>
-                <p class="text-gray-300 text-sm mt-1">${alerta.observacoes || 'Sem observações'}</p>
+                <p class="text-gray-300 text-sm mt-1">${alerta.descricao}</p>
             </div>
         `;
     });
 
-    alertas.futuros.slice(0, 3).forEach(alerta => {
-        html += `
-            <div class="bg-blue-900/30 border-l-4 border-blue-500 p-4 rounded cursor-pointer hover:bg-blue-900/40 transition" onclick="window.location.href='/empresas'">
-                <div class="flex items-center justify-between">
-                    <p class="text-blue-300 font-semibold">📌 Próximo Agendamento</p>
-                    <span class="text-xs text-blue-400">${new Date(alerta.data_agendada).toLocaleDateString('pt-BR')}</span>
-                </div>
-                <p class="text-gray-300 text-sm mt-1">${alerta.observacoes || 'Sem observações'}</p>
-            </div>
-        `;
-    });
+    container.innerHTML = html;
+}
 
-    container.innerHTML = html || '<p class="text-gray-400 text-center py-4">Nenhum alerta no momento</p>';
+function formatarDataAlerta(dataStr) {
+    try {
+        const data = new Date(dataStr);
+        return data.toLocaleDateString('pt-BR');
+    } catch {
+        return dataStr;
+    }
 }
 
 
@@ -348,111 +344,77 @@ function getConsultorCor(id) {
 
 async function carregarMetricasCronograma() {
     try {
-        // Carregar Evolução
-        const evolucaoRes = await apiRequest('/api/cronograma/evolution');
-        if (evolucaoRes.ok) {
-            const evolucaoData = await evolucaoRes.json();
-            renderizarEvolucao(evolucaoData);
-        }
-
-        // Carregar Indicadores
         const metricsRes = await apiRequest('/api/cronograma/metrics');
         if (metricsRes.ok) {
             const metricsData = await metricsRes.json();
+            renderizarGestaoGlobal(metricsData.programas);
             renderizarIndicadores(metricsData);
         }
     } catch (error) {
         console.error('Erro ao carregar métricas do cronograma:', error);
-        document.getElementById('metricasEvolucao').innerHTML = '<p class="text-red-400 text-center col-span-full">Erro ao carregar evolução</p>';
+        const container = document.getElementById('gestaoGlobalTableBody');
+        if (container) container.innerHTML = '<tr><td colspan="8" class="text-red-400 text-center py-4">Erro ao carregar métricas</td></tr>';
     }
 }
 
-function renderizarEvolucao(lista) {
-    const container = document.getElementById('metricasEvolucao');
+function renderizarGestaoGlobal(programas) {
+    const container = document.getElementById('gestaoGlobalTableBody');
     if (!container) return;
 
-    if (lista.length === 0) {
-        container.innerHTML = `
-            <div class="col-span-full flex flex-col items-center justify-center py-8 text-center bg-dark-card/30 rounded-xl border border-dashed border-dark-border">
-                <div class="w-12 h-12 rounded-full bg-dark-card/50 flex items-center justify-center mb-3">
-                    <i class="fas fa-chart-line text-xl text-gray-600"></i>
-                </div>
-                <p class="text-gray-500 text-sm">Nenhum programa ativo</p>
-            </div>
-        `;
+    if (programas.length === 0) {
+        container.innerHTML = '<tr><td colspan="8" class="px-6 py-10 text-center text-gray-500 italic">Nenhum programa ativo</td></tr>';
         return;
     }
 
-    container.innerHTML = lista.map(item => {
-        const porcentagem = Math.round((item.realizado / item.total) * 100);
-        const consultorCor = getConsultorCor(item.consultorId);
-        const proximaFormatada = item.proxima_data ? new Date(item.proxima_data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : null;
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
 
-        let statusCor = 'blue';
-        let statusTexto = 'Em andamento';
-        let statusIcon = 'fa-clock';
+    container.innerHTML = programas.map(p => {
+        const percAgendado = p.meta_total > 0 ? Math.round((p.total_horas / p.meta_total) * 100) : 0;
+        const saldoAgendar = p.meta_total - p.total_horas;
 
-        if (porcentagem === 100) {
-            statusCor = 'green';
-            statusTexto = 'Concluído';
-            statusIcon = 'fa-check-circle';
-        } else if (porcentagem === 0) {
-            statusCor = 'yellow';
-            statusTexto = 'Não iniciado';
-            statusIcon = 'fa-hourglass-start';
-        } else if (porcentagem >= 75) {
-            statusCor = 'emerald';
-            statusTexto = 'Finalizando';
-            statusIcon = 'fa-flag-checkered';
+        let diasExecucao = "-";
+        let dataInicioFormatada = "Não iniciado";
+
+        if (p.data_inicio) {
+            const dataInicio = new Date(p.data_inicio + 'T12:00:00');
+            dataInicio.setHours(0, 0, 0, 0);
+            dataInicioFormatada = dataInicio.toLocaleDateString('pt-BR');
+
+            const diffTime = hoje - dataInicio;
+            diasExecucao = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            if (diasExecucao < 0) diasExecucao = 0; // Se começar no futuro
+            diasExecucao = `${diasExecucao} dias`;
         }
 
         return `
-            <div class="p-4 rounded-xl bg-dark-card/40 border border-dark-border/50 space-y-3 hover:border-${statusCor}-500/30 transition-all hover:bg-dark-card/60 group">
-                <div class="flex justify-between items-start gap-2">
-                    <div class="min-w-0 flex-1">
-                        <div class="flex items-center gap-2 mb-1.5">
-                            <span class="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-400 text-[10px] font-bold border border-blue-500/20">${item.sigla || 'N/A'}</span>
-                            <span class="px-2 py-0.5 rounded-md bg-${statusCor}-500/10 text-${statusCor}-400 text-[10px] font-medium flex items-center gap-1 border border-${statusCor}-500/20">
-                                <i class="fas ${statusIcon} text-[8px]"></i>
-                                ${statusTexto}
-                            </span>
-                        </div>
-                        <h4 class="text-sm font-bold text-gray-200 truncate group-hover:text-white transition-colors" title="${item.empresa}">${item.empresa}</h4>
-                        <p class="text-xs text-gray-500 truncate flex items-center gap-1 mt-1 group-hover:text-gray-400">
-                            <i class="fas fa-book-open text-[10px] opacity-70"></i>
-                            ${item.programa}
-                        </p>
+            <tr class="hover:bg-dark-hover/50 transition duration-150">
+                <td class="px-6 py-4 text-white font-medium">${p.consultor}</td>
+                <td class="px-6 py-4 text-gray-300">${p.empresa}</td>
+                <td class="px-6 py-4 text-center text-gray-400">${dataInicioFormatada}</td>
+                <td class="px-6 py-4 text-center">
+                    <span class="px-2 py-1 rounded bg-blue-500/10 text-blue-400 font-bold border border-blue-500/20">
+                        ${diasExecucao}
+                    </span>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="font-medium text-white">${p.nome}</div>
+                    <div class="w-24 h-1 bg-dark-border/30 rounded-full mt-1">
+                        <div class="h-full bg-blue-500 rounded-full" style="width: ${Math.min(percAgendado, 100)}%"></div>
                     </div>
-                    <div class="text-right pl-2">
-                        <span class="text-xl font-bold text-${statusCor}-400">${porcentagem}%</span>
-                    </div>
-                </div>
-                
-                <div class="w-full h-2 bg-dark-bg rounded-full overflow-hidden border border-white/5">
-                    <div class="h-full bg-gradient-to-r from-${statusCor}-600 to-${statusCor}-400 transition-all duration-700 ease-out rounded-full shadow-[0_0_10px_rgba(var(--color-${statusCor}-500),0.3)]" style="width: ${porcentagem}%"></div>
-                </div>
-                
-                <div class="flex justify-between items-center text-[11px] pt-1 border-t border-white/5">
-                    <div class="flex items-center gap-2" title="Consultor: ${item.consultor}">
-                        <div class="w-5 h-5 rounded-md flex items-center justify-center text-white text-[9px] font-bold shadow-sm" style="background-color: ${consultorCor}">${getIniciais(item.consultor)}</div>
-                        <span class="text-gray-500 group-hover:text-gray-400 text-[10px]">${item.realizado}/${item.total} sessões</span>
-                    </div>
-                    ${proximaFormatada ? `
-                        <span class="text-gray-500 group-hover:text-gray-400 flex items-center gap-1.5 bg-dark-bg/50 px-2 py-1 rounded text-[10px]">
-                            <i class="fas fa-calendar text-[9px] text-blue-400"></i>
-                            ${proximaFormatada}
-                        </span>
-                    ` : porcentagem === 100 ? `
-                        <span class="text-green-500/80 flex items-center gap-1">
-                            <i class="fas fa-check-double text-[10px]"></i>
-                            Finalizado
-                        </span>
-                    ` : ''}
-                </div>
-            </div>
+                </td>
+                <td class="px-6 py-4 text-center font-bold text-white">${p.meta_total}h</td>
+                <td class="px-6 py-4 text-center text-blue-300">${p.total_horas}h</td>
+                <td class="px-6 py-4 text-center">
+                    <span class="px-2 py-1 rounded ${saldoAgendar <= 0 ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-500'} font-bold">
+                        ${saldoAgendar}h
+                    </span>
+                </td>
+            </tr>
         `;
     }).join('');
 }
+
 
 function renderizarIndicadores(data) {
     const containerProg = document.getElementById('metricasPrograma');

@@ -336,7 +336,8 @@ def listar_eventos(
             consultor_nome=evento.consultor.nome if evento.consultor else "Sem consultor",
             titulo=evento.titulo or f"{cat_value}-{evento.sigla_empresa or ''}",
             cor=cat_info["cor"],
-            alterado=bool(evento.alterado)
+            alterado=bool(evento.alterado),
+            carga_horaria=evento.carga_horaria or 0
         ))
     
     return result
@@ -472,35 +473,40 @@ def obter_evolucao(
         joinedload(CronogramaEvento.consultor)
     ).filter(CronogramaEvento.program_id.isnot(None)).all()
     
-    # Process in Python (easier for complex grouping logic)
-    grupos = {}
-    hoje = date.today()
+def obter_evolucao(db: Session = Depends(get_db)):
+    from backend.models import Program, CronogramaEvento
+    from sqlalchemy import func
+    import datetime
     
-    for evento in eventos:
-        key = f"{evento.empresa_id}-{evento.program_id}"
-        if key not in grupos:
-            grupos[key] = {
-                "empresa": evento.empresa.empresa if evento.empresa else (evento.sigla_empresa or "N/A"),
-                "sigla": evento.sigla_empresa or (evento.empresa.sigla if evento.empresa else ""),
-                "programa": evento.program.nome,
-                "consultor": evento.consultor.nome if evento.consultor else "N/A",
-                "consultor_id": evento.consultor_id,
-                "total": 0,
-                "realizado": 0,
-                "proxima_data": None
-            }
-        
-        grupos[key]["total"] += 1
-        
-        if evento.data <= hoje:
-            grupos[key]["realizado"] += 1
-        elif grupos[key]["proxima_data"] is None or evento.data < grupos[key]["proxima_data"]:
-            grupos[key]["proxima_data"] = evento.data
+    hoje = datetime.date.today()
+    
+    # Get all programs to ensure we show even those with 0 events
+    programas = db.query(Program).all()
+    resultado = []
+    
+    for prog in programas:
+        # Total Realizado: hours of events in the past
+        realizado = db.query(func.sum(CronogramaEvento.carga_horaria))\
+            .filter(CronogramaEvento.program_id == prog.id)\
+            .filter(CronogramaEvento.data <= hoje).scalar() or 0
             
-    # Convert to list and sort by progress
-    resultado = list(grupos.values())
-    resultado.sort(key=lambda x: (x["realizado"] / x["total"]) if x["total"] > 0 else 0)
-    
+        # Total Agendado: hours of all events
+        agendado = db.query(func.sum(CronogramaEvento.carga_horaria))\
+            .filter(CronogramaEvento.program_id == prog.id).scalar() or 0
+        
+        proxima = db.query(func.min(CronogramaEvento.data))\
+            .filter(CronogramaEvento.program_id == prog.id)\
+            .filter(CronogramaEvento.data > hoje).scalar()
+            
+        resultado.append({
+            "programa": prog.nome,
+            "total": prog.carga_horaria,
+            "realizado": realizado,
+            "agendado": agendado,
+            "saldo": prog.carga_horaria - agendado,
+            "proxima_data": proxima
+        })
+        
     return resultado
 
 
@@ -510,25 +516,56 @@ def obter_metricas(
     usuario: Usuario = Depends(obter_usuario_atual)
 ):
     from sqlalchemy import func
-    from backend.models import Program, CronogramaEvento
+    from backend.models import Program, CronogramaEvento, Usuario
+    import datetime
     
-    # Metrics by Program
-    metrics_program = db.query(
-        Program.nome,
+    hoje = datetime.date.today()
+
+    # Metrics by (Consultant, Company, Program)
+    from sqlalchemy import case
+    from backend.models import Empresa
+    
+    # Query events that are linked to a program
+    # Group by (Consultant, Company, Program)
+    metrics_query = db.query(
+        Usuario.nome.label("consultor_nome"),
+        Empresa.empresa.label("empresa_nome"),
+        Program.nome.label("program_nome"),
+        Program.carga_horaria.label("meta_total"),
+        func.sum(CronogramaEvento.carga_horaria).label("total_horas_agendadas"),
+        func.sum(case((CronogramaEvento.data <= hoje, CronogramaEvento.carga_horaria), else_=0)).label("horas_realizadas"),
         func.count(CronogramaEvento.id).label("total_atendimentos"),
-        func.count(func.distinct(CronogramaEvento.data)).label("dias_atendidos"),
-        func.count(func.distinct(CronogramaEvento.empresa_id)).label("empresas_atendidas")
-    ).join(CronogramaEvento, Program.id == CronogramaEvento.program_id).group_by(Program.nome).all()
-    
-    # Metrics by Consultant
+        func.min(CronogramaEvento.data).label("data_inicio")
+    ).select_from(CronogramaEvento)\
+     .join(Program, Program.id == CronogramaEvento.program_id)\
+     .join(Usuario, Usuario.id == CronogramaEvento.consultor_id)\
+     .join(Empresa, Empresa.id == CronogramaEvento.empresa_id)\
+     .group_by(Usuario.id, Empresa.id, Program.id, Usuario.nome, Empresa.empresa, Program.nome, Program.carga_horaria).all()
+
+    metrics_program = []
+    for row in metrics_query:
+        metrics_program.append({
+            "consultor": row.consultor_nome,
+            "empresa": row.empresa_nome,
+            "nome": row.program_nome,
+            "meta_total": row.meta_total,
+            "total_horas": row.total_horas_agendadas,
+            "horas_realizadas": row.horas_realizadas,
+            "total_atendimentos": row.total_atendimentos,
+            "saldo": row.meta_total - row.total_horas_agendadas,
+            "data_inicio": row.data_inicio.isoformat() if row.data_inicio else None
+        })
+
+    # Metrics by Consultant (Keep counting all events)
     metrics_consultant = db.query(
         Usuario.nome,
+        func.sum(CronogramaEvento.carga_horaria).label("total_horas"),
         func.count(CronogramaEvento.id).label("total_atendimentos"),
         func.count(func.distinct(CronogramaEvento.data)).label("dias_atendidos"),
         func.count(func.distinct(CronogramaEvento.empresa_id)).label("empresas_atendidas")
     ).join(CronogramaEvento, Usuario.id == CronogramaEvento.consultor_id).group_by(Usuario.nome).all()
-    
+
     return {
-        "programas": [dict(m._mapping) for m in metrics_program],
+        "programas": metrics_program,
         "consultores": [dict(m._mapping) for m in metrics_consultant]
     }

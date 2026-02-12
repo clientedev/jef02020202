@@ -386,105 +386,73 @@ function editarEventoAgenda() {
     }
 }
 
-function renderizarTabelaMetricas() {
+async function renderizarTabelaMetricas() {
     const container = document.getElementById('metricsContainer');
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
+    if (!container) return;
 
-    let html = `
-    <div class="glass-effect rounded-xl overflow-hidden border border-dark-border/30">
-        <div class="bg-dark-card/50 px-6 py-4 border-b border-dark-border/30 flex justify-between items-center">
-            <h3 class="text-white font-bold text-lg"><i class="fas fa-chart-bar mr-2 text-blue-400"></i>Métricas por Consultor e Programa</h3>
-            <div class="text-xs text-gray-400">Total de horas no período selecionado</div>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-dark-card/30 text-xs text-gray-400 uppercase border-b border-dark-border/30">
-                        <th class="px-6 py-3 font-semibold">Consultor</th>
-                         <th class="px-6 py-3 font-semibold">Programa</th>
-                        <th class="px-6 py-3 font-semibold text-center">Horas Programadas</th>
-                        <th class="px-6 py-3 font-semibold text-center">Horas Realizadas</th>
-                        <th class="px-6 py-3 font-semibold text-center">Saldo</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-dark-border/10 text-sm">
-    `;
+    try {
+        const response = await apiRequest('/api/cronograma/metrics');
+        if (!response.ok) throw new Error('Erro ao carregar métricas');
+        const metrics = await response.json();
 
-    consultoresAgenda.forEach(consultor => {
-        // Filtrar eventos deste consultor
-        const eventosConsultor = eventosAgenda.filter(e => e.consultor_id === consultor.id);
+        let html = `
+        <div class="glass-effect rounded-xl overflow-hidden border border-dark-border/30 mt-8">
+            <div class="bg-dark-card/50 px-6 py-4 border-b border-dark-border/30 flex justify-between items-center">
+                <h3 class="text-white font-bold text-lg"><i class="fas fa-chart-bar mr-2 text-blue-400"></i>Gestão Global de Programas</h3>
+                <div class="text-xs text-gray-400">Status total acumulado de cada programa</div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-dark-card/30 text-xs text-gray-400 uppercase border-b border-dark-border/30">
+                            <th class="px-6 py-3 font-semibold">Consultor</th>
+                            <th class="px-6 py-3 font-semibold">Empresa</th>
+                            <th class="px-6 py-3 font-semibold">Programa</th>
+                            <th class="px-6 py-3 font-semibold text-center">Meta Total</th>
+                            <th class="px-6 py-3 font-semibold text-center">Horas Agendadas</th>
+                            <th class="px-6 py-3 font-semibold text-center">Horas Realizadas</th>
+                            <th class="px-6 py-3 font-semibold text-center">Saldo Restante</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-dark-border/10 text-sm">
+        `;
 
-        // Agrupar por programa
-        const programasMap = new Map();
-
-        eventosConsultor.forEach(evento => {
-            const progNome = evento.program_nome || 'Sem Programa';
-
-            if (!programasMap.has(progNome)) {
-                programasMap.set(progNome, { programmed: 0, realized: 0 });
-            }
-
-            const stats = programasMap.get(progNome);
-
-            // Calcular horas
-            let horasEvento = 0;
-            if (evento.periodo === 'D') horasEvento = 8;
-            else if (evento.periodo === 'M' || evento.periodo === 'T') horasEvento = 4;
-
-            stats.programmed += horasEvento;
-
-            // Check realized
-            const [ano, mes, dia] = evento.data.split('-').map(Number);
-            const dataEvento = new Date(ano, mes - 1, dia);
-            if (dataEvento <= hoje) {
-                stats.realized += horasEvento;
-            }
-        });
-
-        // Se o consultor não tem eventos, ignorar (ou mostrar zerado se preferir)
-        if (programasMap.size === 0) {
-            // Optional: Show a row with 0 hours
-            return;
+        if (metrics.programas.length === 0) {
+            html += `<tr><td colspan="7" class="px-6 py-10 text-center text-gray-500 italic">Nenhum programa cadastrado</td></tr>`;
         }
 
-        const corConsultor = getCorConsultor(consultor.id);
-
-        // Iterar sobre os programas e gerar linhas
-        let firstRow = true;
-
-        programasMap.forEach((stats, progNome) => {
-            const saldo = stats.programmed - stats.realized;
+        metrics.programas.forEach(prog => {
+            const percAgendado = prog.meta_total > 0 ? (prog.total_horas / prog.meta_total * 100).toFixed(0) : 0;
+            const saldoAgendar = prog.meta_total - prog.total_horas;
 
             html += `
             <tr class="hover:bg-dark-hover/50 transition duration-150">
-                <td class="px-6 py-3 font-medium text-white">
-                    ${firstRow ? `
-                    <div class="flex items-center gap-3">
-                         <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs" style="background-color: ${corConsultor}">
-                            ${getIniciaisAgenda(consultor.nome)}
-                        </div>
-                        ${consultor.nome}
-                    </div>` : ''}
+                <td class="px-6 py-4 text-white font-medium">${prog.consultor}</td>
+                <td class="px-6 py-4 text-gray-300">${prog.empresa}</td>
+                <td class="px-6 py-4">
+                    <div class="font-medium text-white text-base">${prog.nome}</div>
+                    <div class="text-[10px] text-gray-400 mt-1">Progresso agendamento: ${percAgendado}%</div>
+                    <div class="w-full h-1 bg-dark-border/30 rounded-full mt-1">
+                        <div class="h-full bg-blue-500 rounded-full" style="width: ${Math.min(percAgendado, 100)}%"></div>
+                    </div>
                 </td>
-                <td class="px-6 py-3 font-medium ${progNome === 'Sem Programa' ? 'text-gray-500 italic' : 'text-green-400'}">
-                    ${progNome}
+                <td class="px-6 py-4 text-center font-bold text-lg text-white">${prog.meta_total}h</td>
+                <td class="px-6 py-4 text-center text-blue-300 font-medium">${prog.total_horas}h</td>
+                <td class="px-6 py-4 text-center text-green-400 font-medium">${prog.horas_realizadas}h</td>
+                <td class="px-6 py-4 text-center">
+                    <span class="px-3 py-1 rounded-lg ${saldoAgendar <= 0 ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-500'} font-bold">
+                        ${saldoAgendar}h
+                    </span>
                 </td>
-                <td class="px-6 py-3 text-center text-blue-300 font-medium">${stats.programmed}h</td>
-                <td class="px-6 py-3 text-center text-green-400 font-medium">${stats.realized}h</td>
-                <td class="px-6 py-3 text-center text-gray-400">${saldo}h</td>
             </tr>
-            `;
-            firstRow = false;
+        `;
         });
-    });
-
-    html += `
-                </tbody>
-            </table>
-        </div>
-    </div>
-    `;
-
-    container.innerHTML = html;
+        html += `</tbody></table></div></div>`;
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Erro ao carregar métricas:', error);
+        if (container) {
+            container.innerHTML = `<div class="p-6 text-red-400 italic text-center">Erro ao carregar métricas globais</div>`;
+        }
+    }
 }

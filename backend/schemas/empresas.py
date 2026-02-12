@@ -1,6 +1,7 @@
 from pydantic import BaseModel
-from typing import Optional
-from datetime import datetime
+from typing import Optional, List
+from backend.schemas.crm import ContatoResposta
+from datetime import datetime, date
 
 class EmpresaBase(BaseModel):
     empresa: str
@@ -25,6 +26,9 @@ class EmpresaBase(BaseModel):
     cargo_contato: Optional[str] = None
     telefone_contato: Optional[str] = None
     email_contato: Optional[str] = None
+    cep: Optional[str] = None
+    proxima_etapa: Optional[str] = None
+    data_proxima_etapa: Optional[date] = None
 
 class EmpresaCriar(EmpresaBase):
     pass
@@ -52,11 +56,15 @@ class EmpresaAtualizar(BaseModel):
     cargo_contato: Optional[str] = None
     telefone_contato: Optional[str] = None
     email_contato: Optional[str] = None
+    cep: Optional[str] = None
+    proxima_etapa: Optional[str] = None
+    data_proxima_etapa: Optional[date] = None
 
 class EmpresaResposta(EmpresaBase):
     id: int
     data_cadastro: datetime
     data_atualizacao: datetime
+    contatos: List[ContatoResposta] = []
 
     class Config:
         from_attributes = True

@@ -57,18 +57,8 @@ def obter_estatisticas(
         for resultado, count in resultados:
             prospeccoes_por_resultado[resultado] = count
     
-    agendamentos_pendentes = agendamentos_query.filter(
-        Agendamento.status == StatusAgendamento.pendente
-    )
-    
-    vencidos = agendamentos_pendentes.filter(Agendamento.data_agendada < hoje_inicio).all()
-    hoje_agendamentos = agendamentos_pendentes.filter(
-        Agendamento.data_agendada >= hoje_inicio,
-        Agendamento.data_agendada <= hoje_fim
-    ).all()
-    futuros = agendamentos_pendentes.filter(Agendamento.data_agendada > hoje_fim).all()
-    
-    total_agendamentos = len(vencidos) + len(hoje_agendamentos) + len(futuros)
+    from backend.utils.alertas import agregar_todos_alertas
+    alertas = agregar_todos_alertas(db, usuario)
     
     empresas_por_consultor = {}
     if usuario.tipo == "admin":
@@ -88,21 +78,17 @@ def obter_estatisticas(
         empresas_por_consultor[usuario.nome] = total_empresas
     
     empresas_por_consultor = dict(sorted(empresas_por_consultor.items(), key=lambda x: x[1], reverse=True))
-    
+
     return {
         "total_empresas": total_empresas,
         "total_prospeccoes": total_prospeccoes,
-        "total_agendamentos": total_agendamentos,
+        "total_agendamentos": len(alertas["vencidos"]) + len(alertas["hoje"]) + len(alertas["futuros"]),
         "prospeccoes_por_resultado": prospeccoes_por_resultado,
         "agendamentos_por_status": {
-            "vencidos": len(vencidos),
-            "hoje": len(hoje_agendamentos),
-            "futuros": len(futuros)
+            "vencidos": len(alertas["vencidos"]),
+            "hoje": len(alertas["hoje"]),
+            "futuros": len(alertas["futuros"])
         },
         "empresas_por_consultor": empresas_por_consultor,
-        "alertas": {
-            "vencidos": [{"id": a.id, "prospeccao_id": a.prospeccao_id, "data_agendada": a.data_agendada, "observacoes": a.observacoes} for a in vencidos],
-            "hoje": [{"id": a.id, "prospeccao_id": a.prospeccao_id, "data_agendada": a.data_agendada, "observacoes": a.observacoes} for a in hoje_agendamentos],
-            "futuros": [{"id": a.id, "prospeccao_id": a.prospeccao_id, "data_agendada": a.data_agendada, "observacoes": a.observacoes} for a in futuros]
-        }
+        "alertas": alertas
     }

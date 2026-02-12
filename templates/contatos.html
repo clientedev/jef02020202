@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}Contatos - Núcleo 1.03{% endblock %}
+
+{% set active_page = 'contatos' %}
+{% block content %}
+<div class="flex h-screen">
+    {% include "partials/sidebar.html" %}
+
+    <main class="flex-1 overflow-y-auto">
+        <header class="sticky top-0 z-10 glass-effect border-b border-dark-border/50 px-4 sm:px-8 py-4">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleMobileSidebar()"
+                        class="mobile-menu-btn w-10 h-10 rounded-xl bg-dark-card hover:bg-dark-hover items-center justify-center text-gray-400 hover:text-white transition">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-bold text-white">Gestão de Contatos</h2>
+                        <p class="text-gray-400 text-xs sm:text-sm mt-1 hidden sm:block">Filtre e visualize todos os
+                            contatos do sistema</p>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="abrirModalNovoContato()"
+                        class="btn-primary bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-xl flex items-center gap-2 font-medium transition">
+                        <i class="fas fa-plus"></i>
+                        <span class="hidden sm:inline">Novo Contato</span>
+                    </button>
+                    <button onclick="abrirModalImportar()"
+                        class="btn-primary bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-4 rounded-xl flex items-center gap-2 font-medium transition">
+                        <i class="fas fa-file-import"></i>
+                        <span class="hidden sm:inline">Importar</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
+            <div class="glass-effect rounded-2xl p-4 sm:p-6 border border-dark-border/50 animate-fade-in">
+                <h3 class="text-base sm:text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-filter text-blue-400"></i>
+                    Filtros de Contatos
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Nome do Contato</label>
+                        <input type="text" id="filtroNome" placeholder="Buscar por nome..."
+                            class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white rounded-xl focus:outline-none text-sm sm:text-base">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Empresa</label>
+                        <input type="text" id="filtroEmpresa" placeholder="Nome da empresa..."
+                            class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white rounded-xl focus:outline-none text-sm sm:text-base">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Cargo</label>
+                        <input type="text" id="filtroCargo" placeholder="Ex: Gerente..."
+                            class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white rounded-xl focus:outline-none text-sm sm:text-base">
+                    </div>
+                </div>
+                <div class="flex gap-3 sm:gap-4">
+                    <button onclick="aplicarFiltros()"
+                        class="btn-primary text-white py-2.5 sm:py-3 px-6 rounded-xl flex items-center justify-center gap-2 font-medium text-sm sm:text-base">
+                        <i class="fas fa-search"></i>
+                        <span>Filtrar</span>
+                    </button>
+                    <button onclick="limparFiltros()"
+                        class="bg-dark-card hover:bg-dark-hover text-gray-300 py-2.5 sm:py-3 px-6 rounded-xl flex items-center justify-center gap-2 font-medium transition text-sm sm:text-base">
+                        <i class="fas fa-times"></i>
+                        <span>Limpar</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="glass-effect rounded-2xl border border-dark-border/50 overflow-hidden animate-slide-up">
+                <div class="table-responsive">
+                    <table class="w-full">
+                        <thead class="bg-dark-card/50">
+                            <tr>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    <i class="fas fa-user mr-2"></i>Nome
+                                </th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    <i class="fas fa-building mr-2"></i>Empresa
+                                </th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    <i class="fas fa-user-tag mr-2"></i>Cargo
+                                </th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    <i class="fas fa-envelope mr-2"></i>E-mail
+                                </th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    Status E-mail
+                                </th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    <i class="fas fa-phone mr-2"></i>Celular
+                                </th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    Celular 2
+                                </th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    Tel. Fixo
+                                </th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider text-center">
+                                    PF
+                                </th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider text-center">
+                                    Sócio
+                                </th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    Observações
+                                </th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    Ações
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaContatos" class="divide-y divide-dark-border/30">
+                            <tr>
+                                <td colspan="6" class="px-6 py-12 text-center text-gray-500 italic">
+                                    Carregando contatos...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Modal Importar Contatos -->
+<div id="modalImportar" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center px-4 z-50">
+    <div class="glass-effect rounded-2xl shadow-2xl w-full max-w-md animate-slide-up">
+        <div class="p-6 border-b border-dark-border/50 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                <i class="fas fa-file-import text-emerald-400"></i>
+                Importar Contatos
+            </h2>
+            <button onclick="fecharModalImportar()"
+                class="w-8 h-8 rounded-lg bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="p-6 space-y-4">
+            <p class="text-gray-400 text-sm">
+                Selecione um arquivo Excel (.xlsx) ou CSV para importar contatos. O arquivo deve seguir o modelo de
+                colunas:
+                <span class="text-blue-400 font-medium">EMPRESA, CNPJ, CONTATO, CARGO, EMAIL, CELULAR...</span>
+            </p>
+
+            <div class="border-2 border-dashed border-dark-border/50 rounded-xl p-8 text-center hover:border-blue-500/50 transition cursor-pointer"
+                onclick="document.getElementById('arquivoImportacao').click()">
+                <i class="fas fa-cloud-upload-alt text-4xl text-gray-500 mb-3"></i>
+                <p class="text-gray-300 font-medium" id="nomeArquivo">Clique para selecionar</p>
+                <p class="text-xs text-gray-500 mt-1">Excel ou CSV (Máx. 5MB)</p>
+                <input type="file" id="arquivoImportacao" class="hidden" accept=".xlsx, .csv"
+                    onchange="selecionarArquivo(this)">
+            </div>
+
+            <div id="statusImportacao" class="hidden">
+                <div class="w-full bg-dark-card rounded-full h-2 mb-2">
+                    <div id="barraProgresso" class="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                        style="width: 0%"></div>
+                </div>
+                <p class="text-xs text-gray-400 text-center" id="textoStatus">Processando...</p>
+            </div>
+
+            <div class="flex gap-3 mt-6 pt-6 border-t border-dark-border/50">
+                <button onclick="fecharModalImportar()"
+                    class="flex-1 px-4 py-3 bg-dark-card hover:bg-dark-hover text-gray-300 rounded-xl font-medium transition">
+                    Cancelar
+                </button>
+                <button onclick="processarImportacao()" id="btnProcessar"
+                    class="flex-1 btn-primary text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
+                    disabled>
+                    <i class="fas fa-check"></i>
+                    Começar Importação
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Novo Contato -->
+<div id="modalNovoContato" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center px-4 z-50">
+    <div class="glass-effect rounded-2xl shadow-2xl w-full max-w-2xl animate-slide-up">
+        <div class="p-6 border-b border-dark-border/50 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                <i class="fas fa-user-plus text-blue-400"></i>
+                Novo Contato
+            </h2>
+            <button onclick="fecharModalNovoContato()"
+                class="w-8 h-8 rounded-lg bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="formNovoContato" onsubmit="salvarNovoContato(event)" class="p-6 space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="md:col-span-2">
+                    <label class="block text-sm text-gray-400 mb-2">Nome Completo *</label>
+                    <input type="text" id="novoNome" required
+                        class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-sm text-gray-400 mb-2">Empresa *</label>
+                    <select id="novoEmpresaId" required
+                        class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none bg-dark-card">
+                        <option value="">Carregando empresas...</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Cargo</label>
+                    <input type="text" id="novoCargo"
+                        class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">E-mail</label>
+                    <input type="email" id="novoEmail"
+                        class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Celular</label>
+                    <input type="text" id="novoCelular"
+                        class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Celular 2</label>
+                    <input type="text" id="novoCelular2"
+                        class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Telefone Fixo</label>
+                    <input type="text" id="novoTelefoneFixo"
+                        class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none">
+                </div>
+
+                <div class="flex items-center gap-4 pt-8">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="novoPontoFocal" class="rounded border-gray-400">
+                        <span class="text-sm text-gray-300">Ponto Focal</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="novoSocio" class="rounded border-gray-400">
+                        <span class="text-sm text-gray-300">Sócio</span>
+                    </label>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm text-gray-400 mb-2">Observações</label>
+                <textarea id="novoObservacoes" rows="3"
+                    class="w-full px-4 py-3 input-modern text-white rounded-xl focus:outline-none resize-none"></textarea>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <input type="checkbox" id="novoEmailsVoltaram" class="rounded border-gray-400">
+                <label for="novoEmailsVoltaram" class="text-sm text-red-400">E-mail com problema (voltou)</label>
+            </div>
+
+            <div class="flex gap-3 mt-6 pt-6 border-t border-dark-border/50">
+                <button type="button" onclick="fecharModalNovoContato()"
+                    class="flex-1 px-4 py-3 bg-dark-card hover:bg-dark-hover text-gray-300 rounded-xl font-medium transition">
+                    Cancelar
+                </button>
+                <button type="submit"
+                    class="flex-1 btn-primary text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2">
+                    <i class="fas fa-save"></i>
+                    Salvar Contato
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/contatos.js"></script>
+{% endblock %}

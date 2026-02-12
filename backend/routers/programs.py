@@ -53,10 +53,16 @@ def auto_schedule(request: AutoScheduleRequest, db: Session = Depends(get_db)):
 
     empresa_id_final = request.empresa_id if request.empresa_id else program.empresa_id
     
-    while horas_restantes > 0:
+    # Use a small epsilon for float comparison
+    while horas_restantes > 0.01:
         if data_atual.weekday() in request.dias_semana:
+            # Calculate hours for today (cap at remaining)
             horas_hoje = min(request.horas_por_dia, horas_restantes)
             
+            # Avoid creating very tiny sessions (e.g., 0.0001h)
+            if horas_hoje < 0.1:
+                break
+
             novo_evento = CronogramaEvento(
                 data=data_atual,
                 categoria=CategoriaEvento.programado,
@@ -66,11 +72,12 @@ def auto_schedule(request: AutoScheduleRequest, db: Session = Depends(get_db)):
                 projeto_id=request.projeto_id,
                 program_id=program.id,
                 titulo=f"{program.nome} - Sessão",
-                descricao=f"Sessão automática do programa {program.nome}. Carga: {horas_hoje}h"
+                descricao=f"Sessão automática do programa {program.nome}. Carga: {horas_hoje}h",
+                carga_horaria=round(horas_hoje, 2)
             )
             db.add(novo_evento)
             eventos_criados.append(novo_evento)
-            horas_restantes -= float(horas_hoje)
+            horas_restantes -= horas_hoje
         
         data_atual += timedelta(days=1)
         if (data_atual - request.data_inicio).days > 365: # Safety break

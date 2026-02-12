@@ -8,7 +8,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 Base = declarative_base()
 
 if DATABASE_URL:
-    print(f"🔗 Conectando ao banco de dados...")
+    print(f"Conectando ao banco de dados...")
     
     # Configurações para melhor compatibilidade com Railway/Postgres
     engine = create_engine(
@@ -22,15 +22,15 @@ if DATABASE_URL:
     )
     
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    print("✅ Configuração do banco de dados concluída")
+    print("Configuracao do banco de dados concluida")
 else:
-    print("⚠️ DATABASE_URL não configurada - usando SQLite local (temp.db)")
+    print("DATABASE_URL nao configurada - usando SQLite local (temp.db)")
     DATABASE_URL = "sqlite:///./temp.db"
     engine = create_engine(
         DATABASE_URL, connect_args={"check_same_thread": False}
     )
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    print("✅ SQLite configurado com sucesso")
+    print("SQLite configurado com sucesso")
 
 def get_db():
     if SessionLocal is None:

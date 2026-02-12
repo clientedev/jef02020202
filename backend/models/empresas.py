@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text
+from sqlalchemy import Column, Integer, String, DateTime, Text, Date
 from sqlalchemy.orm import relationship
 from backend.database import Base
 from datetime import datetime
@@ -32,6 +32,11 @@ class Empresa(Base):
     cargo_contato = Column(String(200))
     telefone_contato = Column(String(50))
     email_contato = Column(String(200))
+    cep = Column(String(20))
+    
+    # Novos campos para próxima etapa estratégica
+    proxima_etapa = Column(String(500))
+    data_proxima_etapa = Column(Date)
 
     prospeccoes = relationship("Prospeccao", back_populates="empresa")
     atribuicoes = relationship("AtribuicaoEmpresa", back_populates="empresa")
