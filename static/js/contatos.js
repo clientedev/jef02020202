@@ -1,4 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const usuario = getUsuario();
+    if (usuario && usuario.tipo !== 'admin') {
+        const btnLimpar = document.getElementById('btnLimparTudoContatos');
+        if (btnLimpar) btnLimpar.style.display = 'none';
+
+        // Também esconder importar se não for admin (opcional, mas geralmente seguro)
+        // const btnImportar = document.querySelector('button[onclick="abrirModalImportar()"]');
+        // if (btnImportar) btnImportar.style.display = 'none';
+    }
     carregarContatos();
 });
 
@@ -99,7 +108,23 @@ async function deletarContato(id) {
     }
 }
 
-// Funções para Importação
+async function confirmarLimparTudoContatos() {
+    if (confirm("ATENÇÃO: Deseja realmente excluir TODOS os contatos? Esta ação não pode ser desfeita.")) {
+        try {
+            const response = await apiRequest('/api/contatos/limpar-tudo', {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                alert("Todos os contatos foram removidos.");
+                carregarContatos();
+            } else {
+                alert("Erro ao remover todos os contatos");
+            }
+        } catch (error) {
+            console.error('Erro ao limpar contatos:', error);
+        }
+    }
+}
 function abrirModalImportar() {
     document.getElementById('modalImportar').classList.remove('hidden');
     limparModalImportar();

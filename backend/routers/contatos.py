@@ -68,6 +68,15 @@ def listar_contatos_empresa(
 ):
     return db.query(Contato).filter(Contato.empresa_id == empresa_id).all()
 
+@router.delete("/limpar-tudo")
+def limpar_todos_contatos(
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(obter_usuario_atual)
+):
+    db.query(Contato).delete()
+    db.commit()
+    return {"message": "Todos os contatos foram removidos com sucesso"}
+
 @router.delete("/{contato_id}")
 def deletar_contato(
     contato_id: int,

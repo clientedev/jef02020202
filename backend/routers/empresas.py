@@ -149,6 +149,39 @@ def atualizar_empresa(
     db.refresh(empresa)
     return empresa
 
+@router.delete("/limpar-tudo")
+def limpar_todas_empresas(
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(obter_usuario_admin)
+):
+    from backend.models.prospeccoes import Prospeccao, ProspeccaoHistorico
+    from backend.models.agendamentos import Agendamento
+    from backend.models.atribuicoes import AtribuicaoEmpresa
+    from backend.models.cronograma import CronogramaProjeto, CronogramaAtividade, CronogramaEvento
+    from backend.models.pipeline import CompanyPipeline, CompanyStageHistory, Note, Attachment, Activity
+    from backend.models.historico import HistoricoEmpresa
+    from backend.models.contatos import Contato
+
+    # Limpar dependências que não têm cascade automático ou precisam de limpeza manual
+    db.query(Activity).delete()
+    db.query(Attachment).delete()
+    db.query(Note).delete()
+    db.query(CompanyStageHistory).delete()
+    db.query(CompanyPipeline).delete()
+    db.query(CronogramaEvento).delete()
+    db.query(CronogramaAtividade).delete()
+    db.query(CronogramaProjeto).delete()
+    db.query(AtribuicaoEmpresa).delete()
+    db.query(Agendamento).delete()
+    db.query(ProspeccaoHistorico).delete()
+    db.query(Prospeccao).delete()
+    
+    # As empresas e seus contatos/historico (que têm cascade no modelo)
+    db.query(Empresa).delete()
+    
+    db.commit()
+    return {"message": "Todas as empresas e dados relacionados foram removidos com sucesso"}
+
 @router.delete("/{empresa_id}")
 def deletar_empresa(
     empresa_id: int,

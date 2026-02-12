@@ -6,6 +6,8 @@ const usuario = getUsuario();
 if (usuario.tipo !== 'admin') {
     document.getElementById('btnNovaEmpresa').style.display = 'none';
     document.getElementById('btnUploadExcel').style.display = 'none';
+    const btnLimparTudo = document.getElementById('btnLimparTudo');
+    if (btnLimparTudo) btnLimparTudo.style.display = 'none';
 }
 
 let paginaAtual = 1;
@@ -544,6 +546,33 @@ async function confirmarExcluirEmpresa(empresaId, empresaNome) {
     } catch (error) {
         console.error('Erro ao excluir empresa:', error);
         alert('Erro de conexão com o servidor');
+    }
+}
+
+async function confirmarLimparTudoEmpresas() {
+    if (confirm("ATENÇÃO: Deseja realmente excluir TODAS as empresas e TODOS os dados relacionados (Contatos, Prospecções, Pipeline, etc.)?\n\nEsta ação é IRREVERSÍVEL e afetará todo o sistema.")) {
+        const confirmacaoFinal = prompt('Para confirmar a exclusão de TUDO, digite "EXCLUIR TUDO" (letras maiúsculas):');
+
+        if (confirmacaoFinal === "EXCLUIR TUDO") {
+            try {
+                const response = await apiRequest('/api/empresas/limpar-tudo', {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert("Todos os dados de empresas foram removidos com sucesso.");
+                    carregarEmpresas();
+                } else {
+                    const error = await response.json();
+                    alert(error.detail || "Erro ao remover dados");
+                }
+            } catch (error) {
+                console.error('Erro ao limpar empresas:', error);
+                alert("Erro de conexão ao processar solicitação");
+            }
+        } else {
+            alert("Exclusão cancelada. A frase de confirmação estava incorreta.");
+        }
     }
 }
 
