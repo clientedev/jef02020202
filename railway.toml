@@ -9,3 +9,5 @@ healthcheckPath = "/health"
 healthcheckTimeout = 120
 numReplicas = 1
 sleepApplicationForBuild = false
+# Railway specific: if healthcheck is failing, try increasing the start period
+# However, for FastBoot, we want it to respond fast.

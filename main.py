@@ -13,6 +13,90 @@ from backend.models.prospeccoes import gerar_codigo_prospeccao
 
 app = FastAPI(title="Núcleo 1.03", version="1.0.0")
 
+# --- EARLY ENDPOINTS (Health and Setup) ---
+# Register these before routers to ensure availability even if a router fails to load
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint - must respond quickly and independently of database state"""
+    return JSONResponse(
+        content={
+            "status": "healthy", 
+            "app": "Nucleo 1.03",
+            "version": "1.0.0"
+        }, 
+        status_code=200,
+        headers={"Cache-Control": "no-cache"}
+    )
+
+@app.get("/setup-db")
+async def setup_db_endpoint():
+    """Endpoint manual para criar as tabelas e popular o banco remoto.
+    Deve ser chamado pelo usuário uma única vez após o deploy inicial estar online.
+    """
+    import threading
+    
+    def run_init():
+        if engine is None: 
+            print("❌ ENGINE NÃO CONFIGURADA")
+            return
+        
+        try:
+            print("🛠️ [SETUP] Iniciando criação de tabelas e seed...")
+            # Garante que as tabelas base existam
+            Base.metadata.create_all(bind=engine)
+            
+            # Fallback para colunas extras (caso as migrations não rolem)
+            try: adicionar_colunas_faltantes_empresas()
+            except Exception as e: print(f"Erro fallback empresas: {e}")
+            
+            try: adicionar_colunas_faltantes_contatos()
+            except Exception as e: print(f"Erro fallback contatos: {e}")
+            
+            try: adicionar_colunas_faltantes_prospeccoes()
+            except Exception as e: print(f"Erro fallback prospeccoes: {e}")
+            
+            try: adicionar_colunas_faltantes_eventos()
+            except Exception as e: print(f"Erro fallback eventos: {e}")
+            
+            try: criar_tabela_prospeccoes_historico()
+            except Exception as e: print(f"Erro fallback historico: {e}")
+            
+            db = SessionLocal()
+            try:
+                print("🌱 [SETUP] Populando dados básicos...")
+                criar_usuario_admin_padrao(db)
+                criar_consultores_padrao(db)
+                criar_stages_padrao(db)
+                # Empresas e Pipeline são opcionais no setup inicial rápido
+                try: criar_empresas_padrao(db)
+                except: pass
+                
+                try: popular_pipeline(db)
+                except: pass
+                
+                try: criar_prospeccoes_padrao(db)
+                except: pass
+                
+                try: atualizar_prospeccoes_sem_codigo(db)
+                except: pass
+                
+                print("✅ [SETUP] Processo concluído com sucesso!")
+            finally:
+                db.close()
+        except Exception as e:
+            print(f"❌ [SETUP] ERRO FATAL: {e}")
+
+    thread = threading.Thread(target=run_init)
+    thread.daemon = True
+    thread.start()
+    return {
+        "status": "started", 
+        "message": "Inicialização do banco de dados iniciada em background. Acompanhe os logs no Railway.",
+        "hint": "Espere cerca de 30-60 segundos e tente usar o sistema."
+    }
+
+
 def get_existing_columns(conn, table_name):
     """Retorna um conjunto com os nomes das colunas existentes na tabela"""
     from sqlalchemy import text
@@ -222,49 +306,10 @@ def atualizar_prospeccoes_sem_codigo(db):
         db.commit()
         print(f"Prospeccoes atualizadas com codigo unico")
 
-@app.get("/health")
-async def health_check():
-    """Health check endpoint - must respond quickly and independently of database state"""
-    return JSONResponse(
-        content={
-            "status": "healthy", 
-            "app": "Nucleo 1.03",
-            "version": "1.0.0"
-        }, 
-        status_code=200,
-        headers={"Cache-Control": "no-cache"}
-    )
-
-def adicionar_colunas_faltantes_eventos():
-    """Adiciona colunas faltantes à tabela cronograma_eventos se não existirem"""
-    from sqlalchemy import text
-    
-    if engine is None:
-        return
-    
-    colunas_necessarias = {
-        'program_id': 'INTEGER REFERENCES programs(id)',
-        'carga_horaria': 'FLOAT DEFAULT 0',
-    }
-    
-    with engine.connect() as conn:
-        colunas_existentes = get_existing_columns(conn, 'cronograma_eventos')
-        
-        for coluna, tipo in colunas_necessarias.items():
-            if coluna not in colunas_existentes:
-                print(f"🔄 Adicionando coluna '{coluna}' à tabela cronograma_eventos...")
-                try:
-                    conn.execute(text(f"ALTER TABLE cronograma_eventos ADD COLUMN {coluna} {tipo}"))
-                    conn.commit()
-                    print(f"✅ Coluna '{coluna}' adicionada com sucesso à cronograma_eventos")
-                except Exception as e:
-                    print(f"⚠️ Erro ao adicionar coluna '{coluna}' à cronograma_eventos: {e}")
-
 @app.on_event("startup")
 async def startup_event():
-    """Startup event - DB initialization disabled to ensure fast boot on Railway"""
-    print("🚀 Aplicação iniciada (Inicialização de banco via startup desativada)")
-    # Para criar as tabelas remotamente, use os scripts de seed separadamente
+    """Startup minimalista - Tabelas serão criadas via /setup-db se necessário"""
+    print("🚀 Aplicação pronta! Use o endpoint /setup-db se as tabelas não existirem no banco.")
 
 app.add_middleware(
     CORSMiddleware,
@@ -290,23 +335,26 @@ app.add_middleware(NoCacheMiddleware)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-app.include_router(auth.router)
-app.include_router(admin.router)
-app.include_router(empresas.router)
-app.include_router(prospeccoes.router)
-app.include_router(agendamentos.router)
-app.include_router(atribuicoes.router)
-app.include_router(consultores.router)
-app.include_router(dashboard.router)
-app.include_router(cnpj.router)
-app.include_router(notificacoes.router)
-app.include_router(mensagens.router)
-app.include_router(cronograma.router)
-app.include_router(pipeline.router)
-app.include_router(programs.router)
-app.include_router(contatos.router)
-app.include_router(formularios_router)
-app.include_router(formularios_public_router)
+    # Routers included after main initialization
+    app.include_router(auth.router)
+    app.include_router(admin.router)
+    app.include_router(empresas.router)
+    app.include_router(prospeccoes.router)
+    app.include_router(agendamentos.router)
+    app.include_router(atribuicoes.router)
+    app.include_router(consultores.router)
+    app.include_router(dashboard.router)
+    app.include_router(cnpj.router)
+    app.include_router(notificacoes.router)
+    app.include_router(mensagens.router)
+    app.include_router(cronograma.router)
+    app.include_router(pipeline.router)
+    app.include_router(programs.router)
+    app.include_router(contatos.router)
+    app.include_router(formularios_router)
+    app.include_router(formularios_public_router)
+except Exception as e:
+    print(f"⚠️ Erro ao incluir routers: {e}")
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
