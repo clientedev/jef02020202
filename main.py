@@ -4,14 +4,39 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from backend.database import SessionLocal, Base, engine
-from backend.models import Usuario, Empresa, Prospeccao, Agendamento, AtribuicaoEmpresa, Notificacao, Mensagem
-from backend.routers import auth, empresas, prospeccoes, agendamentos, admin, atribuicoes, consultores, dashboard, cnpj, notificacoes, mensagens, cronograma, pipeline, programs, contatos
-from backend.routers.formularios import router as formularios_router, router_public as formularios_public_router
-from backend.utils.seed import criar_usuario_admin_padrao, criar_empresas_padrao, criar_consultores_padrao, criar_stages_padrao, popular_pipeline, criar_prospeccoes_padrao
-from backend.utils.seed_cronograma import seed_cronograma
-from backend.models.prospeccoes import gerar_codigo_prospeccao
 
 app = FastAPI(title="Núcleo 1.03", version="1.0.0")
+
+# --- EARLY ENDPOINTS (Health and Setup) ---
+@app.get("/health")
+async def health_check():
+    return JSONResponse(content={"status": "healthy", "version": "1.0.0"})
+
+@app.get("/setup-db")
+async def setup_db_endpoint():
+    """Endpoint manual para criar as tabelas e popular o banco remoto"""
+    import threading
+    from backend.utils.seed import criar_usuario_admin_padrao, criar_consultores_padrao, criar_empresas_padrao, criar_stages_padrao, popular_pipeline, criar_prospeccoes_padrao
+    
+    def run_init():
+        if engine is None: return
+        try:
+            print("🛠️ Setup iniciado...")
+            Base.metadata.create_all(bind=engine)
+            # Chama as funções de fallback se necessário
+            try: adicionar_colunas_faltantes_empresas()
+            except: pass
+            db = SessionLocal()
+            try:
+                criar_usuario_admin_padrao(db)
+                criar_consultores_padrao(db)
+                criar_stages_padrao(db)
+                print("✅ Setup concluído!")
+            finally: db.close()
+        except Exception as e: print(f"❌ Erro setup: {e}")
+
+    threading.Thread(target=run_init, daemon=True).start()
+    return {"status": "started", "message": "Inicialização em background."}
 
 # --- EARLY ENDPOINTS (Health and Setup) ---
 # Register these before routers to ensure availability even if a router fails to load
@@ -335,7 +360,11 @@ app.add_middleware(NoCacheMiddleware)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-    # Routers included after main initialization
+try:
+    # Routers included after main initialization with local imports
+    from backend.routers import auth, empresas, prospeccoes, agendamentos, admin, atribuicoes, consultores, dashboard, cnpj, notificacoes, mensagens, cronograma, pipeline, programs, contatos
+    from backend.routers.formularios import router as formularios_router, router_public as formularios_public_router
+    
     app.include_router(auth.router)
     app.include_router(admin.router)
     app.include_router(empresas.router)
