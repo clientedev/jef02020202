@@ -139,6 +139,50 @@
     </div>
 </div>
 
+<!-- Modal Ações do Consultor (NOVO) -->
+<div id="modalConsultor" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
+    <div class="glass-effect rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-slide-up">
+        <div class="p-6 border-b border-dark-border/50 flex justify-between items-center">
+            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                <i class="fas fa-user-gear text-blue-400"></i> <span id="modalConsultorTitulo">Ações do Consultor</span>
+            </h3>
+            <button onclick="fecharModalConsultor()" class="text-gray-400 hover:text-white transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-4">
+            <div id="modalConsultorInfo" class="p-4 rounded-xl bg-dark-bg/50 border border-dark-border/30">
+                <!-- Info do consultor (nome, total de horas, etc) -->
+            </div>
+
+            <div class="space-y-2">
+                <h4 class="text-xs font-bold text-gray-500 uppercase">Ações Disponíveis</h4>
+                <div class="grid grid-cols-1 gap-2">
+                    <button onclick="listarAgendamentosConsultor()"
+                        class="w-full py-3 bg-blue-500/20 text-blue-400 rounded-xl font-medium hover:bg-blue-500/30 transition text-sm flex items-center justify-center gap-2">
+                        <i class="fas fa-list-ul"></i> Listar todos os agendamentos
+                    </button>
+                    <button onclick="excluirTodosAgendamentosConsultor()"
+                        class="w-full py-3 bg-red-500/20 text-red-400 rounded-xl font-medium hover:bg-red-500/30 transition text-sm flex items-center justify-center gap-2">
+                        <i class="fas fa-user-slash"></i> EXCLUIR TODOS OS AGENDAMENTOS
+                    </button>
+                </div>
+            </div>
+
+            <div id="listaAgendamentosConsultor"
+                class="hidden space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pt-4 border-t border-dark-border/30">
+                <!-- Lista de agendamentos será injetada aqui -->
+            </div>
+        </div>
+
+        <div class="p-6 border-t border-dark-border/30 flex gap-2 bg-dark-card/50 text-right">
+            <button onclick="fecharModalConsultor()"
+                class="w-full py-2.5 bg-dark-bg text-gray-400 rounded-xl font-medium hover:bg-dark-hover transition text-sm">Fechar</button>
+        </div>
+    </div>
+</div>
+
 <div id="tooltipAgenda" class="hidden fixed z-50 pointer-events-none">
     <div class="bg-dark-card border border-dark-border/50 rounded-xl shadow-2xl p-4 max-w-xs">
         <div id="tooltipContent"></div>

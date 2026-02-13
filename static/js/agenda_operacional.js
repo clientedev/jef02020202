@@ -2,6 +2,7 @@ let consultoresAgenda = [];
 let eventosAgenda = [];
 let dataInicioAgenda = null;
 let eventoSelecionado = null;
+let consultorSelecionadoAcoes = null;
 let feriadosAgenda = [];
 const DIAS_EXIBIR = 35;
 
@@ -229,11 +230,15 @@ function renderizarScheduler() {
     });
 
     consultoresAgenda.forEach(consultor => {
-        html += `<div class="scheduler-row-header scheduler-cell p-3 border-r-2 border-dark-border/50 flex items-center gap-3">
-            <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm" style="background-color: ${getCorConsultor(consultor.id)}">
+        html += `<div class="scheduler-row-header scheduler-cell p-3 border-r-2 border-dark-border/50 flex items-center gap-3 cursor-pointer hover:bg-dark-hover group transition-colors" 
+                      onclick="abrirAcoesConsultor(${consultor.id})">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-lg group-hover:scale-110 transition-transform" style="background-color: ${getCorConsultor(consultor.id)}">
                 ${getIniciaisAgenda(consultor.nome)}
             </div>
-            <div class="truncate text-sm font-medium text-white">${consultor.nome}</div>
+            <div class="min-w-0">
+                <div class="truncate text-sm font-bold text-white group-hover:text-blue-400 transition-colors">${consultor.nome}</div>
+                <div class="text-[10px] text-gray-500 group-hover:text-gray-400">Ver ações <i class="fas fa-chevron-right ml-1 text-[8px]"></i></div>
+            </div>
         </div>`;
 
         datas.forEach(data => {
@@ -275,6 +280,93 @@ function renderizarScheduler() {
 
     html += '</div>';
     container.innerHTML = html;
+}
+
+// Ações do Consultor
+async function abrirAcoesConsultor(consultorId) {
+    const consultor = consultoresAgenda.find(c => c.id === consultorId);
+    if (!consultor) return;
+
+    consultorSelecionadoAcoes = consultor;
+    document.getElementById('modalConsultorTitulo').textContent = `Consultor: ${consultor.nome}`;
+    document.getElementById('modalConsultorInfo').innerHTML = `
+        <div class="flex items-center gap-4">
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-bold text-2xl" style="background-color: ${getCorConsultor(consultor.id)}">
+                ${getIniciaisAgenda(consultor.nome)}
+            </div>
+            <div>
+                <div class="text-white font-bold text-lg">${consultor.nome}</div>
+                <div class="text-xs text-gray-400">${consultor.email || 'Email não informado'}</div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('listaAgendamentosConsultor').classList.add('hidden');
+    document.getElementById('modalConsultor').classList.remove('hidden');
+}
+
+function fecharModalConsultor() {
+    document.getElementById('modalConsultor').classList.add('hidden');
+}
+
+async function listarAgendamentosConsultor() {
+    if (!consultorSelecionadoAcoes) return;
+
+    const container = document.getElementById('listaAgendamentosConsultor');
+    container.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-blue-400"></i> Carregando...</div>';
+    container.classList.remove('hidden');
+
+    try {
+        const res = await apiRequest(`/api/cronograma/eventos?consultor_id=${consultorSelecionadoAcoes.id}`);
+        const eventos = await res.json();
+
+        if (eventos.length === 0) {
+            container.innerHTML = '<div class="text-center py-4 text-gray-500 italic text-sm">Nenhum agendamento encontrado.</div>';
+            return;
+        }
+
+        let html = '<div class="space-y-2">';
+        eventos.forEach(ev => {
+            const cat = CATEGORIA_CORES_AGENDA[ev.categoria] || CATEGORIA_CORES_AGENDA['O'];
+            const dataFm = new Date(ev.data + 'T12:00:00').toLocaleDateString('pt-BR');
+            html += `
+                <div class="flex items-center gap-3 p-3 rounded-lg bg-dark-card border border-dark-border/30 hover:bg-dark-hover transition cursor-pointer" onclick="fecharModalConsultor(); mostrarDetalheEvento(${ev.id})">
+                    <div class="w-2 h-10 rounded-full" style="background-color: ${cat.cor}"></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-start">
+                             <div class="text-white font-bold text-xs truncate">${ev.empresa_nome || ev.sigla_empresa || 'N/A'}</div>
+                             <div class="text-[10px] text-gray-400">${dataFm}</div>
+                        </div>
+                        <div class="text-[10px] text-blue-400 truncate">${ev.program_nome || 'Sem programa'}</div>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    } catch (error) {
+        container.innerHTML = '<div class="text-center py-4 text-red-400 italic text-sm">Erro ao carregar lista.</div>';
+    }
+}
+
+async function excluirTodosAgendamentosConsultor() {
+    if (!consultorSelecionadoAcoes) return;
+
+    const confirmacao = confirm(`ATENÇÃO: Você deseja realmente excluir TODOS os agendamentos de ${consultorSelecionadoAcoes.nome}?\nEsta ação não pode ser desfeita.`);
+    if (!confirmacao) return;
+
+    try {
+        const res = await apiRequest(`/api/cronograma/eventos/bulk?consultor_id=${consultorSelecionadoAcoes.id}`, {
+            method: 'DELETE'
+        });
+        const data = await res.json();
+
+        showToast(data.message || 'Excluídos com sucesso!', 'success');
+        fecharModalConsultor();
+        carregarDadosAgenda();
+    } catch (error) {
+        showToast('Erro ao excluir agendamentos.', 'error');
+    }
 }
 
 function mostrarTooltip(event, eventoId) {
