@@ -13,6 +13,7 @@ app = FastAPI(title="Núcleo 1.03", version="1.0.0")
 templates = None
 is_loaded = False
 boot_error = None
+boot_step = "Iniciando..."
 
 @app.get("/health")
 async def health_check():
@@ -28,9 +29,10 @@ async def health_check():
 
 # --- 2. DEFERRED FULL BOOT ---
 def deferred_boot(app_instance):
-    global templates, is_loaded, boot_error
+    global templates, is_loaded, boot_error, boot_step
     print("🚀 [BOOT] Iniciando carga pesada em segundo plano...")
     try:
+        boot_step = "Carregando Middlewares e Deps..."
         from fastapi.middleware.cors import CORSMiddleware
         from fastapi.staticfiles import StaticFiles
         from fastapi.templating import Jinja2Templates
@@ -47,16 +49,23 @@ def deferred_boot(app_instance):
         )
 
         # Ensure database tables exist (Critical for Railway/New Deploys)
+        boot_step = "Conectando ao banco de dados..."
+        print(f"🚀 [BOOT] {boot_step}")
         engine = get_engine()
+        
+        boot_step = "Sincronizando tabelas (create_all)..."
+        print(f"🚀 [BOOT] {boot_step}")
         Base.metadata.create_all(bind=engine)
+        print("✅ [BOOT] Tabelas sincronizadas.")
 
-        # 2b. Assets
+        boot_step = "Carregando Assets..."
         if os.path.exists("static"):
             app_instance.mount("/static", StaticFiles(directory="static"), name="static")
         if os.path.exists("templates"):
             templates = Jinja2Templates(directory="templates")
 
         # 2c. Routers (This is what usually blocks)
+        boot_step = "Iniciando Roteadores..."
         from backend.routers import (auth, empresas, prospeccoes, agendamentos, admin, 
                                     atribuicoes, consultores, dashboard, cnpj, 
                                     notificacoes, mensagens, cronograma, pipeline, 
@@ -78,8 +87,10 @@ def deferred_boot(app_instance):
         print("✅ [BOOT] Sistema totalmente funcional!")
         
     except Exception as e:
-        boot_error = str(e)
-        print(f"❌ [BOOT] Falha na carga background: {e}")
+        import traceback
+        error_details = traceback.format_exc()
+        boot_error = f"{str(e)}\n{error_details}"
+        print(f"❌ [BOOT] Falha na carga background: {boot_error}")
 
 # Trigger boot in thread immediately
 threading.Thread(target=deferred_boot, args=(app,), daemon=True).start()
@@ -88,7 +99,19 @@ threading.Thread(target=deferred_boot, args=(app,), daemon=True).start()
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     if not is_loaded:
-        return HTMLResponse("<h1>Carregando...</h1><p>O sistema está iniciando os módulos internos. Aguarde alguns segundos e atualize.</p>")
+        error_html = ""
+        if boot_error:
+            error_html = f"<div style='color:red; margin-top:20px; padding:10px; border:1px solid red; background:#fff5f5;'><h3>Erro no Boot:</h3><pre>{boot_error}</pre></div>"
+        
+        return HTMLResponse(f"""
+            <div style="font-family: sans-serif; padding: 50px; text-align: center;">
+                <h1>🚀 Carregando Sistema Núcleo...</h1>
+                <p>O sistema está iniciando os módulos internos e conectando ao banco de dados.</p>
+                <p>Aguarde alguns segundos e <b>atualize a página</b>.</p>
+                {error_html}
+                <div style="margin-top: 20px; color: #666;">Step: {boot_step}</div>
+            </div>
+        """)
     return templates.TemplateResponse("login.html", {"request": request})
 
 @app.get("/dashboard", response_class=HTMLResponse)
