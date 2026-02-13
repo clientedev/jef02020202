@@ -81,27 +81,40 @@ function renderizarProgramas() {
 }
 
 window.prepararEdicaoPrograma = function (id) {
+    console.log('Preparando edição para ID:', id);
     const prog = programas.find(p => p.id === id);
-    if (!prog) return;
+    if (!prog) {
+        console.error('Programa não encontrado para ID:', id);
+        return;
+    }
 
-    document.getElementById('progNome').value = prog.nome;
-    document.getElementById('progCarga').value = prog.carga_horaria;
-    document.getElementById('progDesc').value = prog.descricao || '';
+    const nomeField = document.getElementById('progNome');
+    const cargaField = document.getElementById('progCarga');
+    const descField = document.getElementById('progDesc');
+
+    if (nomeField) nomeField.value = prog.nome;
+    if (cargaField) cargaField.value = prog.carga_horaria;
+    if (descField) descField.value = prog.descricao || '';
 
     let idInput = document.getElementById('editProgramId');
     if (!idInput) {
         idInput = document.createElement('input');
         idInput.type = 'hidden';
         idInput.id = 'editProgramId';
-        document.getElementById('formPrograma').appendChild(idInput);
+        const form = document.getElementById('formPrograma');
+        if (form) form.appendChild(idInput);
     }
-    idInput.value = id;
+    if (idInput) idInput.value = id;
 
     const btnSubmit = document.querySelector('#formPrograma button[type="submit"]');
     if (btnSubmit) btnSubmit.innerHTML = '<i class="fas fa-save"></i> Salvar Alterações';
 
+    const modalTitle = document.querySelector('#modalProgramas h3');
+    if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-edit text-green-400"></i> Editar Programa';
+
     // Rolar para o topo do formulário
-    document.getElementById('formPrograma').scrollIntoView({ behavior: 'smooth' });
+    const form = document.getElementById('formPrograma');
+    if (form) form.scrollIntoView({ behavior: 'smooth' });
 }
 
 window.deletarPrograma = async function (id) {
