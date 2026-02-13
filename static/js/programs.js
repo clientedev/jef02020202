@@ -80,7 +80,7 @@ function renderizarProgramas() {
     `).join('');
 }
 
-function prepararEdicaoPrograma(id) {
+window.prepararEdicaoPrograma = function (id) {
     const prog = programas.find(p => p.id === id);
     if (!prog) return;
 
@@ -104,7 +104,7 @@ function prepararEdicaoPrograma(id) {
     document.getElementById('formPrograma').scrollIntoView({ behavior: 'smooth' });
 }
 
-async function deletarPrograma(id) {
+window.deletarPrograma = async function (id) {
     if (!confirm('Deseja realmente excluir este programa? Os eventos agendados não serão removidos.')) return;
     try {
         const response = await apiRequest(`/api/programs/${id}`, { method: 'DELETE' });
@@ -145,8 +145,8 @@ if (formProg) {
                 if (document.getElementById('editProgramId')) document.getElementById('editProgramId').value = '';
 
                 // Resetar título do modal se estivermos na agenda
-                const modalTitle = document.querySelector('#modalNovoProgram h3');
-                if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-list-check text-blue-400"></i> Novo Programa';
+                const modalTitle = document.querySelector('#modalProgramas h3');
+                if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-list-check text-blue-400"></i> Gestão de Programas';
 
                 await carregarProgramas();
 
