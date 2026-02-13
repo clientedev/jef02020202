@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
-                const response = await apiRequest(`/api/empresas/?q=${busca}&page_size=5`);
+                const response = await apiRequest(`/api/empresas/?nome=${busca}&page_size=50`);
                 const data = await response.json();
                 const empresas = data.items || [];
 
