@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     carregarDadosAgenda();
 
-    // Event Listeners para Busca de Empresa
+    // Busca de Empresa no Modal
     const inputBusca = document.getElementById('eventoBuscaEmpresa');
     const listaSugestoes = document.getElementById('listaSugestoesEmpresa');
 
@@ -165,12 +165,10 @@ function renderizarScheduler() {
 
     let html = `<div class="scheduler-grid" style="grid-template-columns: 200px repeat(${datas.length}, minmax(90px, 1fr));">`;
 
-    // Header corner
     html += `<div class="scheduler-corner scheduler-cell p-3 border-b-2 border-r-2 border-dark-border/50">
         <div class="text-sm font-bold text-white uppercase tracking-wider">Consultores</div>
     </div>`;
 
-    // Header dates
     datas.forEach(data => {
         const dataStr = data.toISOString().split('T')[0];
         const isHoje = data.getTime() === hoje.getTime();
@@ -188,7 +186,6 @@ function renderizarScheduler() {
         </div>`;
     });
 
-    // Rows
     consultoresAgenda.forEach(consultor => {
         html += `<div class="scheduler-row-header scheduler-cell p-3 border-r-2 border-dark-border/50 flex items-center gap-3">
             <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm" style="background-color: ${getCorConsultor(consultor.id)}">
@@ -206,10 +203,18 @@ function renderizarScheduler() {
             if (eventosCell.length > 0) {
                 eventosCell.forEach(evento => {
                     const cat = CATEGORIA_CORES_AGENDA[evento.categoria] || CATEGORIA_CORES_AGENDA['O'];
+                    const empresaNome = evento.empresa_nome ? evento.empresa_nome.split(' ')[0] : (evento.sigla_empresa || 'N/A');
+                    const consultorNome = evento.consultor_nome ? evento.consultor_nome.split(' ')[0] : 'N/A';
+                    const programa = evento.program_nome ? evento.program_nome.substring(0, 15) : '';
+
                     html += `<div class="scheduler-cell-content" 
                         style="background-color: ${cat.cor}; color: ${cat.corTexto};"
-                        onclick="event.stopPropagation(); mostrarDetalheEvento(${evento.id})">
-                        <div class="truncate">${evento.sigla_empresa || evento.empresa_nome || 'N/A'}</div>
+                        onclick="event.stopPropagation(); mostrarDetalheEvento(${evento.id})"
+                        onmouseenter="mostrarTooltip(event, ${evento.id})"
+                        onmouseleave="esconderTooltip()">
+                        <div class="font-bold truncate text-[11px]">${empresaNome}</div>
+                        <div class="text-[9px] truncate opacity-90">${consultorNome}</div>
+                        ${programa ? `<div class="text-[8px] opacity-80 truncate border-t border-white/20 mt-1 pt-0.5">${programa}</div>` : ''}
                     </div>`;
                 });
             } else {
@@ -225,6 +230,51 @@ function renderizarScheduler() {
     container.innerHTML = html;
 }
 
+function mostrarTooltip(event, eventoId) {
+    const evento = eventosAgenda.find(e => e.id === eventoId);
+    if (!evento) return;
+
+    const tooltip = document.getElementById('tooltipAgenda');
+    const content = document.getElementById('tooltipContent');
+    const cat = CATEGORIA_CORES_AGENDA[evento.categoria] || CATEGORIA_CORES_AGENDA['O'];
+
+    const dataFormatada = new Date(evento.data + 'T12:00:00').toLocaleDateString('pt-BR', {
+        weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
+    });
+
+    content.innerHTML = `
+        <div class="space-y-2">
+            <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold text-white" style="background-color: ${cat.cor}">${evento.categoria} - ${cat.nome}</span>
+            </div>
+            <div>
+                <div class="text-xs text-gray-400">Empresa</div>
+                <div class="text-sm text-white font-medium">${evento.empresa_nome || 'N/A'}</div>
+                <div class="text-xs text-blue-400">${evento.sigla_empresa || ''}</div>
+            </div>
+            <div>
+                <div class="text-xs text-gray-400">Consultor</div>
+                <div class="text-sm text-white">${evento.consultor_nome || 'N/A'}</div>
+            </div>
+            <div>
+                <div class="text-xs text-gray-400">Data</div>
+                <div class="text-sm text-white capitalize">${dataFormatada}</div>
+            </div>
+            ${evento.program_nome ? `<div><div class="text-xs text-gray-400">Programa</div><div class="text-sm text-green-400">${evento.program_nome}</div></div>` : ''}
+            ${evento.descricao ? `<div><div class="text-xs text-gray-400">Descrição</div><div class="text-xs text-gray-300 italic">${evento.descricao}</div></div>` : ''}
+        </div>
+    `;
+
+    tooltip.style.left = `${event.pageX + 15}px`;
+    tooltip.style.top = `${event.pageY + 10}px`;
+    tooltip.classList.remove('hidden');
+}
+
+function esconderTooltip() {
+    const t = document.getElementById('tooltipAgenda');
+    if (t) t.classList.add('hidden');
+}
+
 function abrirModalNovoEvento(data, consultorId) {
     const modal = document.getElementById('modalEvento');
     const form = document.getElementById('formEvento');
@@ -235,9 +285,11 @@ function abrirModalNovoEvento(data, consultorId) {
     document.getElementById('eventoData').value = data;
 
     const selectConsultor = document.getElementById('eventoConsultor');
-    selectConsultor.innerHTML = consultoresAgenda.map(c =>
-        `<option value="${c.id}" ${c.id === consultorId ? 'selected' : ''}>${c.nome}</option>`
-    ).join('');
+    if (selectConsultor) {
+        selectConsultor.innerHTML = consultoresAgenda.map(c =>
+            `<option value="${c.id}" ${c.id === consultorId ? 'selected' : ''}>${c.nome}</option>`
+        ).join('');
+    }
 
     document.getElementById('configuracaoDistribuicao').classList.remove('hidden');
     modal.classList.remove('hidden');
@@ -282,7 +334,7 @@ async function salvarEventoAgenda(e) {
             throw new Error('Selecione uma empresa e um programa.');
         }
 
-        showToast('Sucesso!', 'success');
+        showToast('Operação realizada com sucesso!', 'success');
         fecharModalEvento();
         carregarDadosAgenda();
     } catch (error) {
@@ -297,30 +349,59 @@ async function mostrarDetalheEvento(eventoId) {
         const response = await apiRequest(`/api/cronograma/eventos/${eventoId}`);
         eventoSelecionado = await response.json();
         const cat = CATEGORIA_CORES_AGENDA[eventoSelecionado.categoria] || CATEGORIA_CORES_AGENDA['O'];
-        const dataFormatada = new Date(eventoSelecionado.data + 'T12:00:00').toLocaleDateString('pt-BR');
+        const dataFormatada = new Date(eventoSelecionado.data + 'T12:00:00').toLocaleDateString('pt-BR', {
+            weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
+        });
 
         document.getElementById('modalDetalheConteudo').innerHTML = `
-            <div class="p-4 rounded-xl bg-dark-bg/50 border border-dark-border/30 space-y-4">
-                <div class="flex items-center gap-3">
-                    <div class="px-3 py-1 rounded-lg font-bold text-white" style="background-color: ${cat.cor}">${eventoSelecionado.categoria}</div>
-                    <div class="text-white font-bold">${cat.nome}</div>
+            <div class="flex items-center gap-3 p-4 rounded-xl" style="background-color: ${cat.cor}20; border: 1px solid ${cat.cor}50;">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-xl" style="background-color: ${cat.cor}">
+                    ${eventoSelecionado.categoria}
                 </div>
                 <div>
-                    <div class="text-xs text-gray-400">Empresa</div>
-                    <div class="text-blue-400 font-bold">${eventoSelecionado.empresa_nome || 'N/A'}</div>
+                    <div class="text-lg font-bold text-white">${cat.nome}</div>
+                    <div class="text-sm text-gray-400 capitalize">${dataFormatada}</div>
                 </div>
-                <div>
-                    <div class="text-xs text-gray-400">Consultor</div>
-                    <div class="text-white">${eventoSelecionado.consultor_nome}</div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div class="p-4 rounded-xl bg-dark-bg/50 border border-dark-border/30">
+                    <div class="text-xs text-gray-400 mb-1">Empresa</div>
+                    <div class="text-white font-medium text-lg leading-tight mb-0.5">${eventoSelecionado.empresa_nome || 'N/A'}</div>
+                    <div class="text-blue-400 text-sm">${eventoSelecionado.sigla_empresa || ''}</div>
                 </div>
-                <div>
-                    <div class="text-xs text-gray-400">Data</div>
-                    <div class="text-white">${dataFormatada}</div>
+                <div class="p-4 rounded-xl bg-dark-bg/50 border border-dark-border/30">
+                    <div class="text-xs text-gray-400 mb-1">Consultor</div>
+                    <div class="text-white font-medium text-lg">${eventoSelecionado.consultor_nome || 'N/A'}</div>
+                </div>
+            </div>
+            
+            ${eventoSelecionado.program_nome ? `<div class="p-4 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 font-medium">Programa: ${eventoSelecionado.program_nome}</div>` : ''}
+            ${eventoSelecionado.descricao ? `<div class="p-4 rounded-xl bg-dark-bg/50 border border-dark-border/30 text-sm text-gray-300">${eventoSelecionado.descricao}</div>` : ''}
+
+            <div class="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 mt-2">
+                <div class="font-medium text-blue-400 mb-2 flex items-center gap-2 text-sm">
+                    <i class="fas fa-calendar-alt"></i> Reagendar Atividade
+                </div>
+                <div class="flex gap-2">
+                    <input type="date" id="novaDataReagendamento" class="flex-1 bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500" value="${eventoSelecionado.data}">
+                    <button onclick="salvarReagendamento(${eventoSelecionado.id})" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition">Confirmar</button>
                 </div>
             </div>
         `;
         document.getElementById('modalDetalheEvento').classList.remove('hidden');
     } catch (e) { console.error(e); }
+}
+
+async function salvarReagendamento(id) {
+    const novaData = document.getElementById('novaDataReagendamento').value;
+    if (!novaData) return;
+    try {
+        await apiRequest(`/api/cronograma/eventos/${id}`, { method: 'PUT', body: JSON.stringify({ data: novaData }) });
+        showToast('Reagendado com sucesso!', 'success');
+        fecharModalDetalhe();
+        carregarDadosAgenda();
+    } catch (e) { showToast('Erro ao reagendar', 'error'); }
 }
 
 function fecharModalDetalhe() {
@@ -344,33 +425,34 @@ function editarEventoAgenda() {
 }
 
 async function excluirEventoAgenda() {
-    if (!eventoSelecionado || !confirm('Excluir?')) return;
+    if (!eventoSelecionado || !confirm('Deseja realmente excluir este agendamento?')) return;
     try {
         await apiRequest(`/api/cronograma/eventos/${eventoSelecionado.id}`, { method: 'DELETE' });
-        showToast('Sucesso!', 'success');
+        showToast('Agendamento excluído!', 'success');
         fecharModalDetalhe();
         carregarDadosAgenda();
-    } catch (e) { showToast('Erro', 'error'); }
+    } catch (e) { showToast('Erro ao excluir', 'error'); }
 }
 
 async function excluirTodosEventosPrograma() {
-    if (!eventoSelecionado?.program_id || !confirm('Excluir todos?')) return;
+    if (!eventoSelecionado?.program_id || !confirm('ATENÇÃO: Isso excluirá TODOS os agendamentos deste programa. Continuar?')) return;
     try {
         await apiRequest(`/api/cronograma/eventos/bulk?program_id=${eventoSelecionado.program_id}`, { method: 'DELETE' });
-        showToast('Sucesso!', 'success');
+        showToast('Todos os eventos do programa foram excluídos!', 'success');
         fecharModalDetalhe();
         carregarDadosAgenda();
-    } catch (e) { showToast('Erro', 'error'); }
+    } catch (e) { showToast('Erro ao excluir em massa', 'error'); }
 }
 
 function getIniciaisAgenda(nome) {
     if (!nome) return '??';
-    const p = nome.split(' ').filter(x => x).map(x => x[0]).join('');
-    return p.substring(0, 2).toUpperCase();
+    const partes = nome.split(' ').filter(p => p.length > 0);
+    if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
+    return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
 }
 
 function getCorConsultor(id) {
-    const cores = ['#8B5CF6', '#EC4899', '#06B6D4', '#10B981', '#F59E0B'];
+    const cores = ['#8B5CF6', '#EC4899', '#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#6366F1'];
     return cores[id % cores.length];
 }
 
@@ -401,23 +483,75 @@ function atualizarPeriodoExibido() {
 async function renderizarTabelaMetricas() {
     const container = document.getElementById('metricsContainer');
     if (!container) return;
+
     try {
-        const res = await apiRequest('/api/cronograma/metrics');
-        const metrics = await res.json();
-        let h = `<div class="glass-effect rounded-xl overflow-hidden border border-dark-border/30 mt-8">
-            <div class="bg-dark-card/50 px-6 py-4 border-b border-dark-border/30 font-bold text-white">Metas por Programa</div>
-            <div class="overflow-x-auto"><table class="w-full text-left">
-            <thead class="text-xs text-gray-400 uppercase border-b border-dark-border/20">
-            <tr><th class="px-6 py-3">Consultor/Empresa</th><th class="px-6 py-3 text-center">Meta</th><th class="px-6 py-3 text-center">Saldo</th></tr>
-            </thead><tbody>`;
-        metrics.programas.forEach(p => {
-            h += `<tr class="border-b border-dark-border/10">
-                <td class="px-6 py-4"><div class="text-white font-medium">${p.nome}</div><div class="text-xs text-gray-500">${p.consultor} / ${p.empresa}</div></td>
-                <td class="px-6 py-4 text-center text-white font-bold">${p.meta_total}h</td>
-                <td class="px-6 py-4 text-center"><span class="px-2 py-1 rounded bg-blue-500/10 text-blue-400">${p.total_horas}h</span></td>
-            </tr>`;
+        const response = await apiRequest('/api/cronograma/metrics');
+        if (!response.ok) throw new Error('Erro ao carregar métricas');
+        const metrics = await response.json();
+
+        // Suporta tanto o array simples quanto o objeto { programas: [] }
+        const listaProgramas = metrics.programas || metrics;
+
+        let html = `
+        <div class="glass-effect rounded-xl overflow-hidden border border-dark-border/30 mt-8">
+            <div class="bg-dark-card/50 px-6 py-4 border-b border-dark-border/30 flex justify-between items-center">
+                <h3 class="text-white font-bold text-lg"><i class="fas fa-chart-bar mr-2 text-blue-400"></i>Gestão Global de Programas</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-dark-card/30 text-xs text-gray-400 uppercase border-b border-dark-border/30">
+                            <th class="px-6 py-3">Consultor</th>
+                            <th class="px-6 py-3">Empresa</th>
+                            <th class="px-6 py-3">Programa</th>
+                            <th class="px-6 py-3 text-center">Carga Total</th>
+                            <th class="px-6 py-3">Status Execução</th>
+                            <th class="px-6 py-3 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-dark-border/20">
+        `;
+
+        listaProgramas.forEach(m => {
+            // Mapeia propriedades dependendo do formato do objeto
+            const consultor = m.consultor_nome || m.consultor;
+            const empresa = m.projeto_nome || m.empresa;
+            const programa = m.programa_nome || m.nome;
+            const cargaTotal = m.carga_total || m.meta_total;
+            const horasRealizadas = m.horas_contabilizadas || m.horas_realizadas || 0;
+            const progresso = (horasRealizadas / cargaTotal) * 100;
+
+            html += `
+                <tr class="hover:bg-dark-hover/30 transition-colors">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-[10px]">
+                                ${getIniciaisAgenda(consultor)}
+                            </div>
+                            <span class="text-xs text-white font-medium">${consultor}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-xs text-gray-300 font-medium">${empresa}</td>
+                    <td class="px-6 py-4">
+                        <div class="text-[11px] text-green-400 font-bold">${programa}</div>
+                    </td>
+                    <td class="px-6 py-4 text-center text-xs text-white font-bold">${cargaTotal}h</td>
+                    <td class="px-6 py-4">
+                        <div class="w-full h-1.5 bg-dark-bg rounded-full overflow-hidden mb-1">
+                            <div class="h-full bg-blue-500 rounded-full" style="width: ${Math.min(progresso, 100)}%"></div>
+                        </div>
+                        <span class="text-[9px] text-gray-400">${Math.round(progresso)}% executado</span>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                         <span class="text-[10px] text-gray-500">${m.ultima_data ? new Date(m.ultima_data).toLocaleDateString('pt-BR') : 'N/A'}</span>
+                    </td>
+                </tr>
+            `;
         });
-        h += `</tbody></table></div></div>`;
-        container.innerHTML = h;
-    } catch (e) { }
+
+        html += '</tbody></table></div></div>';
+        container.innerHTML = html;
+    } catch (error) {
+        console.error(error);
+    }
 }
