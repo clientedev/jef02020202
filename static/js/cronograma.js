@@ -28,9 +28,12 @@ const MESES = ['Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho',
 // --- INITIALIZATION ---
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("Cronograma JS Loaded");
-    if (typeof checkAuth !== 'undefined') checkAuth();
-    if (typeof atualizarSidebar !== 'undefined') atualizarSidebar();
+    console.log("CRONOGRAMA_DEBUG: DOMContentLoaded fired");
+    if (typeof checkAuth !== 'undefined') {
+        checkAuth();
+    } else {
+        console.error("CRONOGRAMA_DEBUG: checkAuth not found!");
+    }
 
     const hoje = new Date();
     const filtroMesAno = document.getElementById('filtroMesAno');
@@ -465,12 +468,32 @@ function renderizarListaFeriados() {
 // --- MODAL & UI ACTIONS ---
 
 function abrirModalFeriados() {
+    console.log("CRONOGRAMA_DEBUG: abrirModalFeriados called");
     const modal = document.getElementById('modalFeriados');
     if (modal) {
         carregarFeriados();
         modal.classList.remove('hidden');
+    } else {
+        console.error("CRONOGRAMA_DEBUG: modalFeriados element not found");
     }
 }
+window.abrirModalFeriados = abrirModalFeriados;
+window.fecharModalFeriados = fecharModalFeriados;
+window.abrirModalProgramas = abrirModalProgramas;
+window.fecharModalProgramas = fecharModalProgramas;
+window.abrirModalNovoEvento = abrirModalNovoEvento;
+window.fecharModalEvento = fecharModalEvento;
+window.abrirDetalhesDia = abrirDetalhesDia;
+window.fecharModalDetalhes = fecharModalDetalhes;
+window.mesAnterior = mesAnterior;
+window.proximoMes = proximoMes;
+window.irParaHoje = irParaHoje;
+window.setVisualizacao = setVisualizacao;
+window.aplicarFiltros = aplicarFiltros;
+window.limparFiltros = limparFiltros;
+window.toggleFiltros = toggleFiltros;
+window.exibirDetalhesAgendamento = exibirDetalhesAgendamento;
+window.selecionarEmpresaParaEvento = selecionarEmpresaParaEvento;
 
 function fecharModalFeriados() {
     document.getElementById('modalFeriados').classList.add('hidden');

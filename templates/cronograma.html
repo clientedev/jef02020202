@@ -394,6 +394,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/cronograma.js"></script>
-<script src="/static/js/programs.js"></script>
+<script src="/static/js/cronograma.js?v={{ range(1, 1000) | random }}"></script>
+<script src="/static/js/programs.js?v={{ range(1, 1000) | random }}"></script>
 {% endblock %}
