@@ -799,6 +799,12 @@ function fecharModalEvento() {
     document.getElementById('modalEvento').classList.add('hidden');
 }
 
+function atualizarMetricasEvolucao() {
+    // Implementação futura de métricas
+    console.log("Atualizando métricas (placeholder)...");
+}
+
+
 async function carregarProgramasNoEvento() {
     const select = document.getElementById('eventoPrograma');
     if (!select) return;
