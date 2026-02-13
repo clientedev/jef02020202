@@ -15,7 +15,7 @@ class FeriadoBase(BaseModel):
     fixo: bool = False
 
 class FeriadoCreate(FeriadoBase):
-    pass
+    data_fim: Optional[date] = None
 
 class FeriadoResponse(FeriadoBase):
     id: int
@@ -39,22 +39,42 @@ def listar_feriados(
         
     return query.order_by(Feriado.data).all()
 
-@router.post("/", response_model=FeriadoResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=List[FeriadoResponse], status_code=status.HTTP_201_CREATED)
 def criar_feriado(
     feriado: FeriadoCreate,
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(obter_usuario_atual)
 ):
-    # Check simple duplicate
-    existente = db.query(Feriado).filter(Feriado.data == feriado.data).first()
-    if existente:
-        raise HTTPException(status_code=400, detail="Feriado já cadastrado nesta data")
-        
-    novo_feriado = Feriado(**feriado.model_dump())
-    db.add(novo_feriado)
+    from datetime import timedelta
+    
+    datas = []
+    if feriado.data_fim and feriado.data_fim > feriado.data:
+        # Range of dates
+        delta = (feriado.data_fim - feriado.data).days
+        for i in range(delta + 1):
+            datas.append(feriado.data + timedelta(days=i))
+    else:
+        # Single date
+        datas.append(feriado.data)
+    
+    criados = []
+    for d in datas:
+        # Check simple duplicate
+        existente = db.query(Feriado).filter(Feriado.data == d).first()
+        if not existente:
+            novo_feriado = Feriado(
+                data=d,
+                descricao=feriado.descricao,
+                fixo=feriado.fixo
+            )
+            db.add(novo_feriado)
+            criados.append(novo_feriado)
+            
     db.commit()
-    db.refresh(novo_feriado)
-    return novo_feriado
+    for c in criados:
+        db.refresh(c)
+        
+    return criados
 
 @router.delete("/{feriado_id}", status_code=status.HTTP_204_NO_CONTENT)
 def deletar_feriado(

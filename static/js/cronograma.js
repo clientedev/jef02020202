@@ -53,12 +53,17 @@ document.addEventListener('DOMContentLoaded', () => {
         formFeriado.addEventListener('submit', async (e) => {
             e.preventDefault();
             const data = document.getElementById('feriadoData').value;
+            const dataFim = document.getElementById('feriadoDataFim').value;
             const desc = document.getElementById('feriadoDescricao').value;
 
             try {
                 const res = await apiRequest('/api/feriados/', {
                     method: 'POST',
-                    body: JSON.stringify({ data: data, descricao: desc })
+                    body: JSON.stringify({
+                        data: data,
+                        data_fim: dataFim || null,
+                        descricao: desc
+                    })
                 });
                 if (res.ok) {
                     formFeriado.reset();

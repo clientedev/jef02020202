@@ -34,6 +34,8 @@ def deferred_boot(app_instance):
         from fastapi.middleware.cors import CORSMiddleware
         from fastapi.staticfiles import StaticFiles
         from fastapi.templating import Jinja2Templates
+        from backend.database import get_engine, Base
+        import backend.models # Ensure all models are registered
         
         # 2a. Middleware
         app_instance.add_middleware(
@@ -43,6 +45,10 @@ def deferred_boot(app_instance):
             allow_methods=["*"],
             allow_headers=["*"],
         )
+
+        # Ensure database tables exist (Critical for Railway/New Deploys)
+        engine = get_engine()
+        Base.metadata.create_all(bind=engine)
 
         # 2b. Assets
         if os.path.exists("static"):
