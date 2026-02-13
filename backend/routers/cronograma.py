@@ -430,26 +430,6 @@ def atualizar_evento(
     return evento
 
 
-@router.delete("/eventos/{evento_id}")
-def deletar_evento(
-    evento_id: int,
-    db: Session = Depends(get_db),
-    usuario: Usuario = Depends(obter_usuario_atual)
-):
-    evento = db.query(CronogramaEvento).filter(CronogramaEvento.id == evento_id).first()
-    
-    if not evento:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Evento nao encontrado"
-        )
-    
-    db.delete(evento)
-    db.commit()
-    
-    return {"message": "Evento deletado com sucesso"}
-
-
 @router.delete("/eventos/bulk")
 def deletar_eventos_bulk(
     projeto_id: Optional[int] = None,
@@ -473,14 +453,34 @@ def deletar_eventos_bulk(
     if consultor_id:
         query = query.filter(CronogramaEvento.consultor_id == consultor_id)
         
-    # Check if user is admin or owner of one of the events
-    if usuario.tipo != "admin":
+    from backend.models.usuarios import TipoUsuario
+    if usuario.tipo != TipoUsuario.admin:
         query = query.filter(CronogramaEvento.consultor_id == usuario.id)
         
     excluidos = query.delete(synchronize_session=False)
     db.commit()
     
     return {"message": f"{excluidos} eventos deletados com sucesso"}
+
+
+@router.delete("/eventos/{evento_id}")
+def deletar_evento(
+    evento_id: int,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(obter_usuario_atual)
+):
+    evento = db.query(CronogramaEvento).filter(CronogramaEvento.id == evento_id).first()
+    
+    if not evento:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Evento nao encontrado"
+        )
+    
+    db.delete(evento)
+    db.commit()
+    
+    return {"message": "Evento deletado com sucesso"}
 
 
 
