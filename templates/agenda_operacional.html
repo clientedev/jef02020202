@@ -87,19 +87,56 @@
             </div>
         </div>
 
-        <div class="flex-1 overflow-auto custom-scrollbar" id="schedulerContainer">
-            <div id="schedulerGrid" class="min-w-max mb-6">
+        <div class="flex-1 overflow-auto custom-scrollbar" id="schedulerContainer" ondragover="allowDropAgenda(event)"
+            ondrop="dropAgenda(event)">
+            <div id="schedulerGrid" class="min-w-max">
                 <div class="text-center py-20 text-gray-500">
                     <i class="fas fa-spinner fa-spin text-3xl mb-4"></i>
                     <p>Carregando agenda...</p>
                 </div>
             </div>
 
-            <div id="metricsContainer" class="px-4 pb-8">
+            <div id="metricsContainer" class="px-4 pb-8 sticky left-0">
                 <!-- Metrics table will be injected here -->
             </div>
         </div>
     </main>
+</div>
+
+<!-- Modal Detalhe do Evento (Restaurado) -->
+<div id="modalDetalheEvento" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
+    <div class="glass-effect rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-slide-up">
+        <div class="p-6 border-b border-dark-border/50 flex justify-between items-center">
+            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                <i class="fas fa-info-circle text-blue-400"></i> Detalhes da Atividade
+            </h3>
+            <button onclick="fecharModalDetalhe()" class="text-gray-400 hover:text-white transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-6" id="modalDetalheConteudo">
+            <!-- Conteúdo dinâmico -->
+        </div>
+
+        <div class="p-6 border-t border-dark-border/30 flex flex-wrap gap-2 bg-dark-card/50">
+            <button onclick="editarEventoAgenda()"
+                class="flex-1 min-w-[120px] py-2.5 bg-blue-500/20 text-blue-400 rounded-xl font-medium hover:bg-blue-500/30 transition text-sm">
+                <i class="fas fa-edit mr-2"></i>Editar
+            </button>
+            <button id="btnExcluirEvento" onclick="excluirEventoAgenda()"
+                class="flex-1 min-w-[120px] py-2.5 bg-red-500/20 text-red-400 rounded-xl font-medium hover:bg-red-500/30 transition text-sm">
+                <i class="fas fa-trash-alt mr-2"></i>Excluir
+            </button>
+            <button id="btnExcluirTodosPrograma" onclick="excluirTodosEventosPrograma()"
+                class="w-full mt-2 py-2.5 border border-red-500/30 text-red-400/80 rounded-xl font-medium hover:bg-red-500/10 transition text-xs">
+                <i class="fas fa-layer-group mr-2"></i>Excluir todos deste programa
+            </button>
+            <button onclick="fecharModalDetalhe()"
+                class="w-full mt-1 py-2.5 bg-dark-bg text-gray-400 rounded-xl font-medium hover:bg-dark-hover transition text-sm">
+                Fechar</button>
+        </div>
+    </div>
 </div>
 
 <div id="tooltipAgenda" class="hidden fixed z-50 pointer-events-none">

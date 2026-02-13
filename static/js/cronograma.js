@@ -301,14 +301,15 @@ function renderizarCalendario() {
         }
 
         if (eventosDoDia.length > 0) {
-            html += '<div class="space-y-1.5 pointer-events-none">';
+            html += '<div class="space-y-1.5">';
             eventosDoDia.slice(0, 3).forEach(evento => {
                 const consultorCor = getConsultorCor(evento.consultor_id);
                 const corCat = CATEGORIA_CORES[evento.categoria]?.cor || '#6b7280';
                 const programa = evento.program_nome ? evento.program_nome.substring(0, 20) : '';
                 const alteradoBadge = evento.alterado ? '<span class="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-auto"></span>' : '';
                 html += `
-                    <div class="flex items-center gap-1.5 p-1.5 rounded-lg bg-dark-card/90 border ${evento.alterado ? 'border-red-500/50' : 'border-dark-border/40'} shadow-sm">
+                    <div class="flex items-center gap-1.5 p-1.5 rounded-lg bg-dark-card/90 border ${evento.alterado ? 'border-red-500/50' : 'border-dark-border/40'} shadow-sm hover:brightness-125 transition-all"
+                         onclick="event.stopPropagation(); exibirDetalhesAgendamento(${evento.id})">
                         <div class="w-1 h-8 rounded-full flex-shrink-0" style="background-color: ${corCat}"></div>
                         <div class="flex-1 min-w-0">
                             <div class="font-bold text-[11px] text-white truncate">${evento.empresa_nome || evento.sigla_empresa}</div>

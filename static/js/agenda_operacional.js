@@ -2,6 +2,7 @@ let consultoresAgenda = [];
 let eventosAgenda = [];
 let dataInicioAgenda = null;
 let eventoSelecionado = null;
+let feriadosAgenda = [];
 const DIAS_EXIBIR = 35;
 
 const CATEGORIA_CORES_AGENDA = {
@@ -96,6 +97,46 @@ document.addEventListener('DOMContentLoaded', () => {
     if (formEvento) formEvento.addEventListener('submit', salvarEventoAgenda);
 });
 
+// Drag and Drop Logic
+function dragAgenda(ev, id) {
+    ev.dataTransfer.setData("eventoId", id);
+    ev.target.style.opacity = "0.5";
+}
+
+function allowDropAgenda(ev) {
+    ev.preventDefault();
+}
+
+async function dropAgenda(ev) {
+    ev.preventDefault();
+    const cell = ev.target.closest('.scheduler-cell');
+    if (!cell) return;
+
+    const targetData = cell.getAttribute('data-data');
+    const targetConsultor = cell.getAttribute('data-consultor');
+    const eventoId = ev.dataTransfer.getData("eventoId");
+
+    if (targetData && targetConsultor && eventoId) {
+        try {
+            await apiRequest(`/api/cronograma/eventos/${eventoId}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    data: targetData,
+                    consultor_id: parseInt(targetConsultor)
+                })
+            });
+            showToast('Reagendado com sucesso!', 'success');
+            carregarDadosAgenda();
+        } catch (error) {
+            showToast('Erro ao reagendar', 'error');
+        }
+    }
+
+    // Reset opacity visually
+    const draggables = document.querySelectorAll('.scheduler-cell-content');
+    draggables.forEach(d => d.style.opacity = "1");
+}
+
 function selecionarEmpresaParaEventoAgenda(id, nome, sigla) {
     document.getElementById('eventoBuscaEmpresa').value = nome;
     document.getElementById('eventoEmpresaId').value = id;
@@ -121,8 +162,6 @@ async function carregarProgramasPorEmpresaAgenda(empresaId) {
         console.error('Erro ao carregar programas:', error);
     }
 }
-
-let feriadosAgenda = [];
 
 async function carregarDadosAgenda() {
     try {
@@ -181,7 +220,10 @@ function renderizarScheduler() {
         else if (diaSemana === 0 || diaSemana === 6) classes += 'weekend-col ';
 
         html += `<div class="${classes}">
-            <div class="text-lg font-bold ${isHoje ? 'text-blue-400' : 'text-white'}">${data.getDate()}</div>
+            <div class="text-lg font-bold ${isHoje ? 'text-blue-400' : 'text-white'}">
+                ${data.getDate()} 
+                ${feriado ? '<i class="fas fa-flag text-[10px] text-red-500 ml-1" title="' + feriado.descricao + '"></i>' : ''}
+            </div>
             <div class="text-[10px] text-gray-400">${DIAS_SEMANA[diaSemana]}</div>
         </div>`;
     });
@@ -198,7 +240,10 @@ function renderizarScheduler() {
             const dataStr = data.toISOString().split('T')[0];
             const eventosCell = eventosAgenda.filter(e => e.consultor_id === consultor.id && e.data === dataStr);
 
-            html += `<div class="scheduler-cell group relative" onclick="abrirModalNovoEvento('${dataStr}', ${consultor.id})">`;
+            html += `<div class="scheduler-cell group relative" 
+                        data-data="${dataStr}" 
+                        data-consultor="${consultor.id}"
+                        onclick="abrirModalNovoEvento('${dataStr}', ${consultor.id})">`;
 
             if (eventosCell.length > 0) {
                 eventosCell.forEach(evento => {
@@ -208,6 +253,8 @@ function renderizarScheduler() {
                     const programa = evento.program_nome ? evento.program_nome.substring(0, 15) : '';
 
                     html += `<div class="scheduler-cell-content" 
+                        draggable="true"
+                        ondragstart="dragAgenda(event, ${evento.id})"
                         style="background-color: ${cat.cor}; color: ${cat.corTexto};"
                         onclick="event.stopPropagation(); mostrarDetalheEvento(${evento.id})"
                         onmouseenter="mostrarTooltip(event, ${evento.id})"
@@ -331,7 +378,16 @@ async function salvarEventoAgenda(e) {
             };
             await apiRequest('/api/programs/auto-schedule', { method: 'POST', body: JSON.stringify(dadosAuto) });
         } else {
-            throw new Error('Selecione uma empresa e um programa.');
+            // Manual creation without program
+            const dados = {
+                data: document.getElementById('eventoData').value,
+                categoria: document.getElementById('eventoCategoria').value,
+                consultor_id: parseInt(document.getElementById('eventoConsultor').value),
+                empresa_id: empresaId ? parseInt(empresaId) : null,
+                sigla_empresa: document.getElementById('eventoSigla').value || null,
+                descricao: document.getElementById('eventoDescricao').value
+            };
+            await apiRequest('/api/cronograma/eventos', { method: 'POST', body: JSON.stringify(dados) });
         }
 
         showToast('Operação realizada com sucesso!', 'success');
@@ -378,30 +434,14 @@ async function mostrarDetalheEvento(eventoId) {
             
             ${eventoSelecionado.program_nome ? `<div class="p-4 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 font-medium">Programa: ${eventoSelecionado.program_nome}</div>` : ''}
             ${eventoSelecionado.descricao ? `<div class="p-4 rounded-xl bg-dark-bg/50 border border-dark-border/30 text-sm text-gray-300">${eventoSelecionado.descricao}</div>` : ''}
-
-            <div class="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 mt-2">
-                <div class="font-medium text-blue-400 mb-2 flex items-center gap-2 text-sm">
-                    <i class="fas fa-calendar-alt"></i> Reagendar Atividade
-                </div>
-                <div class="flex gap-2">
-                    <input type="date" id="novaDataReagendamento" class="flex-1 bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500" value="${eventoSelecionado.data}">
-                    <button onclick="salvarReagendamento(${eventoSelecionado.id})" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition">Confirmar</button>
-                </div>
-            </div>
         `;
-        document.getElementById('modalDetalheEvento').classList.remove('hidden');
-    } catch (e) { console.error(e); }
-}
 
-async function salvarReagendamento(id) {
-    const novaData = document.getElementById('novaDataReagendamento').value;
-    if (!novaData) return;
-    try {
-        await apiRequest(`/api/cronograma/eventos/${id}`, { method: 'PUT', body: JSON.stringify({ data: novaData }) });
-        showToast('Reagendado com sucesso!', 'success');
-        fecharModalDetalhe();
-        carregarDadosAgenda();
-    } catch (e) { showToast('Erro ao reagendar', 'error'); }
+        document.getElementById('btnExcluirTodosPrograma').classList.toggle('hidden', !eventoSelecionado.program_id);
+        document.getElementById('modalDetalheEvento').classList.remove('hidden');
+    } catch (e) {
+        console.error(e);
+        showToast('Erro ao carregar detalhes', 'error');
+    }
 }
 
 function fecharModalDetalhe() {
@@ -489,7 +529,6 @@ async function renderizarTabelaMetricas() {
         if (!response.ok) throw new Error('Erro ao carregar métricas');
         const metrics = await response.json();
 
-        // Suporta tanto o array simples quanto o objeto { programas: [] }
         const listaProgramas = metrics.programas || metrics;
 
         let html = `
@@ -502,18 +541,17 @@ async function renderizarTabelaMetricas() {
                     <thead>
                         <tr class="bg-dark-card/30 text-xs text-gray-400 uppercase border-b border-dark-border/30">
                             <th class="px-6 py-3">Consultor</th>
-                            <th class="px-6 py-3">Empresa</th>
-                            <th class="px-6 py-3">Programa</th>
-                            <th class="px-6 py-3 text-center">Carga Total</th>
-                            <th class="px-6 py-3">Status Execução</th>
-                            <th class="px-6 py-3 text-center">Ações</th>
+                            <th class="px-3 py-3">Empresa</th>
+                            <th class="px-3 py-3">Programa</th>
+                            <th class="px-3 py-3 text-center">Carga</th>
+                            <th class="px-3 py-3">Status</th>
+                            <th class="px-3 py-3 text-center">Última Ativ.</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-dark-border/20">
         `;
 
         listaProgramas.forEach(m => {
-            // Mapeia propriedades dependendo do formato do objeto
             const consultor = m.consultor_nome || m.consultor;
             const empresa = m.projeto_nome || m.empresa;
             const programa = m.programa_nome || m.nome;
@@ -531,18 +569,18 @@ async function renderizarTabelaMetricas() {
                             <span class="text-xs text-white font-medium">${consultor}</span>
                         </div>
                     </td>
-                    <td class="px-6 py-4 text-xs text-gray-300 font-medium">${empresa}</td>
-                    <td class="px-6 py-4">
+                    <td class="px-3 py-4 text-xs text-gray-300 font-medium">${empresa}</td>
+                    <td class="px-3 py-4">
                         <div class="text-[11px] text-green-400 font-bold">${programa}</div>
                     </td>
-                    <td class="px-6 py-4 text-center text-xs text-white font-bold">${cargaTotal}h</td>
-                    <td class="px-6 py-4">
-                        <div class="w-full h-1.5 bg-dark-bg rounded-full overflow-hidden mb-1">
+                    <td class="px-3 py-4 text-center text-xs text-white font-bold">${cargaTotal}h</td>
+                    <td class="px-3 py-4">
+                        <div class="w-24 h-1.5 bg-dark-bg rounded-full overflow-hidden mb-1">
                             <div class="h-full bg-blue-500 rounded-full" style="width: ${Math.min(progresso, 100)}%"></div>
                         </div>
                         <span class="text-[9px] text-gray-400">${Math.round(progresso)}% executado</span>
                     </td>
-                    <td class="px-6 py-4 text-center">
+                    <td class="px-3 py-4 text-center">
                          <span class="text-[10px] text-gray-500">${m.ultima_data ? new Date(m.ultima_data).toLocaleDateString('pt-BR') : 'N/A'}</span>
                     </td>
                 </tr>
