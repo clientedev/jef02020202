@@ -466,7 +466,8 @@ async function salvarEventoAgenda(e) {
                 empresa_id: empresaId ? parseInt(empresaId) : null,
                 data_inicio: document.getElementById('eventoData').value,
                 dias_semana: Array.from(diasCheckboxes).map(cb => parseInt(cb.value)),
-                horas_por_dia: parseFloat(document.getElementById('eventoHorasDia').value || 8)
+                horas_por_dia: parseFloat(document.getElementById('eventoHorasDia').value || 8),
+                categoria: document.getElementById('eventoCategoria').value
             };
             await apiRequest('/api/programs/auto-schedule', { method: 'POST', body: JSON.stringify(dadosAuto) });
         } else {

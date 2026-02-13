@@ -29,6 +29,7 @@ class AutoScheduleRequest(BaseModel):
     data_inicio: date
     dias_semana: List[int]  # 0=Monday, 6=Sunday
     horas_por_dia: float
+    categoria: Optional[str] = None
 
 @router.post("/", response_model=ProgramResponse)
 def create_program(program: ProgramCreate, db: Session = Depends(get_db)):
@@ -81,7 +82,7 @@ def auto_schedule(request: AutoScheduleRequest, db: Session = Depends(get_db)):
 
             novo_evento = CronogramaEvento(
                 data=data_atual,
-                categoria=CategoriaEvento.programado,
+                categoria=request.categoria if request.categoria else CategoriaEvento.programado,
                 periodo=PeriodoEvento.dia_todo if horas_hoje >= 4 else PeriodoEvento.manha,
                 consultor_id=request.consultor_id,
                 empresa_id=empresa_id_final,
