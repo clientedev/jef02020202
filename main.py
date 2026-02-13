@@ -9,8 +9,27 @@ import threading
 # --- 1. HYPERSONIC BOOT (Ready in Miliseconds) ---
 app = FastAPI(title="Núcleo 1.03", version="1.0.0")
 
+# 1a. Middleware & Static (Must be loaded before app startup)
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+
 # Global state
 templates = None
+if os.path.exists("templates"):
+    templates = Jinja2Templates(directory="templates")
+
 is_loaded = False
 boot_error = None
 boot_step = "Iniciando..."
@@ -32,22 +51,10 @@ def deferred_boot(app_instance):
     global templates, is_loaded, boot_error, boot_step
     print("🚀 [BOOT] Iniciando carga pesada em segundo plano...")
     try:
-        boot_step = "Carregando Middlewares e Deps..."
-        from fastapi.middleware.cors import CORSMiddleware
-        from fastapi.staticfiles import StaticFiles
-        from fastapi.templating import Jinja2Templates
+        boot_step = "Carregando Deps..."
         from backend.database import get_engine, Base
         import backend.models # Ensure all models are registered
         
-        # 2a. Middleware
-        app_instance.add_middleware(
-            CORSMiddleware,
-            allow_origins=["*"],
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
-
         # Ensure database tables exist (Critical for Railway/New Deploys)
         boot_step = "Conectando ao banco de dados..."
         print(f"🚀 [BOOT] {boot_step}")
@@ -57,12 +64,6 @@ def deferred_boot(app_instance):
         print(f"🚀 [BOOT] {boot_step}")
         Base.metadata.create_all(bind=engine)
         print("✅ [BOOT] Tabelas sincronizadas.")
-
-        boot_step = "Carregando Assets..."
-        if os.path.exists("static"):
-            app_instance.mount("/static", StaticFiles(directory="static"), name="static")
-        if os.path.exists("templates"):
-            templates = Jinja2Templates(directory="templates")
 
         # 2c. Routers (This is what usually blocks)
         boot_step = "Iniciando Roteadores..."
