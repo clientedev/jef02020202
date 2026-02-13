@@ -1,6 +1,7 @@
 let eventos = [];
 let consultores = [];
 let categorias = [];
+let feriados = [];
 let mesAtual = new Date().getMonth();
 let anoAtual = new Date().getFullYear();
 let dataSelecionada = null;
@@ -24,23 +25,10 @@ const CONSULTOR_CORES = [
 const MESES = ['Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
-function getConsultorCor(consultorId) {
-    return CONSULTOR_CORES[consultorId % CONSULTOR_CORES.length];
-}
-
-function getIniciais(nome) {
-    if (!nome) return '??';
-    const partes = nome.split(' ').filter(p => p.length > 0);
-    if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
-    return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
-}
-
-function getPrimeiroNome(nome) {
-    if (!nome) return 'Consultor';
-    return nome.split(' ')[0];
-}
+// --- INITIALIZATION ---
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log("Cronograma JS Loaded");
     if (typeof checkAuth !== 'undefined') checkAuth();
     if (typeof atualizarSidebar !== 'undefined') atualizarSidebar();
 
@@ -50,12 +38,40 @@ document.addEventListener('DOMContentLoaded', () => {
         filtroMesAno.value = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
     }
 
+    // Carregar dados iniciais
     carregarDados();
 
+    // Event Listeners para Formulários
     const formEvento = document.getElementById('formEvento');
     if (formEvento) formEvento.addEventListener('submit', salvarEvento);
 
-    // Lógica de Busca de Empresa
+    const formFeriado = document.getElementById('formFeriado');
+    if (formFeriado) {
+        formFeriado.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = document.getElementById('feriadoData').value;
+            const desc = document.getElementById('feriadoDescricao').value;
+
+            try {
+                const res = await apiRequest('/api/feriados/', {
+                    method: 'POST',
+                    body: JSON.stringify({ data: data, descricao: desc })
+                });
+                if (res.ok) {
+                    formFeriado.reset();
+                    await carregarFeriados();
+                    await carregarDados();
+                } else {
+                    const err = await res.json();
+                    alert(err.detail || "Erro ao criar");
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        });
+    }
+
+    // Busca de Empresa (Autocomplete)
     const inputBusca = document.getElementById('eventoBuscaEmpresa');
     const listaSugestoes = document.getElementById('listaSugestoesEmpresa');
 
@@ -97,6 +113,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// --- UTILITY FUNCTIONS ---
+
+function getConsultorCor(consultorId) {
+    return CONSULTOR_CORES[consultorId % CONSULTOR_CORES.length];
+}
+
+function getIniciais(nome) {
+    if (!nome) return '??';
+    const partes = nome.split(' ').filter(p => p.length > 0);
+    if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
+    return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
+}
+
+function getPrimeiroNome(nome) {
+    if (!nome) return 'Consultor';
+    return nome.split(' ')[0];
+}
+
 function selecionarEmpresaParaEvento(id, nome, sigla) {
     const bus = document.getElementById('eventoBuscaEmpresa');
     const eid = document.getElementById('eventoEmpresaId');
@@ -109,100 +143,7 @@ function selecionarEmpresaParaEvento(id, nome, sigla) {
     if (sug) sug.classList.add('hidden');
 }
 
-
-
-// FERIADOS LOGIC
-let feriados = [];
-
-function abrirModalFeriados() {
-    const modal = document.getElementById('modalFeriados');
-    if (modal) {
-        carregarFeriados();
-        modal.classList.remove('hidden');
-    }
-}
-
-function fecharModalFeriados() {
-    document.getElementById('modalFeriados').classList.add('hidden');
-}
-
-async function carregarFeriados() {
-    try {
-        const response = await apiRequest('/api/feriados/');
-        feriados = await response.json();
-        renderizarListaFeriados();
-        if (!document.getElementById('modalFeriados').classList.contains('hidden')) {
-            // If modal is open, we just wanted to refresh the list inside it
-        } else {
-            // If this call came from main load, render calendar
-            // But wait, carregarDados calls carregarFeriados?
-            // No, let's keep it separate or integrate
-        }
-    } catch (e) {
-        console.error("Erro ao carregar feriados", e);
-    }
-}
-
-function renderizarListaFeriados() {
-    const lista = document.getElementById('listaFeriados');
-    if (!lista) return;
-
-    lista.innerHTML = feriados.map(f => {
-        const dataF = new Date(f.data + 'T12:00:00').toLocaleDateString('pt-BR');
-        return `
-            <div class="flex items-center justify-between p-2 rounded-lg bg-dark-bg/50 border border-dark-border/30 hover:bg-dark-hover transition">
-                <div>
-                    <span class="text-red-400 font-bold text-xs mr-2">${dataF}</span>
-                    <span class="text-white text-sm">${f.descricao}</span>
-                </div>
-                <button onclick="deletarFeriado(${f.id})" class="text-gray-500 hover:text-red-400 transition ml-2">
-                    <i class="fas fa-trash text-xs"></i>
-                </button>
-            </div>
-        `;
-    }).join('');
-}
-
-async function deletarFeriado(id) {
-    if (!confirm("Remover este feriado?")) return;
-    try {
-        await apiRequest(`/api/feriados/${id}`, { method: 'DELETE' });
-        carregarFeriados();
-        carregarDados(); // Refresh calendar to remove holiday marker
-    } catch (e) {
-        alert("Erro ao remover");
-    }
-}
-
-// Form handler attached in init
-document.addEventListener('DOMContentLoaded', () => {
-    // ... existing init ...
-    const formFeriado = document.getElementById('formFeriado');
-    if (formFeriado) {
-        formFeriado.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = document.getElementById('feriadoData').value;
-            const desc = document.getElementById('feriadoDescricao').value;
-
-            try {
-                const res = await apiRequest('/api/feriados/', {
-                    method: 'POST',
-                    body: JSON.stringify({ data: data, descricao: desc })
-                });
-                if (res.ok) {
-                    formFeriado.reset();
-                    await carregarFeriados();
-                    await carregarDados(); // Update calendar
-                } else {
-                    const err = await res.json();
-                    alert(err.detail || "Erro ao criar");
-                }
-            } catch (e) {
-                console.error(e);
-            }
-        });
-    }
-});
+// --- DATA LOADING ---
 
 async function carregarDados() {
     try {
@@ -290,6 +231,18 @@ async function carregarEventos() {
     }
 }
 
+async function carregarFeriados() {
+    try {
+        const response = await apiRequest('/api/feriados/');
+        feriados = await response.json();
+        renderizarListaFeriados();
+    } catch (e) {
+        console.error("Erro ao carregar feriados", e);
+    }
+}
+
+// --- RENDERING FUNCTIONS ---
+
 function renderizarCalendario() {
     const container = document.getElementById('diasCalendario');
     if (!container) return;
@@ -317,18 +270,15 @@ function renderizarCalendario() {
         const isFimDeSemana = diaSemana === 0 || diaSemana === 6;
 
         const hasAlterado = eventosDoDia.some(e => e.alterado);
-
         const feriadoDoDia = feriados.find(f => f.data === dataStr);
+
         let classesDia = 'min-h-[140px] rounded-xl p-2.5 transition cursor-pointer hover:ring-2 hover:ring-blue-500/50 hover:scale-[1.02] ';
 
-        if (feriadoDoDia) classesDia += 'bg-red-900/10 border border-red-500/30 '; // Holiday style
+        if (feriadoDoDia) classesDia += 'bg-red-900/10 border border-red-500/30 ';
         else if (isHoje) classesDia += 'bg-gradient-to-br from-blue-900/60 to-blue-800/40 ring-2 ring-blue-500 shadow-lg shadow-blue-500/20 ';
         else if (hasAlterado) classesDia += 'bg-red-900/20 border-2 border-red-500/50 ';
         else if (isFimDeSemana) classesDia += 'bg-dark-bg/30 ';
         else classesDia += 'bg-dark-bg/50 hover:bg-dark-bg/70 ';
-
-        // If holiday, disable click for new event? Or allow but warn?
-        // Let's allow but maybe add visual indicator
 
         html += `<div class="${classesDia}" onclick="abrirDetalhesDia('${dataStr}', ${dia})">`;
         html += `<div class="flex justify-between items-center mb-2">
@@ -347,17 +297,16 @@ function renderizarCalendario() {
             eventosDoDia.slice(0, 3).forEach(evento => {
                 const consultorCor = getConsultorCor(evento.consultor_id);
                 const corCat = CATEGORIA_CORES[evento.categoria]?.cor || '#6b7280';
-                const titulo = evento.sigla_empresa || 'Empresa';
                 const programa = evento.program_nome ? evento.program_nome.substring(0, 20) : '';
                 const alteradoBadge = evento.alterado ? '<span class="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-auto"></span>' : '';
                 html += `
-                    <div class="flex items-center gap-1.5 p-1.5 rounded-lg bg-dark-card/90 border ${evento.alterado ? 'border-red-500/50' : 'border-dark-border/40'} shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-1.5 p-1.5 rounded-lg bg-dark-card/90 border ${evento.alterado ? 'border-red-500/50' : 'border-dark-border/40'} shadow-sm">
                         <div class="w-1 h-8 rounded-full flex-shrink-0" style="background-color: ${corCat}"></div>
                         <div class="flex-1 min-w-0">
-                            <div class="font-bold text-[11px] text-white truncate" title="${evento.empresa_nome || evento.sigla_empresa}">${evento.empresa_nome || evento.sigla_empresa}</div>
+                            <div class="font-bold text-[11px] text-white truncate">${evento.empresa_nome || evento.sigla_empresa}</div>
                              <div class="flex items-center gap-1 mt-0.5">
                                 <div class="w-4 h-4 rounded-md text-[8px] flex items-center justify-center text-white font-bold flex-shrink-0" style="background-color: ${consultorCor}">${getIniciais(evento.consultor_nome)}</div>
-                                <span class="text-[10px] text-gray-300 truncate" title="${evento.consultor_nome}">${evento.consultor_nome}</span>
+                                <span class="text-[10px] text-gray-300 truncate">${evento.consultor_nome}</span>
                                 ${alteradoBadge}
                             </div>
                             ${programa ? `<div class="text-[9px] text-blue-400 font-medium truncate mt-0.5 border-t border-white/10 pt-0.5">${programa}</div>` : ''}
@@ -367,34 +316,13 @@ function renderizarCalendario() {
             });
             if (eventosDoDia.length > 3) html += `<div class="text-[10px] text-blue-400 text-center mt-1 font-medium">+${eventosDoDia.length - 3} mais</div>`;
             html += '</div>';
-        } else if (!isFimDeSemana) {
+        } else if (!isFimDeSemana && !feriadoDoDia) {
             html += '<div class="text-[10px] text-gray-600 text-center mt-4 italic">Sem agendamentos</div>';
         }
         html += '</div>';
     }
     container.innerHTML = html;
     atualizarMetricasEvolucao();
-}
-
-function setVisualizacao(tipo) {
-    const cal = document.getElementById('calendarioDesktop');
-    const list = document.getElementById('listaDesktop');
-    const timeline = document.getElementById('timelineDesktop');
-
-    if (cal) cal.classList.add('hidden');
-    if (list) list.classList.add('hidden');
-    if (timeline) timeline.classList.add('hidden');
-
-    if (tipo === 'calendario') {
-        if (cal) cal.classList.remove('hidden');
-        renderizarCalendario();
-    } else if (tipo === 'lista') {
-        if (list) list.classList.remove('hidden');
-        renderizarLista();
-    } else if (tipo === 'timeline') {
-        if (timeline) timeline.classList.remove('hidden');
-        renderizarTimeline();
-    }
 }
 
 function renderizarLista() {
@@ -514,6 +442,40 @@ function renderizarTimeline() {
     atualizarMetricasEvolucao();
 }
 
+function renderizarListaFeriados() {
+    const lista = document.getElementById('listaFeriados');
+    if (!lista) return;
+
+    lista.innerHTML = feriados.map(f => {
+        const dataF = new Date(f.data + 'T12:00:00').toLocaleDateString('pt-BR');
+        return `
+            <div class="flex items-center justify-between p-2 rounded-lg bg-dark-bg/50 border border-dark-border/30 hover:bg-dark-hover transition">
+                <div>
+                    <span class="text-red-400 font-bold text-xs mr-2">${dataF}</span>
+                    <span class="text-white text-sm">${f.descricao}</span>
+                </div>
+                <button onclick="deletarFeriado(${f.id})" class="text-gray-500 hover:text-red-400 transition ml-2">
+                    <i class="fas fa-trash text-xs"></i>
+                </button>
+            </div>
+        `;
+    }).join('');
+}
+
+// --- MODAL & UI ACTIONS ---
+
+function abrirModalFeriados() {
+    const modal = document.getElementById('modalFeriados');
+    if (modal) {
+        carregarFeriados();
+        modal.classList.remove('hidden');
+    }
+}
+
+function fecharModalFeriados() {
+    document.getElementById('modalFeriados').classList.add('hidden');
+}
+
 function abrirDetalhesDia(data, dia) {
     const evs = eventos.filter(e => e.data === data);
     if (evs.length > 0) {
@@ -522,7 +484,6 @@ function abrirDetalhesDia(data, dia) {
         const inputData = document.getElementById('eventoData');
         if (inputData) inputData.value = data;
 
-        // Limpar campos de empresa antes de abrir para novo agendamento
         const inputEmpresaId = document.getElementById('eventoEmpresaId');
         if (inputEmpresaId) inputEmpresaId.value = '';
 
@@ -623,40 +584,6 @@ function fecharModalDetalhes() {
     document.getElementById('modalDetalhesEvento').classList.add('hidden');
 }
 
-
-
-async function reagendarAgendamento(agendamentoId) {
-    const novaDataStr = prompt("Informe a nova data (AAAA-MM-DD):");
-    if (!novaDataStr) return;
-
-    const observacoes = prompt("Observações do reagendamento:");
-
-    try {
-        const response = await fetch(`/api/agendamentos/${agendamentoId}/reagendar?nova_data=${novaDataStr}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                nova_data: novaDataStr,
-                observacoes: observacoes
-            })
-        });
-
-        if (response.ok) {
-            alert("Agendamento reagendado com sucesso!");
-            carregarEventos();
-            renderizarCalendario();
-        } else {
-            const err = await response.json();
-            alert("Erro ao reagendar: " + (err.detail || "Erro desconhecido"));
-        }
-    } catch (error) {
-        console.error('Erro ao reagendar:', error);
-    }
-}
-
-// Hooks para inicializar as métricas
-
-
 async function editarEvento(id) {
     if (!id) return;
     try {
@@ -705,7 +632,7 @@ async function editarEvento(id) {
 }
 
 async function salvarEvento(e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
     const programId = document.getElementById('eventoPrograma')?.value;
     const empresaId = document.getElementById('eventoEmpresaId')?.value;
     const eventoId = document.getElementById('eventoId')?.value;
@@ -764,23 +691,19 @@ async function salvarEvento(e) {
 }
 
 function abrirModalNovoEvento() {
-    console.log("Abrindo modal novo evento...");
     const modal = document.getElementById('modalEvento');
-    if (!modal) {
-        console.error("Modal 'modalEvento' não encontrado!");
-        return;
-    }
+    if (!modal) return;
     const form = document.getElementById('formEvento');
     if (form) form.reset();
 
-    const inputId = document.getElementById('eventoId');
-    if (inputId) inputId.value = '';
+    const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val;
+    };
 
-    const inputEmpresaId = document.getElementById('eventoEmpresaId');
-    if (inputEmpresaId) inputEmpresaId.value = '';
-
-    const inputBusca = document.getElementById('eventoBuscaEmpresa');
-    if (inputBusca) inputBusca.value = '';
+    setVal('eventoId', '');
+    setVal('eventoEmpresaId', '');
+    setVal('eventoBuscaEmpresa', '');
 
     const cp = document.getElementById('campoEventoPrograma');
     if (cp) cp.classList.remove('hidden');
@@ -796,14 +719,46 @@ function abrirModalNovoEvento() {
 }
 
 function fecharModalEvento() {
-    document.getElementById('modalEvento').classList.add('hidden');
+    const modal = document.getElementById('modalEvento');
+    if (modal) modal.classList.add('hidden');
 }
 
-function atualizarMetricasEvolucao() {
-    // Implementação futura de métricas
-    console.log("Atualizando métricas (placeholder)...");
+async function reagendarAgendamento(agendamentoId) {
+    const novaDataStr = prompt("Informe a nova data (AAAA-MM-DD):");
+    if (!novaDataStr) return;
+
+    const observacoes = prompt("Observações do reagendamento:");
+
+    try {
+        const response = await fetch(`/api/agendamentos/${agendamentoId}/reagendar?nova_data=${novaDataStr}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nova_data: novaDataStr, observacoes: observacoes })
+        });
+
+        if (response.ok) {
+            alert("Agendamento reagendado com sucesso!");
+            carregarEventos();
+            renderizarCalendario();
+        } else {
+            const err = await response.json();
+            alert("Erro ao reagendar: " + (err.detail || "Erro desconhecido"));
+        }
+    } catch (error) {
+        console.error('Erro ao reagendar:', error);
+    }
 }
 
+async function deletarFeriado(id) {
+    if (!confirm("Remover este feriado?")) return;
+    try {
+        await apiRequest(`/api/feriados/${id}`, { method: 'DELETE' });
+        carregarFeriados();
+        carregarDados();
+    } catch (e) {
+        alert("Erro ao remover");
+    }
+}
 
 async function carregarProgramasNoEvento() {
     const select = document.getElementById('eventoPrograma');
@@ -827,16 +782,35 @@ function proximoMes() {
 }
 
 function irParaHoje() {
-    const hoje = new Date();
-    mesAtual = hoje.getMonth();
-    anoAtual = hoje.getFullYear();
+    const hoj = new Date();
+    mesAtual = hoj.getMonth();
+    anoAtual = hoj.getFullYear();
     carregarDados();
 }
 
-function renderizarCalendarioMobile() { }
-function atualizarResumo() { }
-function renderizarLegendaConsultores() { }
+function setVisualizacao(tipo) {
+    const cal = document.getElementById('calendarioDesktop');
+    const list = document.getElementById('listaDesktop');
+    const timeline = document.getElementById('timelineDesktop');
+
+    if (cal) cal.classList.add('hidden');
+    if (list) list.classList.add('hidden');
+    if (timeline) timeline.classList.add('hidden');
+
+    if (tipo === 'calendario') {
+        if (cal) cal.classList.remove('hidden');
+        renderizarCalendario();
+    } else if (tipo === 'lista') {
+        if (list) list.classList.remove('hidden');
+        renderizarLista();
+    } else if (tipo === 'timeline') {
+        if (timeline) timeline.classList.remove('hidden');
+        renderizarTimeline();
+    }
+}
+
 function aplicarFiltros() { carregarDados(); }
+
 function limparFiltros() {
     const fc = document.getElementById('filtroConsultor');
     const fcat = document.getElementById('filtroCategoria');
@@ -844,7 +818,18 @@ function limparFiltros() {
     if (fcat) fcat.value = '';
     carregarDados();
 }
+
 function toggleFiltros() {
     const container = document.getElementById('filtrosContainer');
     if (container) container.classList.toggle('hidden');
 }
+
+function atualizarMetricasEvolucao() {
+    // Placeholder para métricas futuras
+    console.log("Métricas atualizadas.");
+}
+
+// Funções mobile (Placeholders se não utilizadas)
+function renderizarCalendarioMobile() { }
+function atualizarResumo() { }
+function renderizarLegendaConsultores() { }
