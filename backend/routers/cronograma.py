@@ -4,7 +4,7 @@ from sqlalchemy import and_, or_
 from typing import List, Optional
 from datetime import date, datetime
 from backend.database import get_db
-from backend.models import CronogramaProjeto, CronogramaAtividade, CronogramaEvento, Usuario, Empresa, CategoriaEvento, PeriodoEvento
+from backend.models import CronogramaProjeto, CronogramaAtividade, CronogramaEvento, Usuario, Empresa, CategoriaEvento, PeriodoEvento, Feriado
 from backend.schemas.cronograma import (
     CronogramaProjetoCriar, CronogramaProjetoResposta, CronogramaProjetoAtualizar,
     CronogramaAtividadeCriar, CronogramaAtividadeResposta, CronogramaAtividadeAtualizar,

@@ -21,6 +21,11 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
+                    <button onclick="abrirModalFeriados()"
+                        class="w-9 h-9 rounded-xl bg-dark-card hover:bg-dark-hover text-gray-400 hover:text-white flex items-center justify-center transition"
+                        title="Feriados">
+                        <i class="fas fa-cog text-sm"></i>
+                    </button>
                     <button onclick="abrirModalProgramas()"
                         class="w-9 h-9 rounded-xl bg-dark-card hover:bg-dark-hover text-gray-400 hover:text-white flex items-center justify-center transition"
                         title="Programas">
@@ -183,6 +188,42 @@
                 class="flex-1 py-2.5 bg-blue-500/20 text-blue-400 rounded-xl font-medium hover:bg-blue-500/30 transition text-sm">Editar</button>
             <button onclick="fecharModalDetalhes()"
                 class="flex-1 py-2.5 bg-dark-card text-gray-300 rounded-xl font-medium hover:bg-dark-hover transition text-sm">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Feriados -->
+<div id="modalFeriados" class="hidden fixed inset-0 modal-backdrop flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+    <div class="glass-effect rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md max-h-[85vh] overflow-hidden animate-slide-up">
+        <div class="p-4 sm:p-6 border-b border-dark-border/50 flex justify-between items-center">
+            <h3 class="text-base sm:text-xl font-bold text-white flex items-center gap-2">
+                <i class="fas fa-calendar-times text-red-400"></i>
+                Gestão de Feriados
+            </h3>
+            <button onclick="fecharModalFeriados()" class="w-8 h-8 rounded-lg bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="p-4 sm:p-6 space-y-4">
+            <form id="formFeriado" class="space-y-3 p-4 bg-dark-bg/30 rounded-xl border border-dark-border/30">
+                <div class="space-y-1">
+                    <label class="text-xs text-gray-400">Data do Feriado</label>
+                    <input type="date" id="feriadoData" required class="w-full px-3 py-2 input-modern text-white text-sm rounded-lg focus:outline-none">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs text-gray-400">Descrição</label>
+                    <input type="text" id="feriadoDescricao" required placeholder="Ex: Natal" class="w-full px-3 py-2 input-modern text-white text-sm rounded-lg focus:outline-none">
+                </div>
+                <button type="submit" class="w-full py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2">
+                    <i class="fas fa-plus"></i> Adicionar Feriado
+                </button>
+            </form>
+
+            <div class="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                <h4 class="text-xs font-bold text-gray-500 uppercase">Feriados Cadastrados</h4>
+                <div id="listaFeriados" class="space-y-1"></div>
+            </div>
         </div>
     </div>
 </div>

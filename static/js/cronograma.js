@@ -109,11 +109,107 @@ function selecionarEmpresaParaEvento(id, nome, sigla) {
     if (sug) sug.classList.add('hidden');
 }
 
+
+
+// FERIADOS LOGIC
+let feriados = [];
+
+function abrirModalFeriados() {
+    const modal = document.getElementById('modalFeriados');
+    if (modal) {
+        carregarFeriados();
+        modal.classList.remove('hidden');
+    }
+}
+
+function fecharModalFeriados() {
+    document.getElementById('modalFeriados').classList.add('hidden');
+}
+
+async function carregarFeriados() {
+    try {
+        const response = await apiRequest('/api/feriados/');
+        feriados = await response.json();
+        renderizarListaFeriados();
+        if (!document.getElementById('modalFeriados').classList.contains('hidden')) {
+            // If modal is open, we just wanted to refresh the list inside it
+        } else {
+            // If this call came from main load, render calendar
+            // But wait, carregarDados calls carregarFeriados?
+            // No, let's keep it separate or integrate
+        }
+    } catch (e) {
+        console.error("Erro ao carregar feriados", e);
+    }
+}
+
+function renderizarListaFeriados() {
+    const lista = document.getElementById('listaFeriados');
+    if (!lista) return;
+
+    lista.innerHTML = feriados.map(f => {
+        const dataF = new Date(f.data + 'T12:00:00').toLocaleDateString('pt-BR');
+        return `
+            <div class="flex items-center justify-between p-2 rounded-lg bg-dark-bg/50 border border-dark-border/30 hover:bg-dark-hover transition">
+                <div>
+                    <span class="text-red-400 font-bold text-xs mr-2">${dataF}</span>
+                    <span class="text-white text-sm">${f.descricao}</span>
+                </div>
+                <button onclick="deletarFeriado(${f.id})" class="text-gray-500 hover:text-red-400 transition ml-2">
+                    <i class="fas fa-trash text-xs"></i>
+                </button>
+            </div>
+        `;
+    }).join('');
+}
+
+async function deletarFeriado(id) {
+    if (!confirm("Remover este feriado?")) return;
+    try {
+        await apiRequest(`/api/feriados/${id}`, { method: 'DELETE' });
+        carregarFeriados();
+        carregarDados(); // Refresh calendar to remove holiday marker
+    } catch (e) {
+        alert("Erro ao remover");
+    }
+}
+
+// Form handler attached in init
+document.addEventListener('DOMContentLoaded', () => {
+    // ... existing init ...
+    const formFeriado = document.getElementById('formFeriado');
+    if (formFeriado) {
+        formFeriado.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = document.getElementById('feriadoData').value;
+            const desc = document.getElementById('feriadoDescricao').value;
+
+            try {
+                const res = await apiRequest('/api/feriados/', {
+                    method: 'POST',
+                    body: JSON.stringify({ data: data, descricao: desc })
+                });
+                if (res.ok) {
+                    formFeriado.reset();
+                    await carregarFeriados();
+                    await carregarDados(); // Update calendar
+                } else {
+                    const err = await res.json();
+                    alert(err.detail || "Erro ao criar");
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        });
+    }
+});
+
 async function carregarDados() {
     try {
         await Promise.all([
             carregarConsultores(),
-            carregarCategorias()
+            carregarCategorias(),
+            carregarFeriados()
         ]);
         await carregarEventos();
 
@@ -222,17 +318,29 @@ function renderizarCalendario() {
 
         const hasAlterado = eventosDoDia.some(e => e.alterado);
 
+        const feriadoDoDia = feriados.find(f => f.data === dataStr);
         let classesDia = 'min-h-[140px] rounded-xl p-2.5 transition cursor-pointer hover:ring-2 hover:ring-blue-500/50 hover:scale-[1.02] ';
-        if (isHoje) classesDia += 'bg-gradient-to-br from-blue-900/60 to-blue-800/40 ring-2 ring-blue-500 shadow-lg shadow-blue-500/20 ';
+
+        if (feriadoDoDia) classesDia += 'bg-red-900/10 border border-red-500/30 '; // Holiday style
+        else if (isHoje) classesDia += 'bg-gradient-to-br from-blue-900/60 to-blue-800/40 ring-2 ring-blue-500 shadow-lg shadow-blue-500/20 ';
         else if (hasAlterado) classesDia += 'bg-red-900/20 border-2 border-red-500/50 ';
         else if (isFimDeSemana) classesDia += 'bg-dark-bg/30 ';
         else classesDia += 'bg-dark-bg/50 hover:bg-dark-bg/70 ';
 
+        // If holiday, disable click for new event? Or allow but warn?
+        // Let's allow but maybe add visual indicator
+
         html += `<div class="${classesDia}" onclick="abrirDetalhesDia('${dataStr}', ${dia})">`;
         html += `<div class="flex justify-between items-center mb-2">
-            <span class="text-sm font-bold ${isHoje ? 'text-blue-400' : isFimDeSemana ? 'text-gray-500' : 'text-white'}">${dia}</span>
+            <span class="text-sm font-bold ${feriadoDoDia ? 'text-red-400' : (isHoje ? 'text-blue-400' : (isFimDeSemana ? 'text-gray-500' : 'text-white'))}">
+                ${dia} ${feriadoDoDia ? '<i class="fas fa-flag text-[10px] ml-1"></i>' : ''}
+            </span>
             ${eventosDoDia.length > 0 ? `<span class="w-5 h-5 rounded-full bg-blue-500/30 text-blue-400 text-[10px] font-bold flex items-center justify-center">${eventosDoDia.length}</span>` : ''}
         </div>`;
+
+        if (feriadoDoDia) {
+            html += `<div class="text-[10px] text-red-300 font-bold uppercase tracking-wider mb-1 text-center bg-red-500/10 rounded py-0.5">${feriadoDoDia.descricao}</div>`;
+        }
 
         if (eventosDoDia.length > 0) {
             html += '<div class="space-y-1.5 pointer-events-none">';

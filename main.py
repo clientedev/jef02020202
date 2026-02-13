@@ -54,7 +54,7 @@ def deferred_boot(app_instance):
         from backend.routers import (auth, empresas, prospeccoes, agendamentos, admin, 
                                     atribuicoes, consultores, dashboard, cnpj, 
                                     notificacoes, mensagens, cronograma, pipeline, 
-                                    programs, contatos)
+                                    programs, contatos, feriados)
         from backend.routers.formularios import router as forms_router, router_public as forms_pub_router
         
         routers = [
@@ -62,7 +62,7 @@ def deferred_boot(app_instance):
             agendamentos.router, atribuicoes.router, consultores.router, 
             dashboard.router, cnpj.router, notificacoes.router, mensagens.router, 
             cronograma.router, pipeline.router, programs.router, contatos.router, 
-            forms_router, forms_pub_router
+            forms_router, forms_pub_router, feriados.router
         ]
         
         for r in routers:

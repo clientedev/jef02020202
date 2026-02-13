@@ -10,3 +10,4 @@ from backend.models.pipeline import Stage, CompanyPipeline, CompanyStageHistory,
 from backend.models.formularios import Formulario, Pergunta, OpcaoResposta, FormularioEnvio, Resposta
 from backend.models.contatos import Contato
 from backend.models.historico import HistoricoEmpresa
+from backend.models.feriados import Feriado

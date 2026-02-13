@@ -5,6 +5,7 @@ from datetime import date, timedelta
 from pydantic import BaseModel
 from backend.database import get_db
 from backend.models.cronograma import Program, CronogramaEvento, CategoriaEvento, PeriodoEvento
+from backend.models.feriados import Feriado
 from backend.auth.security import obter_usuario_admin as get_current_user
 
 router = APIRouter(prefix="/api/programs", tags=["programs"])
@@ -53,8 +54,23 @@ def auto_schedule(request: AutoScheduleRequest, db: Session = Depends(get_db)):
 
     empresa_id_final = request.empresa_id if request.empresa_id else program.empresa_id
     
+    
+    # Pre-fetch holidays
+    feriados = db.query(Feriado).filter(
+        Feriado.data >= data_atual,
+        Feriado.data <= data_atual + timedelta(days=365)
+    ).all()
+    feriados_datas = {f.data for f in feriados}
+
     # Use a small epsilon for float comparison
     while horas_restantes > 0.01:
+        # Check if it's a holiday
+        if data_atual in feriados_datas:
+             data_atual += timedelta(days=1)
+             if (data_atual - request.data_inicio).days > 365: # Safety break
+                break
+             continue
+
         if data_atual.weekday() in request.dias_semana:
             # Calculate hours for today (cap at remaining)
             horas_hoje = min(request.horas_por_dia, horas_restantes)

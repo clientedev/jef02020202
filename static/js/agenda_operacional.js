@@ -30,6 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
     carregarDadosAgenda();
 });
 
+let feriadosAgenda = [];
+
 async function carregarDadosAgenda() {
     try {
         const dataFim = new Date(dataInicioAgenda);
@@ -40,14 +42,24 @@ async function carregarDadosAgenda() {
             data_fim: dataFim.toISOString().split('T')[0]
         });
 
-        const [consultoresRes, eventosRes] = await Promise.all([
+        // Also fetch holidays
+        // We can just fetch all holidays or filter by range if API supports it
+        // The API I created supports inicio/fim params
+        const paramsFeriado = new URLSearchParams({
+            inicio: dataInicioAgenda.toISOString().split('T')[0],
+            fim: dataFim.toISOString().split('T')[0]
+        });
+
+        const [consultoresRes, eventosRes, feriadosRes] = await Promise.all([
             apiRequest('/api/consultores/?page_size=100'),
-            apiRequest(`/api/cronograma/eventos?${params}`)
+            apiRequest(`/api/cronograma/eventos?${params}`),
+            apiRequest(`/api/feriados/?${paramsFeriado}`)
         ]);
 
         const consultoresData = await consultoresRes.json();
         consultoresAgenda = consultoresData.items || [];
         eventosAgenda = await eventosRes.json();
+        feriadosAgenda = await feriadosRes.json();
 
         renderizarScheduler();
         renderizarTabelaMetricas();
@@ -95,6 +107,9 @@ function renderizarScheduler() {
 
     let ultimoMes = -1;
     datas.forEach((data, idx) => {
+        const dataStr = data.toISOString().split('T')[0];
+        const feriado = feriadosAgenda.find(f => f.data === dataStr);
+
         const diaSemana = data.getDay();
         const isHoje = data.getTime() === hoje.getTime();
         const isFimDeSemana = diaSemana === 0 || diaSemana === 6;
@@ -104,14 +119,20 @@ function renderizarScheduler() {
         ultimoMes = mesAtual;
 
         let classes = 'scheduler-header-cell scheduler-cell p-2 text-center border-b-2 border-dark-border/50 ';
-        if (isHoje) classes += 'today-col ';
-        if (isFimDeSemana) classes += 'weekend-col ';
+        if (feriado) classes += 'bg-red-900/10 border-red-500/30 '; // Holiday style
+        else if (isHoje) classes += 'today-col ';
+        else if (isFimDeSemana) classes += 'weekend-col ';
+
         if (isInicioSemana && idx > 0) classes += 'week-separator ';
 
-        html += `<div class="${classes}">
+        html += `<div class="${classes}" ${feriado ? `title="${feriado.descricao}"` : ''}>
             ${mostraMes ? `<div class="text-[9px] text-blue-400 font-bold uppercase">${MESES_CURTOS[mesAtual]}</div>` : ''}
-            <div class="text-lg font-bold ${isHoje ? 'text-blue-400' : isFimDeSemana ? 'text-gray-500' : 'text-white'}">${data.getDate()}</div>
-            <div class="text-[10px] ${isHoje ? 'text-blue-300' : isFimDeSemana ? 'text-gray-600' : 'text-gray-400'}">${DIAS_SEMANA[diaSemana]}</div>
+            <div class="text-lg font-bold ${feriado ? 'text-red-400' : (isHoje ? 'text-blue-400' : (isFimDeSemana ? 'text-gray-500' : 'text-white'))}">
+                ${data.getDate()} ${feriado ? '<i class="fas fa-flag text-[8px] align-top"></i>' : ''}
+            </div>
+            <div class="text-[10px] ${feriado ? 'text-red-300' : (isHoje ? 'text-blue-300' : (isFimDeSemana ? 'text-gray-600' : 'text-gray-400'))}">
+                ${DIAS_SEMANA[diaSemana]}
+            </div>
         </div>`;
     });
 
@@ -140,9 +161,13 @@ function renderizarScheduler() {
                 e.consultor_id === consultor.id && e.data === dataStr
             );
 
+            const feriado = feriadosAgenda.find(f => f.data === dataStr);
+
             let classes = 'scheduler-cell ';
-            if (isHoje) classes += 'today-col ';
-            if (isFimDeSemana) classes += 'weekend-col ';
+            if (feriado) classes += 'bg-red-900/5 '; // Weaker holiday style for body
+            else if (isHoje) classes += 'today-col ';
+            else if (isFimDeSemana) classes += 'weekend-col ';
+
             if (isInicioSemana && idx > 0) classes += 'week-separator ';
 
             html += `<div class="${classes}">`;
