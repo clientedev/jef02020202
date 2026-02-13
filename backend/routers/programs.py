@@ -43,6 +43,29 @@ def create_program(program: ProgramCreate, db: Session = Depends(get_db)):
 def list_programs(db: Session = Depends(get_db)):
     return db.query(Program).all()
 
+@router.put("/{program_id}", response_model=ProgramResponse)
+def update_program(program_id: int, program_data: ProgramCreate, db: Session = Depends(get_db)):
+    db_program = db.query(Program).filter(Program.id == program_id).first()
+    if not db_program:
+        raise HTTPException(status_code=404, detail="Programa não encontrado")
+    
+    for key, value in program_data.dict().items():
+        setattr(db_program, key, value)
+    
+    db.commit()
+    db.refresh(db_program)
+    return db_program
+
+@router.delete("/{program_id}")
+def delete_program(program_id: int, db: Session = Depends(get_db)):
+    db_program = db.query(Program).filter(Program.id == program_id).first()
+    if not db_program:
+        raise HTTPException(status_code=404, detail="Programa não encontrado")
+    
+    db.delete(db_program)
+    db.commit()
+    return {"message": "Programa excluído com sucesso"}
+
 @router.post("/auto-schedule")
 def auto_schedule(request: AutoScheduleRequest, db: Session = Depends(get_db)):
     program = db.query(Program).filter(Program.id == request.program_id).first()

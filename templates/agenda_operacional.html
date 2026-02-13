@@ -424,5 +424,58 @@
     }
 </style>
 
+<!-- Modal Programas -->
+<div id="modalProgramas"
+    class="hidden fixed inset-0 modal-backdrop flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+    <div
+        class="glass-effect rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-2xl max-h-[85vh] sm:max-h-[80vh] overflow-hidden animate-slide-up">
+        <div
+            class="p-4 sm:p-6 border-b border-dark-border/50 flex justify-between items-center sticky top-0 glass-effect z-10">
+            <h3 class="text-base sm:text-xl font-bold text-white flex items-center gap-2">
+                <i class="fas fa-list-check text-blue-400"></i>
+                Gestão de Programas
+            </h3>
+            <button onclick="fecharModalProgramas()"
+                class="w-8 h-8 rounded-lg bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="flex flex-col h-full overflow-hidden">
+            <div class="p-4 sm:p-6 border-b border-dark-border/30 bg-dark-bg/30">
+                <form id="formPrograma" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-1.5">
+                            <label class="block text-xs sm:text-sm text-gray-400">Nome do Programa *</label>
+                            <input type="text" id="progNome" required placeholder="Ex: Diagnóstico Empresarial"
+                                class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none">
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="block text-xs sm:text-sm text-gray-400">Carga Horária (Total) *</label>
+                            <input type="number" id="progCarga" required placeholder="Ex: 40"
+                                class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none">
+                        </div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs sm:text-sm text-gray-400">Descrição</label>
+                        <textarea id="progDesc" rows="2" placeholder="Objetivo do programa..."
+                            class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl focus:outline-none resize-none"></textarea>
+                    </div>
+                    <button type="submit"
+                        class="w-full btn-primary text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
+                        <i class="fas fa-save"></i> Salvar Programa
+                    </button>
+                </form>
+            </div>
+
+            <div class="p-4 sm:p-6 overflow-y-auto max-h-[40vh] custom-scrollbar hidden">
+                <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Programas Ativos</h4>
+                <div id="listaProgramas" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="/static/js/agenda_operacional.js"></script>
+<script src="/static/js/programs.js"></script>
 {% endblock %}

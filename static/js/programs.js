@@ -6,7 +6,7 @@ function showToast(message, type = 'info') {
 
     const toast = document.createElement('div');
     toast.className = 'toast-notification fixed top-4 right-4 z-[9999] px-4 py-3 rounded-xl shadow-lg animate-slide-up flex items-center gap-2';
-    
+
     if (type === 'success') {
         toast.classList.add('bg-green-500/90', 'text-white');
         toast.innerHTML = `<i class="fas fa-check-circle"></i><span>${message}</span>`;
@@ -17,7 +17,7 @@ function showToast(message, type = 'info') {
         toast.classList.add('bg-blue-500/90', 'text-white');
         toast.innerHTML = `<i class="fas fa-info-circle"></i><span>${message}</span>`;
     }
-    
+
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 4000);
 }
@@ -49,12 +49,12 @@ async function carregarProgramas() {
 function renderizarProgramas() {
     const container = document.getElementById('listaProgramas');
     if (!container) return;
-    
+
     if (programas.length === 0) {
         container.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">Nenhum programa cadastrado.</p>';
         return;
     }
-    
+
     container.innerHTML = programas.map(p => `
         <div class="p-4 rounded-xl bg-dark-card/50 border border-dark-border/30 hover:border-blue-500/50 transition-all group">
             <div class="flex justify-between items-start">
@@ -76,22 +76,37 @@ const formProg = document.getElementById('formPrograma');
 if (formProg) {
     formProg.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const editId = document.getElementById('editProgramId')?.value;
         const data = {
             nome: document.getElementById('progNome').value,
             carga_horaria: parseFloat(document.getElementById('progCarga').value),
             descricao: document.getElementById('progDesc').value
         };
-        
+
         try {
-            const response = await apiRequest('/api/programs/', {
-                method: 'POST',
+            const url = editId ? `/api/programs/${editId}` : '/api/programs/';
+            const method = editId ? 'PUT' : 'POST';
+
+            const response = await apiRequest(url, {
+                method: method,
                 body: JSON.stringify(data)
             });
-            
+
             if (response.ok) {
-                showToast('Programa cadastrado com sucesso!', 'success');
+                showToast(editId ? 'Programa atualizado com sucesso!' : 'Programa cadastrado com sucesso!', 'success');
                 formProg.reset();
+                if (document.getElementById('editProgramId')) document.getElementById('editProgramId').value = '';
+
+                // Resetar título do modal se estivermos na agenda
+                const modalTitle = document.querySelector('#modalNovoProgram h3');
+                if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-list-check text-blue-400"></i> Novo Programa';
+
                 await carregarProgramas();
+
+                // Recarregar tabela de métricas se estiver na agenda operacional
+                if (typeof renderizarTabelaMetricas === 'function') {
+                    renderizarTabelaMetricas();
+                }
             }
         } catch (error) {
             console.error('Erro ao salvar programa:', error);

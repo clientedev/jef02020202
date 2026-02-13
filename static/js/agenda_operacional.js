@@ -639,6 +639,7 @@ async function renderizarTabelaMetricas() {
                             <th class="px-3 py-3 text-center">Carga</th>
                             <th class="px-3 py-3">Status</th>
                             <th class="px-3 py-3 text-center">Última Ativ.</th>
+                            <th class="px-3 py-3 text-right">AÇÕES</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-dark-border/20">
@@ -648,6 +649,7 @@ async function renderizarTabelaMetricas() {
             const consultor = m.consultor_nome || m.consultor;
             const empresa = m.projeto_nome || m.empresa;
             const programa = m.programa_nome || m.nome;
+            const programId = m.programa_id || m.id;
             const cargaTotal = m.carga_total || m.meta_total;
             const horasRealizadas = m.horas_contabilizadas || m.horas_realizadas || 0;
             const progresso = (horasRealizadas / cargaTotal) * 100;
@@ -676,6 +678,16 @@ async function renderizarTabelaMetricas() {
                     <td class="px-3 py-4 text-center">
                          <span class="text-[10px] text-gray-500">${m.ultima_data ? new Date(m.ultima_data).toLocaleDateString('pt-BR') : 'N/A'}</span>
                     </td>
+                    <td class="px-3 py-4 text-right">
+                        <div class="flex justify-end gap-2">
+                            <button onclick="abrirModalEditarPrograma(${programId})" class="p-1.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg transition" title="Editar Programa">
+                                <i class="fas fa-edit text-[10px]"></i>
+                            </button>
+                            <button onclick="deletarPrograma(${programId})" class="p-1.5 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition" title="Excluir Programa">
+                                <i class="fas fa-trash text-[10px]"></i>
+                            </button>
+                        </div>
+                    </td>
                 </tr>
             `;
         });
@@ -684,5 +696,60 @@ async function renderizarTabelaMetricas() {
         container.innerHTML = html;
     } catch (error) {
         console.error(error);
+    }
+}
+
+async function abrirModalEditarPrograma(id) {
+    if (!id) return;
+    try {
+        const res = await apiRequest(`/api/programs/`);
+        const programs = await res.json();
+        const prog = programs.find(p => p.id === id);
+
+        if (!prog) return;
+
+        // Reutilizar o modal de programas (definido no cronograma.html ou que adicionaremos à agenda)
+        if (typeof abrirModalProgramas === 'function') {
+            abrirModalProgramas();
+        } else {
+            const modal = document.getElementById('modalProgramas');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        document.getElementById('progNome').value = prog.nome;
+        document.getElementById('progCarga').value = prog.carga_horaria;
+        document.getElementById('progDesc').value = prog.descricao || '';
+
+        // Adicionar ID oculto no formulário
+        let idInput = document.getElementById('editProgramId');
+        if (!idInput) {
+            idInput = document.createElement('input');
+            idInput.type = 'hidden';
+            idInput.id = 'editProgramId';
+            document.getElementById('formPrograma').appendChild(idInput);
+        }
+        idInput.value = id;
+
+        const modalTitle = document.querySelector('#modalProgramas h3');
+        if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-edit text-green-400"></i> Editar Programa';
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function deletarPrograma(id) {
+    if (!confirm('Esta ação excluirá o programa da lista de métricas. Os agendamentos já realizados PERMANECERÃO salvos na agenda.\nDeseja continuar?')) return;
+
+    try {
+        const res = await apiRequest(`/api/programs/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            showToast('Programa excluído com sucesso!');
+            renderizarTabelaMetricas();
+        } else {
+            showToast('Erro ao excluir programa.', 'error');
+        }
+    } catch (error) {
+        console.error(error);
+        showToast('Erro na requisição.', 'error');
     }
 }
