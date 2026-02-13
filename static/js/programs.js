@@ -56,9 +56,9 @@ function renderizarProgramas() {
     }
 
     container.innerHTML = programas.map(p => `
-        <div class="p-4 rounded-xl bg-dark-card/50 border border-dark-border/30 hover:border-blue-500/50 transition-all group">
+        <div class="p-4 rounded-xl bg-dark-card/50 border border-dark-border/30 hover:border-blue-500/50 transition-all group relative">
             <div class="flex justify-between items-start">
-                <div>
+                <div class="flex-1">
                     <h5 class="text-white font-medium">${p.nome}</h5>
                     <p class="text-gray-400 text-xs mt-1">${p.descricao || 'Sem descrição'}</p>
                     <div class="flex items-center gap-2 mt-2">
@@ -67,9 +67,56 @@ function renderizarProgramas() {
                         </span>
                     </div>
                 </div>
+                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onclick="prepararEdicaoPrograma(${p.id})" class="p-1.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg transition" title="Editar">
+                        <i class="fas fa-edit text-[10px]"></i>
+                    </button>
+                    <button onclick="deletarPrograma(${p.id})" class="p-1.5 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition" title="Excluir">
+                        <i class="fas fa-trash text-[10px]"></i>
+                    </button>
+                </div>
             </div>
         </div>
     `).join('');
+}
+
+function prepararEdicaoPrograma(id) {
+    const prog = programas.find(p => p.id === id);
+    if (!prog) return;
+
+    document.getElementById('progNome').value = prog.nome;
+    document.getElementById('progCarga').value = prog.carga_horaria;
+    document.getElementById('progDesc').value = prog.descricao || '';
+
+    let idInput = document.getElementById('editProgramId');
+    if (!idInput) {
+        idInput = document.createElement('input');
+        idInput.type = 'hidden';
+        idInput.id = 'editProgramId';
+        document.getElementById('formPrograma').appendChild(idInput);
+    }
+    idInput.value = id;
+
+    const btnSubmit = document.querySelector('#formPrograma button[type="submit"]');
+    if (btnSubmit) btnSubmit.innerHTML = '<i class="fas fa-save"></i> Salvar Alterações';
+
+    // Rolar para o topo do formulário
+    document.getElementById('formPrograma').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function deletarPrograma(id) {
+    if (!confirm('Deseja realmente excluir este programa? Os eventos agendados não serão removidos.')) return;
+    try {
+        const response = await apiRequest(`/api/programs/${id}`, { method: 'DELETE' });
+        if (response.ok) {
+            showToast('Programa removido', 'success');
+            await carregarProgramas();
+            if (typeof renderizarTabelaMetricas === 'function') renderizarTabelaMetricas();
+        }
+    } catch (error) {
+        console.error(error);
+        showToast('Erro ao remover', 'error');
+    }
 }
 
 const formProg = document.getElementById('formPrograma');
