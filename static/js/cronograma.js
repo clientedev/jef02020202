@@ -525,12 +525,15 @@ function abrirDetalhesDia(data, dia) {
     }
 }
 
+let eventoSelecionadoDetalhes = null;
+
 async function exibirDetalhesAgendamento(id) {
     if (!id) return;
     try {
         const response = await apiRequest(`/api/cronograma/eventos/${id}`);
         if (!response.ok) throw new Error('Falha ao carregar evento');
         const evento = await response.json();
+        eventoSelecionadoDetalhes = evento;
 
         const conteudo = document.getElementById('conteudoDetalhesEvento');
         const btnEditar = document.getElementById('btnEditarDesdeDetalhes');
@@ -593,11 +596,20 @@ async function exibirDetalhesAgendamento(id) {
                     </div>
                 </div>
                 ` : ''}
-                <div class="p-4 border-t border-dark-border/30 mt-4 flex gap-2">
-                    <button onclick="reagendarAgendamento(${evento.id})" class="flex-1 py-2 bg-orange-500/20 text-orange-400 rounded-lg font-bold hover:bg-orange-500/30 transition text-xs">
-                        <i class="fas fa-calendar-plus mr-1"></i> REAGENDAR
-                    </button>
-                    <button onclick="fecharModalDetalhes()" class="px-4 py-2 bg-dark-card text-gray-400 rounded-lg text-xs">Fechar</button>
+                <div class="p-4 border-t border-dark-border/30 mt-4 space-y-2">
+                    <div class="flex gap-2">
+                        <button onclick="reagendarAgendamento(${evento.id})" class="flex-1 py-2 bg-orange-500/20 text-orange-400 rounded-lg font-bold hover:bg-orange-500/30 transition text-xs">
+                            <i class="fas fa-calendar-plus mr-1"></i> REAGENDAR
+                        </button>
+                        <button onclick="excluirEventoCronograma()" class="flex-1 py-2 bg-red-500/20 text-red-400 rounded-lg font-bold hover:bg-red-500/30 transition text-xs">
+                            <i class="fas fa-trash-alt mr-1"></i> EXCLUIR
+                        </button>
+                    </div>
+                    ${evento.program_id ? `
+                        <button onclick="excluirTodosEventosProgramaCronograma()" class="w-full py-2 border border-red-500/30 text-red-400/80 rounded-lg font-bold hover:bg-red-500/10 transition text-[10px]">
+                            <i class="fas fa-layer-group mr-1"></i> EXCLUIR TODOS DESTE PROGRAMA
+                        </button>
+                    ` : ''}
                 </div>
             `;
         }
@@ -607,6 +619,39 @@ async function exibirDetalhesAgendamento(id) {
         console.error('Erro ao exibir detalhes:', e);
     }
 }
+
+async function excluirEventoCronograma() {
+    if (!eventoSelecionadoDetalhes) return;
+    if (!confirm(`Confirmar exclusão deste agendamento?`)) return;
+
+    try {
+        const res = await apiRequest(`/api/cronograma/eventos/${eventoSelecionadoDetalhes.id}`, { method: 'DELETE' });
+        if (res.ok) {
+            fecharModalDetalhes();
+            carregarDados();
+        } else {
+            alert("Erro ao excluir");
+        }
+    } catch (e) { console.error(e); }
+}
+
+async function excluirTodosEventosProgramaCronograma() {
+    if (!eventoSelecionadoDetalhes || !eventoSelecionadoDetalhes.program_id) return;
+    if (!confirm(`ATENÇÃO: Excluir TODOS os agendamentos deste programa?\n"${eventoSelecionadoDetalhes.program_nome}"`)) return;
+
+    try {
+        const res = await apiRequest(`/api/cronograma/eventos/bulk?program_id=${eventoSelecionadoDetalhes.program_id}`, { method: 'DELETE' });
+        if (res.ok) {
+            const data = await res.json();
+            alert(data.message || "Excluídos com sucesso");
+            fecharModalDetalhes();
+            carregarDados();
+        } else {
+            alert("Erro ao excluir em massa");
+        }
+    } catch (e) { console.error(e); }
+}
+
 
 function fecharModalDetalhes() {
     document.getElementById('modalDetalhesEvento').classList.add('hidden');

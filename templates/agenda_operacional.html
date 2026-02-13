@@ -121,13 +121,21 @@
             </button>
         </div>
         <div id="modalDetalheConteudo" class="p-6 space-y-4 overflow-y-auto max-h-[60vh]"></div>
-        <div class="p-6 border-t border-dark-border/30 flex gap-3">
+        <div class="p-6 border-t border-dark-border/30 flex flex-wrap gap-2">
             <button onclick="editarEventoAgenda()"
-                class="flex-1 py-2.5 bg-blue-500/20 text-blue-400 rounded-xl font-medium hover:bg-blue-500/30 transition text-sm">
+                class="flex-1 min-w-[120px] py-2.5 bg-blue-500/20 text-blue-400 rounded-xl font-medium hover:bg-blue-500/30 transition text-sm">
                 <i class="fas fa-edit mr-2"></i>Editar
             </button>
+            <button id="btnExcluirEvento" onclick="excluirEventoAgenda()"
+                class="flex-1 min-w-[120px] py-2.5 bg-red-500/20 text-red-400 rounded-xl font-medium hover:bg-red-500/30 transition text-sm">
+                <i class="fas fa-trash-alt mr-2"></i>Excluir
+            </button>
+            <button id="btnExcluirTodosPrograma" onclick="excluirTodosEventosPrograma()"
+                class="w-full mt-2 py-2.5 border border-red-500/30 text-red-400/80 rounded-xl font-medium hover:bg-red-500/10 transition text-xs">
+                <i class="fas fa-layer-group mr-2"></i>Excluir todos deste programa
+            </button>
             <button onclick="fecharModalDetalhe()"
-                class="flex-1 py-2.5 bg-dark-card text-gray-300 rounded-xl font-medium hover:bg-dark-hover transition text-sm">Fechar</button>
+                class="w-full mt-1 py-2.5 bg-dark-card text-gray-400 rounded-xl font-medium hover:bg-dark-hover transition text-sm">Fechar</button>
         </div>
     </div>
 </div>

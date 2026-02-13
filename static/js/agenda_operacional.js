@@ -411,6 +411,73 @@ function editarEventoAgenda() {
     }
 }
 
+async function excluirEventoAgenda() {
+    if (!eventoSelecionado) return;
+
+    const confirmacao = confirm(`Tem certeza que deseja excluir o agendamento de "${eventoSelecionado.empresa_nome}" no dia ${eventoSelecionado.data}?`);
+
+    if (!confirmacao) return;
+
+    try {
+        const btn = document.getElementById('btnExcluirEvento');
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Excluindo...';
+        btn.disabled = true;
+
+        const response = await apiRequest(`/api/cronograma/eventos/${eventoSelecionado.id}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) throw new Error('Erro ao excluir evento');
+
+        showToast('Sucesso', 'Agendamento excluído com sucesso', 'success');
+        fecharModalDetalhe();
+        carregarDadosAgenda(); // Recarrega o grid e métricas
+    } catch (error) {
+        console.error('Erro:', error);
+        showToast('Erro', 'Não foi possível excluir o agendamento', 'error');
+        const btn = document.getElementById('btnExcluirEvento');
+        btn.innerHTML = '<i class="fas fa-trash-alt mr-2"></i>Excluir';
+        btn.disabled = false;
+    }
+}
+
+async function excluirTodosEventosPrograma() {
+    if (!eventoSelecionado || !eventoSelecionado.program_id) {
+        showToast('Aviso', 'Este evento não está vinculado a um programa', 'info');
+        return;
+    }
+
+    const confirmacao = confirm(`ATENÇÃO: Isso excluirá TODOS os agendamentos vinculados ao programa "${eventoSelecionado.program_nome}". Esta ação não pode ser desfeita. Deseja continuar?`);
+
+    if (!confirmacao) return;
+
+    try {
+        const btn = document.getElementById('btnExcluirTodosPrograma');
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Excluindo todos...';
+        btn.disabled = true;
+
+        const response = await apiRequest(`/api/cronograma/eventos/bulk?program_id=${eventoSelecionado.program_id}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) throw new Error('Erro ao excluir eventos em massa');
+
+        const result = await response.json();
+        showToast('Sucesso', result.message || 'Eventos excluídos com sucesso', 'success');
+        fecharModalDetalhe();
+        carregarDadosAgenda();
+    } catch (error) {
+        console.error('Erro:', error);
+        showToast('Erro', 'Não foi possível excluir os eventos', 'error');
+        const btn = document.getElementById('btnExcluirTodosPrograma');
+        btn.innerHTML = '<i class="fas fa-layer-group mr-2"></i>Excluir todos deste programa';
+        btn.disabled = false;
+    }
+}
+
+
 async function renderizarTabelaMetricas() {
     const container = document.getElementById('metricsContainer');
     if (!container) return;

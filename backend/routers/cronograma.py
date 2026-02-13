@@ -450,6 +450,39 @@ def deletar_evento(
     return {"message": "Evento deletado com sucesso"}
 
 
+@router.delete("/eventos/bulk")
+def deletar_eventos_bulk(
+    projeto_id: Optional[int] = None,
+    program_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(obter_usuario_atual)
+):
+    if not projeto_id and not program_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="É necessário informar projeto_id ou program_id"
+        )
+    
+    query = db.query(CronogramaEvento)
+    
+    if projeto_id:
+        query = query.filter(CronogramaEvento.projeto_id == projeto_id)
+    if program_id:
+        query = query.filter(CronogramaEvento.program_id == program_id)
+        
+    # Check if user is admin or owner of one of the events (simplified check: owner of the project/program)
+    # For now, let's keep it simple: allow if admin or if they own at least one event in the selection
+    # Or more securely: filtered by consultant_id if not admin
+    if usuario.tipo != "admin":
+        query = query.filter(CronogramaEvento.consultor_id == usuario.id)
+        
+    excluidos = query.delete(synchronize_session=False)
+    db.commit()
+    
+    return {"message": f"{excluidos} eventos deletados com sucesso"}
+
+
+
 @router.get("/categorias")
 def listar_categorias(
     usuario: Usuario = Depends(obter_usuario_atual)
