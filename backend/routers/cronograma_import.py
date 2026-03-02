@@ -264,58 +264,77 @@ async def import_excel(
         # --- Find consultor ---
         consultor = None
         if consultor_nome:
-            consultor = consultores_db.get(consultor_nome.strip().upper())
+            c_nome_up = consultor_nome.strip().upper()
+            consultor = consultores_db.get(c_nome_up)
             if not consultor:
-                # Try partial match
+                # Try bidirectional partial match
                 for nome_key, c in consultores_db.items():
-                    if consultor_nome.strip().upper() in nome_key:
+                    # If Excel name is inside DB name OR DB name is inside Excel name
+                    if c_nome_up in nome_key or nome_key in c_nome_up:
                         consultor = c
                         break
 
         if not consultor:
-            # fallback: use the importing user
-            consultor = usuario
+            results["erros"].append(f"Linha {row_num}: Consultor '{consultor_nome}' não encontrado no sistema.")
+            continue
 
-        # --- Generate events based on start date weekday ---
-        # weekday(): Monday=0, Sunday=6
-        dia_semana_inicio = data_inicio.weekday()  # 0=Mon ... 6=Sun
-        # Skip weekends: if start date falls on weekend, move to Monday
+        # --- Generate events based on date range and weekday ---
+        dia_semana_inicio = data_inicio.weekday()
+        # Skip weekends for the start date
         if dia_semana_inicio >= 5:
             dias_ate_segunda = (7 - dia_semana_inicio)
             data_inicio = data_inicio + timedelta(days=dias_ate_segunda)
             dia_semana_inicio = 0
 
-        horas_restantes = carga_horaria
-        horas_por_dia = 8.0
+        # Calculate number of occurrences (weeks) between start and end
+        diff_days = (data_termino - data_inicio).days
+        num_semanas = (diff_days // 7) + 1
+        
+        # Calculate hours per session based on total CH
+        if num_semanas > 0:
+            horas_por_sessao = round(carga_horaria / num_semanas, 2)
+        else:
+            horas_por_sessao = carga_horaria
+
         data_atual = data_inicio
         eventos_linha = 0
-        MAX_DIAS = (data_termino - data_inicio).days + 1
+        horas_restantes = carga_horaria
 
-        for offset in range(MAX_DIAS + 365):  # safety limit
-            if horas_restantes <= 0.01:
+        # Iterate through the range and create events on the same weekday
+        for w in range(num_semanas + 1): # +1 safety
+            if horas_restantes <= 0.05:
                 break
-            d = data_inicio + timedelta(days=offset)
-            if d > data_termino + timedelta(days=365):
-                break
-            if d.weekday() == dia_semana_inicio:
-                horas_hoje = min(horas_por_dia, horas_restantes)
-                periodo = PeriodoEvento.dia_todo if horas_hoje >= 6 else PeriodoEvento.manha
+            
+            d_evento = data_inicio + timedelta(weeks=w)
+            if d_evento > data_termino:
+                # If we still have hours, but passed the end date, 
+                # put the rest in the last possible day or slightly after if needed
+                if horas_restantes > 0:
+                     d_evento = data_termino
+                else:
+                    break
 
-                evento = CronogramaEvento(
-                    data=d,
-                    categoria=CategoriaEvento.programado,
-                    periodo=periodo,
-                    empresa_id=empresa.id,
-                    sigla_empresa=empresa.sigla or sigla or "",
-                    consultor_id=consultor.id,
-                    program_id=program.id,
-                    titulo=f"{tipo_programa} - {empresa_nome}",
-                    descricao=solucao or f"Sessão de {tipo_programa}",
-                    carga_horaria=round(horas_hoje, 2),
-                )
-                db.add(evento)
-                horas_restantes -= horas_hoje
-                eventos_linha += 1
+            # Final check to not double count or exceed
+            h_hoje = min(horas_por_sessao, horas_restantes)
+            if h_hoje <= 0: break
+
+            periodo = PeriodoEvento.dia_todo if h_hoje >= 6 else PeriodoEvento.manha
+
+            evento = CronogramaEvento(
+                data=d_evento,
+                categoria=CategoriaEvento.programado,
+                periodo=periodo,
+                empresa_id=empresa.id,
+                sigla_empresa=empresa.sigla or sigla or "",
+                consultor_id=consultor.id,
+                program_id=program.id,
+                titulo=f"{tipo_programa} - {empresa_nome}",
+                descricao=solucao or f"Sessão de {tipo_programa}",
+                carga_horaria=h_hoje,
+            )
+            db.add(evento)
+            horas_restantes -= h_hoje
+            eventos_linha += 1
 
         results["eventos_criados"] += eventos_linha
         results["rows_processed"] += 1
