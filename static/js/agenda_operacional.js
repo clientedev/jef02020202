@@ -723,3 +723,27 @@ function irParaHojeAgenda() {
     dataInicioAgenda.setDate(hoje.getDate() - hoje.getDay() - 7);
     carregarDadosAgenda();
 }
+
+async function acionarResetGlobal() {
+    const code = prompt("MODO DE MANUTENÇÃO: Digite o código de segurança para LIMPAR TODO O CRONOGRAMA:");
+    if (code !== "RESET99") {
+        if (code) alert("Código incorreto. Operação cancelada.");
+        return;
+    }
+
+    if (!confirm("TEM CERTEZA? Isso excluirá TODOS os agendamentos e projetos do sistema permanentemente.")) return;
+    if (!confirm("CONFIRMAÇÃO FINAL: Esta ação NÃO pode ser desfeita. Deseja continuar?")) return;
+
+    try {
+        const res = await apiRequest('/api/cronograma/reset-global', { method: 'DELETE' });
+        if (res.ok) {
+            showToast("Cronograma resetado com sucesso!", "success");
+            location.reload();
+        } else {
+            const err = await res.json();
+            alert("Erro: " + (err.detail || "Falha ao resetar"));
+        }
+    } catch (e) {
+        showToast("Erro crítico ao resetar", "error");
+    }
+}

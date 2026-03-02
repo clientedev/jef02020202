@@ -507,7 +507,24 @@ def deletar_evento(
             db.commit()
     
     return {"message": "Evento deletado e cronograma sincronizado"}
-
+@router.delete("/reset-global")
+def reset_global_cronograma(
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(obter_usuario_atual)
+):
+    from backend.models.usuarios import TipoUsuario
+    if usuario.tipo != TipoUsuario.admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas administradores podem resetar o cronograma globalmente."
+        )
+    
+    # Delete all events and projects
+    db.query(CronogramaEvento).delete()
+    db.query(CronogramaProjeto).delete()
+    db.commit()
+    
+    return {"message": "Cronograma e Projetos limpos com sucesso."}
 
 
 @router.get("/categorias")
