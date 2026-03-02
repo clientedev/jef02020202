@@ -155,6 +155,15 @@ function selecionarEmpresaParaEvento(id, nome, sigla) {
 
 async function carregarDados() {
     try {
+        // Atualizar interface ANTES de carregar eventos para garantir que os parâmetros de data estejam corretos
+        const mesAnoAtual = document.getElementById('mesAnoAtual');
+        if (mesAnoAtual) mesAnoAtual.textContent = `${MESES[mesAtual]} ${anoAtual}`;
+
+        const filtroMesAno = document.getElementById('filtroMesAno');
+        if (filtroMesAno) {
+            filtroMesAno.value = `${anoAtual}-${String(mesAtual + 1).padStart(2, '0')}`;
+        }
+
         await Promise.all([
             carregarConsultores(),
             carregarCategorias(),
@@ -224,10 +233,14 @@ async function carregarCategorias() {
 async function carregarEventos() {
     try {
         const params = new URLSearchParams();
-        const primeiroDia = new Date(anoAtual, mesAtual, 1);
-        const ultimoDia = new Date(anoAtual, mesAtual + 1, 0);
-        params.append('data_inicio', primeiroDia.toISOString().split('T')[0]);
-        params.append('data_fim', ultimoDia.toISOString().split('T')[0]);
+        // Usar formato YYYY-MM-DD local para evitar problemas de fuso horário
+        const dataInicioStr = `${anoAtual}-${String(mesAtual + 1).padStart(2, '0')}-01`;
+        const ultimoDiaMes = new Date(anoAtual, mesAtual + 1, 0).getDate();
+        const dataFimStr = `${anoAtual}-${String(mesAtual + 1).padStart(2, '0')}-${String(ultimoDiaMes).padStart(2, '0')}`;
+
+        params.append('data_inicio', dataInicioStr);
+        params.append('data_fim', dataFimStr);
+
         const fConsultor = document.getElementById('filtroConsultor')?.value;
         if (fConsultor) params.append('consultor_id', fConsultor);
         const response = await apiRequest(`/api/cronograma/eventos?${params}`);
@@ -254,8 +267,6 @@ async function carregarFeriados() {
 function renderizarCalendario() {
     const container = document.getElementById('diasCalendario');
     if (!container) return;
-    const mesAnoAtual = document.getElementById('mesAnoAtual');
-    if (mesAnoAtual) mesAnoAtual.textContent = `${MESES[mesAtual]} ${anoAtual}`;
 
     const primeiroDia = new Date(anoAtual, mesAtual, 1);
     const ultimoDia = new Date(anoAtual, mesAtual + 1, 0);
@@ -577,24 +588,22 @@ function abrirDetalhesDia(data, dia) {
 }
 
 async function excluirTodosAgendamentosDoDia(data) {
-    if (!confirm(`ATENÇÃO: Deseja realmente excluir TODOS os ${eventos.filter(e => e.data === data).length} agendamentos de ${new Date(data + 'T12:00:00').toLocaleDateString('pt-BR')}?\nEsta ação não poderá ser desfeita.`)) return;
+    const dataFm = new Date(data + 'T12:00:00').toLocaleDateString('pt-BR');
+    if (!confirm(`ATENÇÃO: Deseja realmente excluir TODOS os agendamentos de ${dataFm}?\nEsta ação não poderá ser desfeita.`)) return;
 
     try {
-        // We use a bulk delete by date? The API doesn't have it directly, so we delete each one or we could add a date filter to bulk.
-        // Let's use the individual IDs for safety if bulk date is not ready.
-        const evs = eventos.filter(e => e.data === data);
-        let sucessos = 0;
-        for (const ev of evs) {
-            const res = await apiRequest(`/api/cronograma/eventos/${ev.id}`, { method: 'DELETE' });
-            if (res.ok) sucessos++;
+        const res = await apiRequest(`/api/cronograma/eventos/bulk?data=${data}`, { method: 'DELETE' });
+        if (res.ok) {
+            const result = await res.json();
+            showToast(result.message || 'Agendamentos excluídos!', 'success');
+            fecharModalDetalhes();
+            carregarDados();
+        } else {
+            throw new Error('Falha ao excluir agendamentos');
         }
-
-        alert(`${sucessos} agendamentos removidos.`);
-        fecharModalDetalhes();
-        carregarDados();
-    } catch (e) {
-        console.error(e);
-        alert("Erro ao remover agendamentos.");
+    } catch (error) {
+        console.error('Erro ao excluir agendamentos:', error);
+        showToast('Erro ao excluir agendamentos', 'error');
     }
 }
 window.excluirTodosAgendamentosDoDia = excluirTodosAgendamentosDoDia;
@@ -980,7 +989,17 @@ function setVisualizacao(tipo) {
     }
 }
 
-function aplicarFiltros() { carregarDados(); }
+function aplicarFiltros() {
+    const filtroMesAno = document.getElementById('filtroMesAno')?.value;
+    if (filtroMesAno) {
+        const [ano, mes] = filtroMesAno.split('-').map(Number);
+        if (ano && mes) {
+            anoAtual = ano;
+            mesAtual = mes - 1;
+        }
+    }
+    carregarDados();
+}
 
 function limparFiltros() {
     const fc = document.getElementById('filtroConsultor');
@@ -1004,3 +1023,26 @@ function atualizarMetricasEvolucao() {
 function renderizarCalendarioMobile() { }
 function atualizarResumo() { }
 function renderizarLegendaConsultores() { }
+async function acionarResetGlobal() {
+    const code = prompt("MODO DE MANUTENÇÃO: Digite o código de segurança para LIMPAR TODO O CRONOGRAMA:");
+    if (code !== "RESET99") {
+        if (code) alert("Código incorreto. Operação cancelada.");
+        return;
+    }
+
+    if (!confirm("TEM CERTEZA? Isso excluirá TODOS os agendamentos e projetos do sistema permanentemente.")) return;
+    if (!confirm("CONFIRMAÇÃO FINAL: Esta ação NÃO pode ser desfeita. Deseja continuar?")) return;
+
+    try {
+        const res = await apiRequest('/api/cronograma/reset-global', { method: 'DELETE' });
+        if (res.ok) {
+            showToast("Cronograma resetado com sucesso!", "success");
+            location.reload();
+        } else {
+            const err = await res.json();
+            alert("Erro: " + (err.detail || "Falha ao resetar"));
+        }
+    } catch (e) {
+        showToast("Erro crítico ao resetar", "error");
+    }
+}

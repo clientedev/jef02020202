@@ -435,13 +435,14 @@ def deletar_eventos_bulk(
     projeto_id: Optional[int] = None,
     program_id: Optional[int] = None,
     consultor_id: Optional[int] = None,
+    data: Optional[date] = None,
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(obter_usuario_atual)
 ):
-    if not projeto_id and not program_id and not consultor_id:
+    if not projeto_id and not program_id and not consultor_id and not data:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="É necessário informar projeto_id, program_id ou consultor_id"
+            detail="É necessário informar projeto_id, program_id, consultor_id ou data"
         )
     
     query = db.query(CronogramaEvento)
@@ -452,6 +453,8 @@ def deletar_eventos_bulk(
         query = query.filter(CronogramaEvento.program_id == program_id)
     if consultor_id:
         query = query.filter(CronogramaEvento.consultor_id == consultor_id)
+    if data:
+        query = query.filter(CronogramaEvento.data == data)
         
     from backend.models.usuarios import TipoUsuario
     if usuario.tipo != TipoUsuario.admin:
@@ -462,6 +465,7 @@ def deletar_eventos_bulk(
     if projeto_id: cleanup_query = cleanup_query.filter(CronogramaEvento.projeto_id == projeto_id)
     if program_id: cleanup_query = cleanup_query.filter(CronogramaEvento.program_id == program_id)
     if consultor_id: cleanup_query = cleanup_query.filter(CronogramaEvento.consultor_id == consultor_id)
+    if data: cleanup_query = cleanup_query.filter(CronogramaEvento.data == data)
     
     project_ids = [r[0] for r in cleanup_query.distinct().all()]
 
