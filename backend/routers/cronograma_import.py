@@ -7,7 +7,7 @@ import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from backend.database import get_db
 from backend.models import Empresa, Usuario
-from backend.models.cronograma import Program, CronogramaEvento, CategoriaEvento, PeriodoEvento
+from backend.models.cronograma import Program, CronogramaEvento, CategoriaEvento, PeriodoEvento, CronogramaProjeto, CronogramaAtividade
 from backend.auth.security import obter_usuario_atual
 
 router = APIRouter(prefix="/api/cronograma", tags=["cronograma-import"])
@@ -278,43 +278,79 @@ async def import_excel(
             results["erros"].append(f"Linha {row_num}: Consultor '{consultor_nome}' não encontrado no sistema.")
             continue
 
-        # --- Generate events based on date range and weekday ---
-        dia_semana_inicio = data_inicio.weekday()
-        # Skip weekends for the start date
-        if dia_semana_inicio >= 5:
-            dias_ate_segunda = (7 - dia_semana_inicio)
-            data_inicio = data_inicio + timedelta(days=dias_ate_segunda)
-            dia_semana_inicio = 0
+        # --- Sync with CronogramaProjeto ---
+        projeto = db.query(CronogramaProjeto).filter(
+            CronogramaProjeto.empresa_id == empresa.id,
+            CronogramaProjeto.consultor_id == consultor.id,
+            CronogramaProjeto.proposta == (_col(row_data, "Nº PROPOSTA") or "Excel Import")
+        ).first()
 
-        # Calculate number of occurrences (weeks) between start and end
+        if not projeto:
+            projeto = CronogramaProjeto(
+                proposta=_col(row_data, "Nº PROPOSTA") or "Excel Import",
+                empresa_id=empresa.id,
+                sigla=sigla or empresa.sigla,
+                solucao=solucao or tipo_programa,
+                horas_totais=carga_horaria,
+                consultor_id=consultor.id,
+                consultor_nome=consultor.nome,
+                data_inicio=data_inicio,
+                data_termino=data_termino,
+            )
+            db.add(projeto)
+            db.flush()
+
+        # --- Generate events based on date range and weekday ---
+        # Calculate number of occurrences (weeks) based on duration
         diff_days = (data_termino - data_inicio).days
         num_semanas = (diff_days // 7) + 1
         
-        # Calculate hours per session based on total CH
+        # Calculate hours per session
         if num_semanas > 0:
             horas_por_sessao = round(carga_horaria / num_semanas, 2)
         else:
             horas_por_sessao = carga_horaria
 
-        data_atual = data_inicio
-        eventos_linha = 0
         horas_restantes = carga_horaria
+        eventos_linha = 0
 
-        # Iterate through the range and create events on the same weekday
-        for w in range(num_semanas + 1): # +1 safety
+        # Cache existing dates for this consultor in this import to avoid self-collisions
+        dias_ocupados = set()
+
+        for w in range(num_semanas + 2): # safety buffer
             if horas_restantes <= 0.05:
                 break
             
-            d_evento = data_inicio + timedelta(weeks=w)
-            if d_evento > data_termino:
-                # If we still have hours, but passed the end date, 
-                # put the rest in the last possible day or slightly after if needed
-                if horas_restantes > 0:
-                     d_evento = data_termino
-                else:
-                    break
+            d_ideal = data_inicio + timedelta(weeks=w)
+            d_evento = d_ideal
 
-            # Final check to not double count or exceed
+            # Collision Avoidance: Find next available business day
+            intentos = 0
+            while intentos < 30:
+                # 1. Skip weekends
+                if d_evento.weekday() >= 5:
+                    d_evento += timedelta(days=1)
+                    continue
+                
+                # 2. Check DB for existing events (one company per day rule)
+                conflito_db = db.query(CronogramaEvento).filter(
+                    CronogramaEvento.consultor_id == consultor.id,
+                    CronogramaEvento.data == d_evento,
+                    CronogramaEvento.empresa_id != empresa.id # allowed if same company (rare)
+                ).first()
+
+                if conflito_db or d_evento in dias_ocupados:
+                    d_evento += timedelta(days=1)
+                    intentos += 1
+                    continue
+                
+                break # Found a free day
+
+            if d_evento > data_termino + timedelta(weeks=4): # Don't drift too far
+                break
+
+            dias_ocupados.add(d_evento)
+
             h_hoje = min(horas_por_sessao, horas_restantes)
             if h_hoje <= 0: break
 
@@ -328,6 +364,7 @@ async def import_excel(
                 sigla_empresa=empresa.sigla or sigla or "",
                 consultor_id=consultor.id,
                 program_id=program.id,
+                projeto_id=projeto.id,
                 titulo=f"{tipo_programa} - {empresa_nome}",
                 descricao=solucao or f"Sessão de {tipo_programa}",
                 carga_horaria=h_hoje,

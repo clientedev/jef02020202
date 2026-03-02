@@ -457,10 +457,24 @@ def deletar_eventos_bulk(
     if usuario.tipo != TipoUsuario.admin:
         query = query.filter(CronogramaEvento.consultor_id == usuario.id)
         
+    # Identify potential projects to cleanup
+    project_ids = [r[0] for r in db.query(CronogramaEvento.projeto_id).filter(
+        and_(query.whereclause if query.whereclause is not None else True, 
+             CronogramaEvento.projeto_id.isnot(None))
+    ).distinct().all()]
+
     excluidos = query.delete(synchronize_session=False)
     db.commit()
+
+    # Cleanup projects with no more events
+    if project_ids:
+        for pid in project_ids:
+            has_events = db.query(CronogramaEvento).filter(CronogramaEvento.projeto_id == pid).first()
+            if not has_events:
+                db.query(CronogramaProjeto).filter(CronogramaProjeto.id == pid).delete()
+        db.commit()
     
-    return {"message": f"{excluidos} eventos deletados com sucesso"}
+    return {"message": f"{excluidos} eventos deletados e cronograma sincronizado"}
 
 
 @router.delete("/eventos/{evento_id}")
@@ -477,10 +491,20 @@ def deletar_evento(
             detail="Evento nao encontrado"
         )
     
+    # Store project_id before deletion for sync
+    projeto_id = evento.projeto_id
+
     db.delete(evento)
     db.commit()
+
+    # If it was the last event of a project, delete the project too
+    if projeto_id:
+        outros_eventos = db.query(CronogramaEvento).filter(CronogramaEvento.projeto_id == projeto_id).first()
+        if not outros_eventos:
+            db.query(CronogramaProjeto).filter(CronogramaProjeto.id == projeto_id).delete()
+            db.commit()
     
-    return {"message": "Evento deletado com sucesso"}
+    return {"message": "Evento deletado e cronograma sincronizado"}
 
 
 
