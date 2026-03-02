@@ -7,8 +7,8 @@
 <div class="flex h-screen">
     {% include "partials/sidebar.html" %}
 
-    <main class="flex-1 overflow-hidden h-screen flex flex-col">
-        <header class="sticky top-0 z-20 glass-effect border-b border-dark-border/50 px-3 sm:px-6 py-2 sm:py-3">
+    <main class="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
+        <header class="sticky top-0 z-20 glass-effect border-b border-dark-border/50 px-3 sm:px-6 py-2 sm:py-3 mb-4">
             <div class="flex justify-between items-center gap-2">
                 <div class="flex items-center gap-2 sm:gap-3 min-w-0">
                     <button onclick="toggleMobileSidebar()"
@@ -95,11 +95,6 @@
                     <p>Carregando agenda...</p>
                 </div>
             </div>
-        </div>
-
-        <div id="metricsContainer"
-            class="px-4 pb-4 overflow-y-auto flex-[0_0_35%] border-t border-dark-border/30 bg-dark-bg/50 custom-scrollbar">
-            <!-- Metrics table will be injected here -->
         </div>
     </main>
 </div>
@@ -387,14 +382,25 @@
 
     .scheduler-cell {
         min-width: 100px;
-        min-height: 48px;
-        border: 1px solid rgba(55, 65, 81, 0.3);
+        min-height: 42px;
+        border: 1px solid rgba(55, 65, 81, 0.2);
         transition: all 0.15s ease;
         display: flex;
         flex-direction: column;
-        gap: 2px;
-        padding: 2px;
+        gap: 1px;
+        padding: 1px;
         overflow: hidden;
+    }
+
+    .scheduler-row-header {
+        height: 42px;
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #94a3b8;
+        border-bottom: 1px solid rgba(55, 65, 81, 0.2);
     }
 
     .scheduler-cell:hover {

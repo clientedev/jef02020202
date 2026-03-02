@@ -201,10 +201,10 @@ async function carregarDadosAgenda() {
         feriadosAgenda = await feriadosRes.json();
 
         renderizarScheduler();
-        renderizarTabelaMetricas();
         atualizarPeriodoExibido();
     } catch (error) {
         console.error('Erro ao carregar dados:', error);
+        showToast('Erro ao carregar agenda', 'error');
     }
 }
 
@@ -716,85 +716,10 @@ function atualizarPeriodoExibido() {
     document.getElementById('periodoAtual').textContent = `${f(dataInicioAgenda)} - ${f(fim)} ${fim.getFullYear()}`;
 }
 
-async function renderizarTabelaMetricas() {
-    const container = document.getElementById('metricsContainer');
-    if (!container) return;
-
-    try {
-        const response = await apiRequest('/api/cronograma/metrics');
-        if (!response.ok) throw new Error('Erro ao carregar métricas');
-        const metrics = await response.json();
-
-        const listaProgramas = metrics.programas || metrics;
-
-        let html = `
-        <div class="glass-effect rounded-xl overflow-hidden border border-dark-border/30 mt-8">
-            <div class="bg-dark-card/50 px-6 py-4 border-b border-dark-border/30 flex justify-between items-center">
-                <h3 class="text-white font-bold text-lg"><i class="fas fa-chart-bar mr-2 text-blue-400"></i>Gestão Global de Programas</h3>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-dark-card/30 text-xs text-gray-400 uppercase border-b border-dark-border/30">
-                            <th class="px-6 py-3">Consultor / Empresa</th>
-                            <th class="px-3 py-3">Programa</th>
-                            <th class="px-3 py-3 text-center">Meta Total</th>
-                            <th class="px-3 py-3">Progresso</th>
-                            <th class="px-3 py-3 text-center">Última Ativ.</th>
-                            <th class="px-3 py-3 text-center">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-dark-border/20">
-        `;
-
-        listaProgramas.forEach(m => {
-            const consultor = m.consultor_nome || m.consultor;
-            const empresa = m.projeto_nome || m.empresa;
-            const programa = m.programa_nome || m.nome;
-            const cargaTotal = m.carga_total || m.meta_total;
-            const horasRealizadas = m.horas_contabilizadas || m.horas_realizadas || 0;
-            const progresso = (horasRealizadas / cargaTotal) * 100;
-
-            html += `
-                <tr class="hover:bg-dark-hover/30 transition-colors">
-                    <td class="px-6 py-4">
-                        <div class="flex flex-col gap-1">
-                            <div class="flex items-center gap-2">
-                                <div class="w-6 h-6 rounded bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-[8px]">
-                                    ${getIniciaisAgenda(consultor)}
-                                </div>
-                                <span class="text-xs text-white font-medium">${consultor}</span>
-                            </div>
-                            <span class="text-[10px] text-gray-400 ml-8">${empresa}</span>
-                        </div>
-                    </td>
-                    <td class="px-3 py-4">
-                        <div class="text-[11px] text-green-400 font-bold">${programa}</div>
-                    </td>
-                    <td class="px-3 py-4 text-center text-xs text-white font-bold">${cargaTotal}h</td>
-                    <td class="px-3 py-4">
-                        <div class="w-24 h-1.5 bg-dark-bg rounded-full overflow-hidden mb-1">
-                            <div class="h-full bg-blue-500 rounded-full shadow-[0_0_5px_rgba(59,130,246,0.5)]" style="width: ${Math.min(progresso, 100)}%"></div>
-                        </div>
-                        <span class="text-[9px] text-gray-400">${Math.round(progresso)}% executado</span>
-                    </td>
-                    <td class="px-3 py-4 text-center text-[10px] text-gray-300">
-                         ${m.ultima_data ? new Date(m.ultima_data).toLocaleDateString('pt-BR') : 'N/A'}
-                    </td>
-                    <td class="px-3 py-4 text-center">
-                        <a href="/program/${m.program_id || m.id}/dashboard" 
-                           class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition"
-                           title="Ver Dashboard">
-                            <i class="fas fa-chart-line text-xs"></i>
-                        </a>
-                    </td>
-                </tr>
-            `;
-        });
-
-        html += '</tbody></table></div></div>';
-        container.innerHTML = html;
-    } catch (error) {
-        console.error(error);
-    }
+function irParaHojeAgenda() {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    dataInicioAgenda = new Date(hoje);
+    dataInicioAgenda.setDate(hoje.getDate() - hoje.getDay() - 7);
+    carregarDadosAgenda();
 }
