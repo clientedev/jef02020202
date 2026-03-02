@@ -1024,7 +1024,7 @@ function renderizarCalendarioMobile() { }
 function atualizarResumo() { }
 function renderizarLegendaConsultores() { }
 async function acionarResetGlobal() {
-    const code = prompt("MODO DE MANUTENÇÃO: Digite o código de segurança para LIMPAR TODO O CRONOGRAMA:");
+    const code = prompt("MODO DE MANUTENÇÃO: Digite o código de segurança 'RESET99' para LIMPAR TODO O CRONOGRAMA:");
     if (code !== "RESET99") {
         if (code) alert("Código incorreto. Operação cancelada.");
         return;
