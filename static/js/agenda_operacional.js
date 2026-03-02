@@ -577,6 +577,20 @@ async function mostrarDetalheEvento(eventoId) {
                 </div>
             </div>
             
+            <div class="space-y-2">
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Mudar Categoria:</label>
+                <div class="flex flex-wrap gap-2">
+                    ${Object.entries(CATEGORIA_CORES_AGENDA).map(([sigla, c]) => `
+                        <button onclick="alterarCategoriaRapido(${eventoId}, '${sigla}')" 
+                                class="px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border-2 ${eventoSelecionado.categoria === sigla ? 'scale-110 shadow-lg' : 'opacity-60 grayscale-[0.5] hover:opacity-100 hover:grayscale-0'}"
+                                style="background-color: ${c.cor}20; border-color: ${c.cor}; color: ${c.cor};"
+                                title="${c.nome}">
+                            ${sigla}
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+
             <div class="grid grid-cols-2 gap-4">
                 <div class="p-4 rounded-xl bg-dark-bg/50 border border-dark-border/30">
                     <div class="text-xs text-gray-400 mb-1">Empresa</div>
@@ -589,7 +603,12 @@ async function mostrarDetalheEvento(eventoId) {
                 </div>
             </div>
             
-            ${eventoSelecionado.program_nome ? `<div class="p-4 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 font-medium">Programa: ${eventoSelecionado.program_nome}</div>` : ''}
+            ${eventoSelecionado.program_nome ? `<div class="p-4 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 font-medium flex justify-between items-center">
+                <span>Programa: ${eventoSelecionado.program_nome}</span>
+                <a href="/program/${eventoSelecionado.program_id}/dashboard" class="px-3 py-1 bg-green-500/20 rounded-lg text-[10px] text-green-400 hover:bg-green-500/30 transition">
+                    <i class="fas fa-chart-line mr-1"></i>DASHBOARD
+                </a>
+            </div>` : ''}
             ${eventoSelecionado.descricao ? `<div class="p-4 rounded-xl bg-dark-bg/50 border border-dark-border/30 text-sm text-gray-300">${eventoSelecionado.descricao}</div>` : ''}
         `;
 
@@ -603,6 +622,26 @@ async function mostrarDetalheEvento(eventoId) {
 
 function fecharModalDetalhe() {
     document.getElementById('modalDetalheEvento').classList.add('hidden');
+}
+
+async function alterarCategoriaRapido(id, novaCat) {
+    try {
+        await apiRequest(`/api/cronograma/eventos/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ categoria: novaCat })
+        });
+        showToast('Categoria atualizada!', 'success');
+
+        // Optimistic UI: Update current data without full reload if possible
+        const evIdx = eventosAgenda.findIndex(e => e.id === id);
+        if (evIdx !== -1) eventosAgenda[evIdx].categoria = novaCat;
+
+        // Re-render only the scheduler and the modal content
+        renderizarScheduler();
+        mostrarDetalheEvento(id);
+    } catch (e) {
+        showToast('Erro ao atualizar categoria', 'error');
+    }
 }
 
 function editarEventoAgenda() {
@@ -697,10 +736,12 @@ async function renderizarTabelaMetricas() {
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-dark-card/30 text-xs text-gray-400 uppercase border-b border-dark-border/30">
-                            <th class="px-6 py-3">Consultor</th>
-                            <th class="px-3 py-3">Empresa</th>
+                            <th class="px-6 py-3">Consultor / Empresa</th>
                             <th class="px-3 py-3">Programa</th>
+                            <th class="px-3 py-3 text-center">Meta Total</th>
+                            <th class="px-3 py-3">Progresso</th>
                             <th class="px-3 py-3 text-center">Última Ativ.</th>
+                            <th class="px-3 py-3 text-center">Ações</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-dark-border/20">
@@ -717,26 +758,35 @@ async function renderizarTabelaMetricas() {
             html += `
                 <tr class="hover:bg-dark-hover/30 transition-colors">
                     <td class="px-6 py-4">
-                        <div class="flex items-center gap-2">
-                            <div class="w-7 h-7 rounded bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-[10px]">
-                                ${getIniciaisAgenda(consultor)}
+                        <div class="flex flex-col gap-1">
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 h-6 rounded bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-[8px]">
+                                    ${getIniciaisAgenda(consultor)}
+                                </div>
+                                <span class="text-xs text-white font-medium">${consultor}</span>
                             </div>
-                            <span class="text-xs text-white font-medium">${consultor}</span>
+                            <span class="text-[10px] text-gray-400 ml-8">${empresa}</span>
                         </div>
                     </td>
-                    <td class="px-3 py-4 text-xs text-gray-300 font-medium">${empresa}</td>
                     <td class="px-3 py-4">
                         <div class="text-[11px] text-green-400 font-bold">${programa}</div>
                     </td>
                     <td class="px-3 py-4 text-center text-xs text-white font-bold">${cargaTotal}h</td>
                     <td class="px-3 py-4">
                         <div class="w-24 h-1.5 bg-dark-bg rounded-full overflow-hidden mb-1">
-                            <div class="h-full bg-blue-500 rounded-full" style="width: ${Math.min(progresso, 100)}%"></div>
+                            <div class="h-full bg-blue-500 rounded-full shadow-[0_0_5px_rgba(59,130,246,0.5)]" style="width: ${Math.min(progresso, 100)}%"></div>
                         </div>
                         <span class="text-[9px] text-gray-400">${Math.round(progresso)}% executado</span>
                     </td>
+                    <td class="px-3 py-4 text-center text-[10px] text-gray-300">
+                         ${m.ultima_data ? new Date(m.ultima_data).toLocaleDateString('pt-BR') : 'N/A'}
+                    </td>
                     <td class="px-3 py-4 text-center">
-                         <span class="text-[10px] text-gray-500">${m.ultima_data ? new Date(m.ultima_data).toLocaleDateString('pt-BR') : 'N/A'}</span>
+                        <a href="/program/${m.program_id || m.id}/dashboard" 
+                           class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition"
+                           title="Ver Dashboard">
+                            <i class="fas fa-chart-line text-xs"></i>
+                        </a>
                     </td>
                 </tr>
             `;

@@ -186,6 +186,11 @@ async def agenda_operacional_page(request: Request):
     if not is_loaded: return HTMLResponse("Carregando...")
     return templates.TemplateResponse("agenda_operacional.html", {"request": request})
 
+@app.get("/program/{program_id}/dashboard", response_class=HTMLResponse)
+async def program_dashboard_page(request: Request, program_id: int):
+    if not is_loaded: return HTMLResponse("Carregando...")
+    return templates.TemplateResponse("program_dashboard.html", {"request": request, "program_id": program_id})
+
 @app.get("/pipeline", response_class=HTMLResponse)
 async def pipeline_page(request: Request):
     if not is_loaded: return HTMLResponse("Carregando...")

@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard do Programa - Nucleo 1.03{% endblock %}
+
+{% set active_page = 'agenda_operacional' %}
+
+{% block content %}
+<div class="flex h-screen bg-dark-bg">
+    {% include "partials/sidebar.html" %}
+
+    <main class="flex-1 overflow-y-auto custom-scrollbar">
+        <header class="sticky top-0 z-20 glass-effect border-b border-dark-border/50 px-8 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <a href="/agenda-operacional"
+                        class="w-10 h-10 rounded-xl bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <div>
+                        <h2 id="progNome" class="text-2xl font-bold text-white">Carregando Programa...</h2>
+                        <p id="progEmpresa" class="text-gray-400 text-sm">Empresa: ---</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div id="badgeStatus"
+                        class="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-wider">
+                        Em Andamento
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="p-8 space-y-8 max-w-7xl mx-auto">
+            <!-- Top stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="glass-effect p-6 rounded-2xl border border-dark-border/30">
+                    <div class="text-gray-400 text-xs font-bold uppercase mb-2">Meta Total</div>
+                    <div id="metaTotal" class="text-3xl font-bold text-white">0.0h</div>
+                </div>
+                <div class="glass-effect p-6 rounded-2xl border border-dark-border/30">
+                    <div class="text-gray-400 text-xs font-bold uppercase mb-2">Realizado</div>
+                    <div id="totalRealizado" class="text-3xl font-bold text-green-400">0.0h</div>
+                </div>
+                <div class="glass-effect p-6 rounded-2xl border border-dark-border/30">
+                    <div class="text-gray-400 text-xs font-bold uppercase mb-2">Agendado</div>
+                    <div id="totalAgendado" class="text-3xl font-bold text-blue-400">0.0h</div>
+                </div>
+                <div class="glass-effect p-6 rounded-2xl border border-dark-border/30">
+                    <div class="text-gray-400 text-xs font-bold uppercase mb-2">Saldo</div>
+                    <div id="saldoHoras" class="text-3xl font-bold text-orange-400">0.0h</div>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="glass-effect p-8 rounded-3xl border border-dark-border/30 relative overflow-hidden">
+                <div class="flex justify-between items-end mb-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Progresso de Execução</h3>
+                        <p class="text-gray-400 text-xs">Carga horaria consumida vs total</p>
+                    </div>
+                    <div id="porcentagemTexto" class="text-2xl font-black text-blue-400 font-outfit">0%</div>
+                </div>
+                <div class="h-4 w-full bg-dark-bg/50 rounded-full overflow-hidden border border-dark-border/20 p-0.5">
+                    <div id="progressoBarra"
+                        class="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(59,130,246,0.5)]"
+                        style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between mt-4 text-[10px] text-gray-500 font-bold uppercase">
+                    <span id="dataInicio">Início: ---</span>
+                    <span id="dataFim">Previsão Término: ---</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Consultants chart -->
+                <div class="lg:col-span-1 glass-effect p-6 rounded-2xl border border-dark-border/30">
+                    <h3 class="text-white font-bold mb-6 flex items-center gap-2">
+                        <i class="fas fa-users text-blue-400"></i> Participação por Consultor
+                    </h3>
+                    <div id="listaConsultores" class="space-y-4">
+                        <!-- Consultant cards -->
+                    </div>
+                </div>
+
+                <!-- Session History -->
+                <div class="lg:col-span-2 glass-effect rounded-2xl border border-dark-border/30 overflow-hidden">
+                    <div class="p-6 border-b border-dark-border/30 flex justify-between items-center">
+                        <h3 class="text-white font-bold flex items-center gap-2">
+                            <i class="fas fa-history text-blue-400"></i> Histórico de Atendimentos
+                        </h3>
+                        <div class="text-xs text-gray-400 uppercase font-bold" id="totalSessoes">0 sessões</div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-dark-bg/30 text-gray-400 text-[10px] font-bold uppercase">
+                                <tr>
+                                    <th class="px-6 py-4">Data</th>
+                                    <th class="px-6 py-4">Consultor</th>
+                                    <th class="px-6 py-4 text-center">CH</th>
+                                    <th class="px-6 py-4">Categoria</th>
+                                    <th class="px-6 py-4">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="listaAtendimentos" class="text-sm divide-y divide-dark-border/10">
+                                <!-- Table rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    const programId = {{ program_id }};
+
+    async function carregarDashboard() {
+        try {
+            const res = await apiRequest(`/api/programs/${programId}/dashboard`);
+            if (!res.ok) {
+                alert("Erro ao carregar dashboard");
+                return;
+            }
+            const data = await res.json();
+
+            // Populate header
+            document.getElementById('progNome').innerText = data.nome;
+            document.getElementById('progEmpresa').innerText = `Empresa: ${data.empresa_nome}`;
+
+            // Populate stats
+            document.getElementById('metaTotal').innerText = `${data.carga_horaria.toFixed(1)}h`;
+            document.getElementById('totalRealizado').innerText = `${data.total_realizado.toFixed(1)}h`;
+            document.getElementById('totalAgendado').innerText = `${data.total_agendado.toFixed(1)}h`;
+            const saldo = data.carga_horaria - data.total_agendado;
+            document.getElementById('saldoHoras').innerText = `${saldo.toFixed(1)}h`;
+
+            // Progress bar
+            const pct = (data.total_realizado / data.carga_horaria) * 100;
+            document.getElementById('porcentagemTexto').innerText = `${Math.min(100, pct).toFixed(0)}%`;
+            document.getElementById('progressoBarra').style.width = `${Math.min(100, pct)}%`;
+
+            // Dates
+            document.getElementById('dataInicio').innerText = `Início: ${data.data_inicio ? new Date(data.data_inicio).toLocaleDateString('pt-BR') : '---'}`;
+            document.getElementById('dataFim').innerText = `Previsão Término: ${data.data_fim ? new Date(data.data_fim).toLocaleDateString('pt-BR') : '---'}`;
+
+            // Consultants
+            const listCons = document.getElementById('listaConsultores');
+            listCons.innerHTML = data.consultores.map(c => `
+            <div class="p-3 rounded-xl bg-dark-bg/30 border border-dark-border/20 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold">
+                        ${c.nome.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                        <div class="text-white text-sm font-bold">${c.nome}</div>
+                        <div class="text-gray-500 text-[10px] uppercase">${c.sessoes} sessões</div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-blue-400 font-bold text-sm">${c.horas.toFixed(1)}h</div>
+                    <div class="text-[10px] text-gray-500 font-bold">${((c.horas / data.carga_horaria) * 100).toFixed(0)}%</div>
+                </div>
+            </div>
+        `).join('');
+
+            // Activity history
+            document.getElementById('totalSessoes').innerText = `${data.atendimentos.length} sessões`;
+            const listAtend = document.getElementById('listaAtendimentos');
+            const hoje = new Date().toISOString().split('T')[0];
+
+            listAtend.innerHTML = data.atendimentos.map(a => `
+            <tr class="hover:bg-dark-bg/50 transition-colors group">
+                <td class="px-6 py-4">
+                    <div class="flex flex-col">
+                        <span class="text-white font-medium">${new Date(a.data + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
+                        <span class="text-[10px] ${a.data <= hoje ? 'text-green-500' : 'text-blue-400'} font-bold uppercase">
+                            ${a.data <= hoje ? 'Realizado' : 'Agendado'}
+                        </span>
+                    </div>
+                </td>
+                <td class="px-6 py-4 text-gray-300 font-medium">${a.consultor}</td>
+                <td class="px-6 py-4 text-center font-bold text-white">${a.carga_horaria.toFixed(1)}h</td>
+                <td class="px-6 py-4 text-center">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold text-white bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                        ${a.categoria}
+                    </span>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="flex gap-2">
+                        <button class="w-8 h-8 rounded-lg bg-dark-card hover:bg-dark-hover transition text-gray-400 hover:text-white flex items-center justify-center">
+                            <i class="fas fa-eye text-xs"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', carregarDashboard);
+</script>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #1f2937;
+        border-radius: 10px;
+    }
+
+    .font-outfit {
+        font-family: 'Outfit', sans-serif;
+    }
+</style>
+{% endblock %}

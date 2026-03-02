@@ -3,10 +3,11 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import date, timedelta
 from pydantic import BaseModel
-from backend.database import get_db
+from backend.models import Empresa, Usuario
 from backend.models.cronograma import Program, CronogramaEvento, CategoriaEvento, PeriodoEvento
 from backend.models.feriados import Feriado
-from backend.auth.security import obter_usuario_admin as get_current_user
+from backend.auth.security import obter_usuario_atual # Changed for general usage
+from sqlalchemy import func
 
 router = APIRouter(prefix="/api/programs", tags=["programs"])
 
@@ -30,6 +31,19 @@ class AutoScheduleRequest(BaseModel):
     dias_semana: List[int]  # 0=Monday, 6=Sunday
     horas_por_dia: float
     categoria: Optional[str] = None
+
+class ProgramDashboard(BaseModel):
+    id: int
+    nome: str
+    carga_horaria: float
+    descricao: Optional[str]
+    empresa_nome: Optional[str]
+    total_agendado: float
+    total_realizado: float
+    atendimentos: List[dict]
+    consultores: List[dict]
+    data_inicio: Optional[date]
+    data_fim: Optional[date]
 
 @router.post("/", response_model=ProgramResponse)
 def create_program(program: ProgramCreate, db: Session = Depends(get_db)):
@@ -129,3 +143,65 @@ def auto_schedule(request: AutoScheduleRequest, db: Session = Depends(get_db)):
 
     db.commit()
     return {"message": f"{len(eventos_criados)} eventos criados com sucesso", "total_horas": program.carga_horaria}
+
+@router.get("/{program_id}/dashboard", response_model=ProgramDashboard)
+def get_program_dashboard(
+    program_id: int, 
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(obter_usuario_atual)
+):
+    program = db.query(Program).filter(Program.id == program_id).first()
+    if not program:
+        raise HTTPException(status_code=404, detail="Programa não encontrado")
+    
+    # Calc totals
+    hoje = date.today()
+    realizado = db.query(func.sum(CronogramaEvento.carga_horaria))\
+        .filter(CronogramaEvento.program_id == program_id)\
+        .filter(CronogramaEvento.data <= hoje).scalar() or 0
+        
+    agendado = db.query(func.sum(CronogramaEvento.carga_horaria))\
+        .filter(CronogramaEvento.program_id == program_id).scalar() or 0
+        
+    # Get all events (simplified info)
+    eventos_db = db.query(CronogramaEvento).filter(CronogramaEvento.program_id == program_id).order_by(CronogramaEvento.data.desc()).all()
+    
+    atendimentos = []
+    for e in eventos_db:
+        atendimentos.append({
+            "id": e.id,
+            "data": e.data.isoformat(),
+            "consultor": e.consultor.nome if e.consultor else "N/A",
+            "carga_horaria": e.carga_horaria,
+            "categoria": e.categoria,
+            "descricao": e.descricao
+        })
+        
+    # Stats by consultant
+    consultores_stats = db.query(
+        Usuario.nome,
+        func.sum(CronogramaEvento.carga_horaria).label("horas"),
+        func.count(CronogramaEvento.id).label("sessoes")
+    ).join(CronogramaEvento, Usuario.id == CronogramaEvento.consultor_id)\
+     .filter(CronogramaEvento.program_id == program_id)\
+     .group_by(Usuario.nome).all()
+     
+    consultores = [{"nome": c[0], "horas": c[1], "sessoes": c[2]} for c in consultores_stats]
+    
+    # First and last session
+    data_inicio = db.query(func.min(CronogramaEvento.data)).filter(CronogramaEvento.program_id == program_id).scalar()
+    data_fim = db.query(func.max(CronogramaEvento.data)).filter(CronogramaEvento.program_id == program_id).scalar()
+
+    return {
+        "id": program.id,
+        "nome": program.nome,
+        "carga_horaria": program.carga_horaria,
+        "descricao": program.descricao,
+        "empresa_nome": program.empresa.empresa if program.empresa else "Global",
+        "total_agendado": agendado,
+        "total_realizado": realizado,
+        "atendimentos": atendimentos,
+        "consultores": consultores,
+        "data_inicio": data_inicio,
+        "data_fim": data_fim
+    }
