@@ -148,19 +148,36 @@ function selecionarEmpresaParaEventoAgenda(id, nome, sigla) {
 
 async function carregarProgramasPorEmpresaAgenda(empresaId) {
     const select = document.getElementById('eventoPrograma');
-    if (!select || !empresaId) return;
+    if (!select) return;
+
+    select.innerHTML = '<option value="">Carregando programas...</option>';
 
     try {
-        const response = await apiRequest(`/api/prospeccao/empresa/${empresaId}`);
-        const prospeccoes = await response.json();
-        const options = prospeccoes
-            .filter(p => p.program_id)
-            .map(p => `<option value="${p.program_id}">${p.program_nome}</option>`);
+        const url = empresaId
+            ? `/api/programs/?empresa_id=${empresaId}`
+            : '/api/programs/';
+        const response = await apiRequest(url);
 
-        select.innerHTML = '<option value="">Selecione um programa...</option>' + options.join('');
-        document.getElementById('campoEventoPrograma').classList.toggle('hidden', options.length === 0);
+        if (!response) {
+            select.innerHTML = '<option value="">Erro ao carregar (sem resposta)</option>';
+            return;
+        }
+        if (!response.ok) {
+            select.innerHTML = '<option value="">Erro ao carregar programas</option>';
+            return;
+        }
+        const programas = await response.json();
+
+        if (programas.length > 0) {
+            select.innerHTML = '<option value="">Selecione um programa...</option>' +
+                programas.map(p => `<option value="${p.id}">${p.nome} (${p.carga_horaria}h)</option>`).join('');
+        } else {
+            select.innerHTML = '<option value="">Nenhum programa cadastrado</option>';
+        }
+        document.getElementById('campoEventoPrograma').classList.remove('hidden');
     } catch (error) {
         console.error('Erro ao carregar programas:', error);
+        select.innerHTML = '<option value="">Erro ao carregar programas</option>';
     }
 }
 
@@ -430,12 +447,42 @@ function abrirModalNovoEvento(data, consultorId) {
         ).join('');
     }
 
+    // Resetar busca de empresa
+    document.getElementById('eventoBuscaEmpresa').value = '';
+    document.getElementById('eventoEmpresaId').value = '';
+    document.getElementById('eventoSigla').value = '';
+    document.getElementById('listaSugestoesEmpresa').classList.add('hidden');
+
+    // Reset toggle estado
+    const toggleDistribuir = document.getElementById('eventoDistribuirCarga');
+    if (toggleDistribuir) toggleDistribuir.checked = true;
+    document.getElementById('diasSemanaContainer').classList.remove('hidden');
+
     document.getElementById('configuracaoDistribuicao').classList.remove('hidden');
+
+    // Carregar todos programas ao abrir o modal (sem filtro de empresa)
+    carregarProgramasPorEmpresaAgenda(null);
+
     modal.classList.remove('hidden');
 }
 
 function fecharModalEvento() {
     document.getElementById('modalEvento').classList.add('hidden');
+}
+
+function toggleModoAgendamento(isAuto) {
+    const diasContainer = document.getElementById('diasSemanaContainer');
+    const label = document.getElementById('labelModoAgendamento');
+    const subLabel = document.getElementById('subLabelModoAgendamento');
+    if (isAuto) {
+        diasContainer.classList.remove('hidden');
+        if (label) label.textContent = 'Distribuição Automática';
+        if (subLabel) subLabel.textContent = 'Distribui carga total entre os dias';
+    } else {
+        diasContainer.classList.add('hidden');
+        if (label) label.textContent = 'Lançamento Individual';
+        if (subLabel) subLabel.textContent = 'Cria 1 evento único na data selecionada';
+    }
 }
 
 async function salvarEventoAgenda(e) {
@@ -459,17 +506,34 @@ async function salvarEventoAgenda(e) {
             };
             await apiRequest(`/api/cronograma/eventos/${eventoId}`, { method: 'PUT', body: JSON.stringify(dados) });
         } else if (programId) {
-            const diasCheckboxes = document.querySelectorAll('input[name="eventoDiasSemana"]:checked');
-            const dadosAuto = {
-                program_id: parseInt(programId),
-                consultor_id: parseInt(document.getElementById('eventoConsultor').value),
-                empresa_id: empresaId ? parseInt(empresaId) : null,
-                data_inicio: document.getElementById('eventoData').value,
-                dias_semana: Array.from(diasCheckboxes).map(cb => parseInt(cb.value)),
-                horas_por_dia: parseFloat(document.getElementById('eventoHorasDia').value || 8),
-                categoria: document.getElementById('eventoCategoria').value
-            };
-            await apiRequest('/api/programs/auto-schedule', { method: 'POST', body: JSON.stringify(dadosAuto) });
+            const distribuirCarga = document.getElementById('eventoDistribuirCarga') ? document.getElementById('eventoDistribuirCarga').checked : true;
+
+            if (distribuirCarga) {
+                const diasCheckboxes = document.querySelectorAll('input[name="eventoDiasSemana"]:checked');
+                const dadosAuto = {
+                    program_id: parseInt(programId),
+                    consultor_id: parseInt(document.getElementById('eventoConsultor').value),
+                    empresa_id: empresaId ? parseInt(empresaId) : null,
+                    data_inicio: document.getElementById('eventoData').value,
+                    dias_semana: Array.from(diasCheckboxes).map(cb => parseInt(cb.value)),
+                    horas_por_dia: parseFloat(document.getElementById('eventoHorasDia').value || 8),
+                    categoria: document.getElementById('eventoCategoria').value
+                };
+                await apiRequest('/api/programs/auto-schedule', { method: 'POST', body: JSON.stringify(dadosAuto) });
+            } else {
+                // Manual creation WITH program
+                const dados = {
+                    data: document.getElementById('eventoData').value,
+                    categoria: document.getElementById('eventoCategoria').value,
+                    consultor_id: parseInt(document.getElementById('eventoConsultor').value),
+                    empresa_id: empresaId ? parseInt(empresaId) : null,
+                    program_id: parseInt(programId),
+                    carga_horaria: parseFloat(document.getElementById('eventoHorasDia').value || 8),
+                    sigla_empresa: document.getElementById('eventoSigla').value || null,
+                    descricao: document.getElementById('eventoDescricao').value
+                };
+                await apiRequest('/api/cronograma/eventos', { method: 'POST', body: JSON.stringify(dados) });
+            }
         } else {
             // Manual creation without program
             const dados = {

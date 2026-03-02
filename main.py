@@ -49,7 +49,7 @@ async def health_check():
 # --- 2. DEFERRED FULL BOOT ---
 def deferred_boot(app_instance):
     global templates, is_loaded, boot_error, boot_step
-    print("🚀 [BOOT] Iniciando carga pesada em segundo plano...")
+    print("[BOOT] Iniciando carga pesada em segundo plano...")
     try:
         boot_step = "Carregando Deps..."
         from backend.database import get_engine, Base
@@ -57,20 +57,20 @@ def deferred_boot(app_instance):
         
         # Ensure database tables exist (Critical for Railway/New Deploys)
         boot_step = "Conectando ao banco de dados..."
-        print(f"🚀 [BOOT] {boot_step}")
+        print(f"[BOOT] {boot_step}")
         engine = get_engine()
         
         boot_step = "Sincronizando tabelas (create_all)..."
-        print(f"🚀 [BOOT] {boot_step}")
+        print(f"[BOOT] {boot_step}")
         Base.metadata.create_all(bind=engine)
-        print("✅ [BOOT] Tabelas sincronizadas.")
+        print("[BOOT] Tabelas sincronizadas.")
 
         # 2c. Routers (This is what usually blocks)
         boot_step = "Iniciando Roteadores..."
         from backend.routers import (auth, empresas, prospeccoes, agendamentos, admin, 
                                     atribuicoes, consultores, dashboard, cnpj, 
                                     notificacoes, mensagens, cronograma, pipeline, 
-                                    programs, contatos, feriados)
+                                    programs, contatos, feriados, cronograma_import)
         from backend.routers.formularios import router as forms_router, router_public as forms_pub_router
         
         routers = [
@@ -78,20 +78,20 @@ def deferred_boot(app_instance):
             agendamentos.router, atribuicoes.router, consultores.router, 
             dashboard.router, cnpj.router, notificacoes.router, mensagens.router, 
             cronograma.router, pipeline.router, programs.router, contatos.router, 
-            forms_router, forms_pub_router, feriados.router
+            forms_router, forms_pub_router, feriados.router, cronograma_import.router
         ]
         
         for r in routers:
             app_instance.include_router(r)
 
         is_loaded = True
-        print("✅ [BOOT] Sistema totalmente funcional!")
+        print("[BOOT] Sistema totalmente funcional!")
         
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
         boot_error = f"{str(e)}\n{error_details}"
-        print(f"❌ [BOOT] Falha na carga background: {boot_error}")
+        print(f"[BOOT] Falha na carga background: {boot_error}")
 
 # Trigger boot in thread immediately
 threading.Thread(target=deferred_boot, args=(app,), daemon=True).start()

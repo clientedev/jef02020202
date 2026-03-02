@@ -40,8 +40,12 @@ def create_program(program: ProgramCreate, db: Session = Depends(get_db)):
     return db_program
 
 @router.get("/", response_model=List[ProgramResponse])
-def list_programs(db: Session = Depends(get_db)):
-    return db.query(Program).all()
+def list_programs(empresa_id: Optional[int] = None, db: Session = Depends(get_db)):
+    query = db.query(Program)
+    if empresa_id is not None:
+        # Return programs linked to this empresa OR global programs (no empresa_id)
+        query = query.filter((Program.empresa_id == empresa_id) | (Program.empresa_id == None))
+    return query.order_by(Program.nome).all()
 
 @router.put("/{program_id}", response_model=ProgramResponse)
 def update_program(program_id: int, program_data: ProgramCreate, db: Session = Depends(get_db)):

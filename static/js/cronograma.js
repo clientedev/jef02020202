@@ -728,26 +728,47 @@ async function salvarEvento(e) {
     }
 
     if (programId) {
-        const diasCheckboxes = document.querySelectorAll('input[name="eventoDiasSemana"]:checked');
-        if (diasCheckboxes.length === 0) { alert('Selecione os dias'); return; }
+        const distribuirCarga = document.getElementById('eventoDistribuirCarga') ? document.getElementById('eventoDistribuirCarga').checked : true;
 
-        const dadosAuto = {
-            program_id: parseInt(programId),
-            consultor_id: parseInt(document.getElementById('eventoConsultor').value),
-            empresa_id: empresaId ? parseInt(empresaId) : null,
-            data_inicio: document.getElementById('eventoData').value,
-            dias_semana: Array.from(diasCheckboxes).map(cb => parseInt(cb.value)),
-            horas_por_dia: parseFloat(document.getElementById('eventoHorasDia').value || 8),
-            categoria: document.getElementById('eventoCategoria').value
-        };
+        if (distribuirCarga) {
+            const diasCheckboxes = document.querySelectorAll('input[name="eventoDiasSemana"]:checked');
+            if (diasCheckboxes.length === 0) { alert('Selecione os dias'); return; }
 
-        const response = await apiRequest('/api/programs/auto-schedule', { method: 'POST', body: JSON.stringify(dadosAuto) });
-        if (response.ok) {
-            fecharModalEvento(); await carregarEventos(); await carregarDados();
+            const dadosAuto = {
+                program_id: parseInt(programId),
+                consultor_id: parseInt(document.getElementById('eventoConsultor').value),
+                empresa_id: empresaId ? parseInt(empresaId) : null,
+                data_inicio: document.getElementById('eventoData').value,
+                dias_semana: Array.from(diasCheckboxes).map(cb => parseInt(cb.value)),
+                horas_por_dia: parseFloat(document.getElementById('eventoHorasDia').value || 8),
+                categoria: document.getElementById('eventoCategoria').value
+            };
+
+            const response = await apiRequest('/api/programs/auto-schedule', { method: 'POST', body: JSON.stringify(dadosAuto) });
+            if (response.ok) {
+                fecharModalEvento(); await carregarEventos(); await carregarDados();
+            } else {
+                const err = await response.json(); alert(err.detail || 'Erro ao gerar');
+            }
+            return;
         } else {
-            const err = await response.json(); alert(err.detail || 'Erro ao gerar');
+            const dados = {
+                data: document.getElementById('eventoData').value,
+                categoria: document.getElementById('eventoCategoria').value,
+                consultor_id: parseInt(document.getElementById('eventoConsultor').value),
+                empresa_id: empresaId ? parseInt(empresaId) : null,
+                program_id: parseInt(programId),
+                carga_horaria: parseFloat(document.getElementById('eventoHorasDia').value || 8),
+                sigla_empresa: document.getElementById('eventoSigla').value || null,
+                descricao: document.getElementById('eventoDescricao').value
+            };
+
+            const response = await apiRequest('/api/cronograma/eventos', { method: 'POST', body: JSON.stringify(dados) });
+            if (response.ok) {
+                fecharModalEvento(); await carregarEventos(); await carregarDados();
+            }
+            return;
         }
-        return;
     }
 
     const dados = {

@@ -31,6 +31,11 @@
                         title="Programas">
                         <i class="fas fa-list-check text-sm"></i>
                     </button>
+                    <button onclick="abrirModalImportExcel()"
+                        class="w-9 h-9 rounded-xl bg-dark-card hover:bg-dark-hover text-green-400 hover:text-green-300 flex items-center justify-center transition"
+                        title="Importar via Excel">
+                        <i class="fas fa-file-excel text-sm"></i>
+                    </button>
                     <button onclick="toggleFiltros()"
                         class="lg:hidden w-9 h-9 rounded-xl bg-dark-card hover:bg-dark-hover text-gray-400 hover:text-white flex items-center justify-center transition">
                         <i class="fas fa-filter text-sm"></i>
@@ -295,7 +300,18 @@
             </div>
 
             <div id="configuracaoDistribuicao" class="space-y-4 pt-4 border-t border-dark-border/30">
-                <h4 class="text-xs font-bold text-blue-400 uppercase tracking-wider">Configuração de Distribuição</h4>
+                <div
+                    class="flex justify-between items-center bg-dark-card/50 p-3 rounded-lg border border-dark-border/30">
+                    <span class="text-xs sm:text-sm text-blue-400 font-bold uppercase tracking-wider">Distribuir Carga
+                        Total Automaticamente?</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="eventoDistribuirCarga" class="sr-only peer" checked
+                            onchange="document.getElementById('diasSemanaContainer').classList.toggle('hidden', !this.checked)">
+                        <div
+                            class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500">
+                        </div>
+                    </label>
+                </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs sm:text-sm text-gray-400 mb-1.5">Horas por Dia *</label>
@@ -400,9 +416,166 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Importar Excel -->
+<div id="modalImportExcel"
+    class="hidden fixed inset-0 modal-backdrop flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+    <div
+        class="glass-effect rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg max-h-[92vh] overflow-hidden animate-slide-up">
+        <div class="p-4 sm:p-5 border-b border-dark-border/50 flex justify-between items-center">
+            <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                <i class="fas fa-file-excel text-green-400"></i>
+                Importar Cronograma via Excel
+            </h3>
+            <button onclick="fecharModalImportExcel()"
+                class="w-8 h-8 rounded-lg bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="p-4 sm:p-6 space-y-4 overflow-y-auto max-h-[calc(92vh-70px)] custom-scrollbar">
+            <!-- Download Template -->
+            <a href="/api/cronograma/import-template" download
+                class="flex items-center gap-3 p-3 rounded-xl bg-green-500/10 border border-green-500/30 hover:bg-green-500/20 transition cursor-pointer">
+                <i class="fas fa-download text-green-400 text-lg"></i>
+                <div>
+                    <div class="text-sm font-medium text-green-300">Baixar Modelo Excel</div>
+                    <div class="text-[10px] text-gray-500">modelo_cronograma.xlsx com instruções</div>
+                </div>
+            </a>
+
+            <!-- Upload Area -->
+            <div id="dropZoneExcel"
+                class="border-2 border-dashed border-dark-border/50 rounded-xl p-6 text-center cursor-pointer hover:border-green-500/50 transition"
+                onclick="document.getElementById('inputExcel').click()"
+                ondragover="event.preventDefault(); this.classList.add('border-green-500/70')"
+                ondragleave="this.classList.remove('border-green-500/70')" ondrop="handleDropExcel(event)">
+                <i class="fas fa-cloud-upload-alt text-3xl text-gray-500 mb-2"></i>
+                <p class="text-sm text-gray-400">Arraste o arquivo aqui ou <span
+                        class="text-green-400 font-semibold">clique para selecionar</span></p>
+                <p class="text-[10px] text-gray-600 mt-1">Formatos aceitos: .xlsx, .xls</p>
+                <div id="nomeArquivoExcel" class="mt-2 text-xs text-blue-400 font-medium hidden"></div>
+            </div>
+            <input type="file" id="inputExcel" accept=".xlsx,.xls" class="hidden" onchange="onSelectExcel(this)">
+
+            <!-- Result Area -->
+            <div id="resultadoImportExcel" class="hidden space-y-2 text-sm">
+                <div id="resultadoImportExcelContent"></div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex gap-3">
+                <button type="button" onclick="fecharModalImportExcel()"
+                    class="flex-1 py-2.5 bg-dark-card hover:bg-dark-hover text-gray-300 rounded-xl font-medium transition text-sm">Cancelar</button>
+                <button id="btnImportarExcel" onclick="importarExcel()"
+                    class="flex-1 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl font-bold transition text-sm flex items-center justify-center gap-2">
+                    <i class="fas fa-upload"></i> Importar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script src="/static/js/cronograma.js?v={{ range(1, 1000) | random }}"></script>
 <script src="/static/js/programs.js?v={{ range(1, 1000) | random }}"></script>
+<script>
+    let arquivoExcel = null;
+
+    function abrirModalImportExcel() {
+        arquivoExcel = null;
+        document.getElementById('inputExcel').value = '';
+        document.getElementById('nomeArquivoExcel').classList.add('hidden');
+        document.getElementById('resultadoImportExcel').classList.add('hidden');
+        document.getElementById('resultadoImportExcelContent').innerHTML = '';
+        document.getElementById('modalImportExcel').classList.remove('hidden');
+    }
+
+    function fecharModalImportExcel() {
+        document.getElementById('modalImportExcel').classList.add('hidden');
+        arquivoExcel = null;
+    }
+
+    function onSelectExcel(input) {
+        if (input.files && input.files[0]) {
+            arquivoExcel = input.files[0];
+            const label = document.getElementById('nomeArquivoExcel');
+            label.textContent = '📎 ' + arquivoExcel.name;
+            label.classList.remove('hidden');
+        }
+    }
+
+    function handleDropExcel(event) {
+        event.preventDefault();
+        document.getElementById('dropZoneExcel').classList.remove('border-green-500/70');
+        const file = event.dataTransfer.files[0];
+        if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
+            arquivoExcel = file;
+            const label = document.getElementById('nomeArquivoExcel');
+            label.textContent = '📎 ' + file.name;
+            label.classList.remove('hidden');
+        }
+    }
+
+    async function importarExcel() {
+        if (!arquivoExcel) {
+            alert('Selecione um arquivo Excel primeiro.');
+            return;
+        }
+
+        const btn = document.getElementById('btnImportarExcel');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importando...';
+        btn.disabled = true;
+
+        try {
+            const formData = new FormData();
+            formData.append('file', arquivoExcel);
+
+            const token = getToken ? getToken() : localStorage.getItem('token');
+            const res = await fetch('/api/cronograma/import-excel', {
+                method: 'POST',
+                headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+                body: formData
+            });
+
+            const data = await res.json();
+            const resultDiv = document.getElementById('resultadoImportExcel');
+            const contentDiv = document.getElementById('resultadoImportExcelContent');
+            resultDiv.classList.remove('hidden');
+
+            if (!res.ok) {
+                contentDiv.innerHTML = `<div class="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">${data.detail || 'Erro na importação.'}</div>`;
+            } else {
+                let html = `<div class="p-4 bg-green-500/10 border border-green-500/30 rounded-xl space-y-2">
+                <div class="text-green-300 font-bold flex items-center gap-2"><i class="fas fa-check-circle"></i> Importação concluída!</div>
+                <div class="text-xs text-gray-300 space-y-1">
+                    <div>📋 Linhas processadas: <span class="text-white font-bold">${data.rows_processed}</span></div>
+                    <div>📅 Eventos criados: <span class="text-blue-300 font-bold">${data.eventos_criados}</span></div>`;
+                if (data.programas_criados && data.programas_criados.length > 0)
+                    html += `<div>🆕 Programas criados: <span class="text-yellow-300 font-bold">${data.programas_criados.join(', ')}</span></div>`;
+                if (data.empresas_criadas && data.empresas_criadas.length > 0)
+                    html += `<div>🏢 Empresas criadas: <span class="text-purple-300 font-bold">${data.empresas_criadas.join(', ')}</span></div>`;
+                html += `</div></div>`;
+                if (data.erros && data.erros.length > 0) {
+                    html += `<div class="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
+                    <div class="text-yellow-400 font-bold text-xs mb-1">⚠️ Avisos (${data.erros.length}):</div>
+                    <div class="text-xs text-gray-400 space-y-0.5">${data.erros.map(e => `<div>${e}</div>`).join('')}</div>
+                </div>`;
+                }
+                contentDiv.innerHTML = html;
+                // Refresh calendar
+                if (typeof carregarEventos === 'function') carregarEventos();
+            }
+        } catch (err) {
+            console.error(err);
+            document.getElementById('resultadoImportExcelContent').innerHTML =
+                `<div class="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">Erro de rede: ${err.message}</div>`;
+            document.getElementById('resultadoImportExcel').classList.remove('hidden');
+        } finally {
+            btn.innerHTML = '<i class="fas fa-upload"></i> Importar';
+            btn.disabled = false;
+        }
+    }
+</script>
 {% endblock %}

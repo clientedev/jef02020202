@@ -25,7 +25,7 @@ def get_engine():
     elif url.startswith("postgresql://"):
         url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
         
-    print(f"🚀 [INIT] Database engine starting with URL: {url.split('@')[-1]}")
+    print(f"[INIT] Database engine starting with URL: {url.split('@')[-1]}")
     
     engine = create_engine(
         url,

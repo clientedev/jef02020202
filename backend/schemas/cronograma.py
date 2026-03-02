@@ -136,6 +136,7 @@ class CronogramaEventoBase(BaseModel):
     empresa_id: Optional[int] = None
     consultor_id: int
     projeto_id: Optional[int] = None
+    program_id: Optional[int] = None
     titulo: Optional[str] = None
     descricao: Optional[str] = None
     observacoes: Optional[str] = None
@@ -154,6 +155,7 @@ class CronogramaEventoAtualizar(BaseModel):
     empresa_id: Optional[int] = None
     consultor_id: Optional[int] = None
     projeto_id: Optional[int] = None
+    program_id: Optional[int] = None
     titulo: Optional[str] = None
     descricao: Optional[str] = None
     observacoes: Optional[str] = None
