@@ -96,7 +96,80 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const formEvento = document.getElementById('formEvento');
     if (formEvento) formEvento.addEventListener('submit', salvarEventoAgenda);
+
+    // Gestão de Feriados
+    const formFeriado = document.getElementById('formFeriado');
+    if (formFeriado) {
+        formFeriado.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = document.getElementById('feriadoData').value;
+            const dataFim = document.getElementById('feriadoDataFim').value;
+            const descricao = document.getElementById('feriadoDescricao').value;
+
+            try {
+                const res = await apiRequest('/api/feriados/', {
+                    method: 'POST',
+                    body: JSON.stringify({ data, data_fim: dataFim || null, descricao })
+                });
+                if (res.ok) {
+                    formFeriado.reset();
+                    carregarFeriadosAgenda();
+                    carregarDadosAgenda();
+                }
+            } catch (err) { console.error(err); }
+        });
+    }
 });
+
+function abrirModalFeriados() {
+    const modal = document.getElementById('modalFeriados');
+    if (modal) {
+        carregarFeriadosAgenda();
+        modal.classList.remove('hidden');
+    }
+}
+
+function fecharModalFeriados() {
+    const modal = document.getElementById('modalFeriados');
+    if (modal) modal.classList.add('hidden');
+}
+
+async function carregarFeriadosAgenda() {
+    try {
+        const res = await apiRequest('/api/feriados/');
+        feriadosAgenda = await res.json();
+        renderizarListaFeriadosAgenda();
+    } catch (err) { console.error(err); }
+}
+
+function renderizarListaFeriadosAgenda() {
+    const lista = document.getElementById('listaFeriados');
+    if (!lista) return;
+
+    lista.innerHTML = feriadosAgenda.map(f => {
+        const d = new Date(f.data + 'T12:00:00').toLocaleDateString('pt-BR');
+        return `
+            <div class="flex items-center justify-between p-2 rounded-lg bg-dark-bg/50 border border-dark-border/30 hover:bg-dark-hover transition">
+                <div>
+                    <span class="text-red-400 font-bold text-xs mr-2">${d}</span>
+                    <span class="text-white text-sm">${f.descricao}</span>
+                </div>
+                <button onclick="deletarFeriadoAgenda(${f.id})" class="text-gray-500 hover:text-red-400 transition ml-2">
+                    <i class="fas fa-trash text-xs"></i>
+                </button>
+            </div>
+        `;
+    }).join('');
+}
+
+async function deletarFeriadoAgenda(id) {
+    if (!confirm("Remover este feriado?")) return;
+    try {
+        await apiRequest(`/api/feriados/${id}`, { method: 'DELETE' });
+        carregarFeriadosAgenda();
+        carregarDadosAgenda();
+    } catch (err) { console.error(err); }
+}
 
 // Drag and Drop Logic
 function dragAgenda(ev, id) {
