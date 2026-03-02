@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from io import BytesIO
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from backend.database import get_db
@@ -23,10 +23,12 @@ def _col(row_data: dict, *keys):
     for k in keys:
         for rk, rv in row_data.items():
             if rk.strip().upper() == k.strip().upper():
-                v = rv
-                if v is None:
+                if rv is None:
                     continue
-                s = str(v).strip()
+                # If it's already a date/datetime, return it as is
+                if isinstance(rv, (date, datetime)):
+                    return rv
+                s = str(rv).strip()
                 if s.lower() in ('none', 'nan', ''):
                     continue
                 return s
@@ -118,12 +120,18 @@ def download_template():
 def _parse_date(val) -> date | None:
     if val is None:
         return None
-    if isinstance(val, date):
+    if isinstance(val, (date, datetime)):
+        if isinstance(val, datetime):
+            return val.date()
         return val
+    
     s = str(val).strip()
+    # Handle 'YYYY-MM-DD HH:MM:SS' or similar formats by taking only the date part
+    if ' ' in s:
+        s = s.split(' ')[0]
+    
     for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"):
         try:
-            from datetime import datetime
             return datetime.strptime(s, fmt).date()
         except ValueError:
             pass
