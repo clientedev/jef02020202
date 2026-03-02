@@ -372,6 +372,8 @@
         z-index: 5;
         background: rgba(17, 24, 39, 0.95);
         backdrop-filter: blur(8px);
+        display: flex;
+        align-items: center;
     }
 
     .scheduler-corner {
@@ -385,9 +387,14 @@
 
     .scheduler-cell {
         min-width: 100px;
-        height: 48px;
+        min-height: 52px;
         border: 1px solid rgba(55, 65, 81, 0.3);
         transition: all 0.15s ease;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: 2px;
+        overflow: hidden;
     }
 
     .scheduler-cell:hover {
@@ -398,19 +405,20 @@
 
     .scheduler-cell-content {
         cursor: pointer;
-        padding: 4px 6px;
-        height: 100%;
+        padding: 6px 8px;
+        flex: 1;
+        min-height: 44px;
         display: flex;
         flex-direction: column;
         justify-content: center;
-        border-radius: 4px;
-        margin: 2px;
+        border-radius: 6px;
         font-size: 10px;
         font-weight: 600;
         text-align: center;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .weekend-col {
