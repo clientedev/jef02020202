@@ -265,12 +265,16 @@ async def import_excel(
         consultor = None
         if consultor_nome:
             c_nome_up = consultor_nome.strip().upper()
+            # 1. Try Exact Match
             consultor = consultores_db.get(c_nome_up)
             if not consultor:
-                # Try bidirectional partial match
+                # 2. Try partial match but avoid being too greedy
+                # Only match if the names share significant parts
                 for nome_key, c in consultores_db.items():
-                    # If Excel name is inside DB name OR DB name is inside Excel name
-                    if c_nome_up in nome_key or nome_key in c_nome_up:
+                    # If Excel name is a word inside DB name OR vice-versa
+                    parts = set(c_nome_up.split())
+                    db_parts = set(nome_key.split())
+                    if parts & db_parts: # At least one common word
                         consultor = c
                         break
 

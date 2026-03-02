@@ -457,11 +457,13 @@ def deletar_eventos_bulk(
     if usuario.tipo != TipoUsuario.admin:
         query = query.filter(CronogramaEvento.consultor_id == usuario.id)
         
-    # Identify potential projects to cleanup
-    project_ids = [r[0] for r in db.query(CronogramaEvento.projeto_id).filter(
-        and_(query.whereclause if query.whereclause is not None else True, 
-             CronogramaEvento.projeto_id.isnot(None))
-    ).distinct().all()]
+    # Identify potential projects to cleanup (get IDs BEFORE deletion)
+    cleanup_query = db.query(CronogramaEvento.projeto_id).filter(CronogramaEvento.projeto_id.isnot(None))
+    if projeto_id: cleanup_query = cleanup_query.filter(CronogramaEvento.projeto_id == projeto_id)
+    if program_id: cleanup_query = cleanup_query.filter(CronogramaEvento.program_id == program_id)
+    if consultor_id: cleanup_query = cleanup_query.filter(CronogramaEvento.consultor_id == consultor_id)
+    
+    project_ids = [r[0] for r in cleanup_query.distinct().all()]
 
     excluidos = query.delete(synchronize_session=False)
     db.commit()

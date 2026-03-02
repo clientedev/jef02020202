@@ -597,21 +597,19 @@ async function exibirDetalhesAgendamento(id) {
                     </div>
                 </div>
                 ` : ''}
-                <div class="p-4 border-t border-dark-border/30 mt-4 space-y-2">
-                    <div class="flex gap-2">
-                        <button onclick="reagendarAgendamento(${evento.id})" class="flex-1 py-2 bg-orange-500/20 text-orange-400 rounded-lg font-bold hover:bg-orange-500/30 transition text-xs">
-                            <i class="fas fa-calendar-plus mr-1"></i> REAGENDAR
-                        </button>
-                        <button onclick="excluirEventoCronograma()" class="flex-1 py-2 bg-red-500/20 text-red-400 rounded-lg font-bold hover:bg-red-500/30 transition text-xs">
-                            <i class="fas fa-trash-alt mr-1"></i> EXCLUIR
-                        </button>
-                    </div>
-                    ${evento.program_id ? `
-                        <button onclick="excluirTodosEventosProgramaCronograma()" class="w-full py-2 border border-red-500/30 text-red-400/80 rounded-lg font-bold hover:bg-red-500/10 transition text-[10px]">
-                            <i class="fas fa-layer-group mr-1"></i> EXCLUIR TODOS DESTE PROGRAMA
-                        </button>
-                    ` : ''}
+                <div class="grid grid-cols-2 gap-2 mt-6">
+                    <button onclick="editarEvento(${evento.id})" class="py-2.5 bg-blue-500/20 text-blue-400 rounded-xl font-bold hover:bg-blue-500/30 transition text-sm">
+                        <i class="fas fa-edit mr-2"></i> EDITAR
+                    </button>
+                    <button onclick="excluirEventoCronograma(${evento.id})" class="py-2.5 bg-red-500/20 text-red-400 rounded-xl font-bold hover:bg-red-500/30 transition text-sm">
+                        <i class="fas fa-trash-alt mr-2"></i> EXCLUIR
+                    </button>
                 </div>
+                ${evento.program_id ? `
+                    <button onclick="excluirTodosEventosProgramaCronograma(${evento.program_id}, '${evento.program_nome}')" class="w-full mt-2 py-2.5 border border-red-500/30 text-red-400/80 rounded-xl font-bold hover:bg-red-500/10 transition text-xs">
+                        <i class="fas fa-layer-group mr-2"></i> EXCLUIR TODOS DESTE PROGRAMA
+                    </button>
+                ` : ''}
             `;
         }
 
@@ -621,12 +619,13 @@ async function exibirDetalhesAgendamento(id) {
     }
 }
 
-async function excluirEventoCronograma() {
-    if (!eventoSelecionadoDetalhes) return;
+async function excluirEventoCronograma(id) {
+    const eid = id || (eventoSelecionadoDetalhes ? eventoSelecionadoDetalhes.id : null);
+    if (!eid) return;
     if (!confirm(`Confirmar exclusão deste agendamento?`)) return;
 
     try {
-        const res = await apiRequest(`/api/cronograma/eventos/${eventoSelecionadoDetalhes.id}`, { method: 'DELETE' });
+        const res = await apiRequest(`/api/cronograma/eventos/${eid}`, { method: 'DELETE' });
         if (res.ok) {
             fecharModalDetalhes();
             carregarDados();
@@ -636,12 +635,15 @@ async function excluirEventoCronograma() {
     } catch (e) { console.error(e); }
 }
 
-async function excluirTodosEventosProgramaCronograma() {
-    if (!eventoSelecionadoDetalhes || !eventoSelecionadoDetalhes.program_id) return;
-    if (!confirm(`ATENÇÃO: Excluir TODOS os agendamentos deste programa?\n"${eventoSelecionadoDetalhes.program_nome}"`)) return;
+async function excluirTodosEventosProgramaCronograma(pid, nome) {
+    const programId = pid || (eventoSelecionadoDetalhes ? eventoSelecionadoDetalhes.program_id : null);
+    const programNome = nome || (eventoSelecionadoDetalhes ? eventoSelecionadoDetalhes.program_nome : 'este programa');
+
+    if (!programId) return;
+    if (!confirm(`ATENÇÃO: Excluir TODOS os agendamentos deste programa?\n"${programNome}"`)) return;
 
     try {
-        const res = await apiRequest(`/api/cronograma/eventos/bulk?program_id=${eventoSelecionadoDetalhes.program_id}`, { method: 'DELETE' });
+        const res = await apiRequest(`/api/cronograma/eventos/bulk?program_id=${programId}`, { method: 'DELETE' });
         if (res.ok) {
             const data = await res.json();
             alert(data.message || "Excluídos com sucesso");
