@@ -500,6 +500,10 @@ window.limparFiltros = limparFiltros;
 window.toggleFiltros = toggleFiltros;
 window.exibirDetalhesAgendamento = exibirDetalhesAgendamento;
 window.selecionarEmpresaParaEvento = selecionarEmpresaParaEvento;
+window.excluirEventoCronograma = excluirEventoCronograma;
+window.excluirTodosEventosProgramaCronograma = excluirTodosEventosProgramaCronograma;
+window.editarEvento = editarEvento;
+window.reagendarAgendamento = (id) => { alert('Função em desenvolvimento'); };
 
 function fecharModalFeriados() {
     document.getElementById('modalFeriados').classList.add('hidden');
@@ -507,24 +511,93 @@ function fecharModalFeriados() {
 
 function abrirDetalhesDia(data, dia) {
     const evs = eventos.filter(e => e.data === data);
+    const conteudo = document.getElementById('conteudoDetalhesEvento');
+    if (!conteudo) return;
+
     if (evs.length > 0) {
-        exibirDetalhesAgendamento(evs[0].id);
+        if (evs.length === 1) {
+            exibirDetalhesAgendamento(evs[0].id);
+        } else {
+            // Show list of events for the day
+            const dataFm = new Date(data + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
+            let html = `
+                <div class="mb-4">
+                    <h4 class="text-white font-bold text-lg capitalize font-outfit">${dataFm}</h4>
+                    <p class="text-gray-400 text-xs">${evs.length} agendamentos encontrados</p>
+                </div>
+                <div class="space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar p-1">
+            `;
+
+            evs.forEach(ev => {
+                const corCat = CATEGORIA_CORES[ev.categoria]?.cor || '#6b7280';
+                html += `
+                    <div class="group flex items-center gap-3 p-3 rounded-xl bg-dark-bg/50 border border-dark-border/30 hover:bg-dark-hover transition-all cursor-pointer" 
+                         onclick="exibirDetalhesAgendamento(${ev.id})">
+                        <div class="w-1.5 h-10 rounded-full" style="background-color: ${corCat}"></div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-white font-bold text-sm truncate">${ev.empresa_nome || ev.sigla_empresa || 'N/A'}</div>
+                            <div class="flex items-center gap-2 mt-1">
+                                <div class="w-5 h-5 rounded bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-[8px]">
+                                    ${getIniciais(ev.consultor_nome)}
+                                </div>
+                                <span class="text-[11px] text-gray-400 truncate">${ev.consultor_nome}</span>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-600 group-hover:text-blue-400 transition ml-2"></i>
+                    </div>
+                `;
+            });
+
+            html += `
+                </div>
+                <div class="pt-6 border-t border-dark-border/30 mt-6 grid grid-cols-1 gap-2">
+                    <button onclick="abrirModalNovoEvento('${data}')" class="w-full py-3 bg-blue-500/20 text-blue-400 rounded-xl font-bold hover:bg-blue-500/30 transition text-sm flex items-center justify-center gap-2">
+                        <i class="fas fa-plus"></i> ADICIONAR NOVO AGENDAMENTO
+                    </button>
+                    <button onclick="excluirTodosAgendamentosDoDia('${data}')" class="w-full py-3 bg-red-500/20 text-red-400 rounded-xl font-bold hover:bg-red-500/30 transition text-sm flex items-center justify-center gap-2">
+                        <i class="fas fa-trash-alt"></i> LIMPAR TUDO DESTE DIA
+                    </button>
+                </div>
+            `;
+            conteudo.innerHTML = html;
+            document.getElementById('modalDetalhesEvento').classList.remove('hidden');
+        }
     } else {
         const inputData = document.getElementById('eventoData');
         if (inputData) inputData.value = data;
 
-        const inputEmpresaId = document.getElementById('eventoEmpresaId');
-        if (inputEmpresaId) inputEmpresaId.value = '';
-
-        const inputBusca = document.getElementById('eventoBuscaEmpresa');
-        if (inputBusca) inputBusca.value = '';
-
-        const inputSigla = document.getElementById('eventoSigla');
-        if (inputSigla) inputSigla.value = '';
+        // Reset form
+        const eid = document.getElementById('eventoId'); if (eid) eid.value = '';
+        const bus = document.getElementById('eventoBuscaEmpresa'); if (bus) bus.value = '';
+        const emid = document.getElementById('eventoEmpresaId'); if (emid) emid.value = '';
+        const sig = document.getElementById('eventoSigla'); if (sig) sig.value = '';
 
         abrirModalNovoEvento();
     }
 }
+
+async function excluirTodosAgendamentosDoDia(data) {
+    if (!confirm(`ATENÇÃO: Deseja realmente excluir TODOS os ${eventos.filter(e => e.data === data).length} agendamentos de ${new Date(data + 'T12:00:00').toLocaleDateString('pt-BR')}?\nEsta ação não poderá ser desfeita.`)) return;
+
+    try {
+        // We use a bulk delete by date? The API doesn't have it directly, so we delete each one or we could add a date filter to bulk.
+        // Let's use the individual IDs for safety if bulk date is not ready.
+        const evs = eventos.filter(e => e.data === data);
+        let sucessos = 0;
+        for (const ev of evs) {
+            const res = await apiRequest(`/api/cronograma/eventos/${ev.id}`, { method: 'DELETE' });
+            if (res.ok) sucessos++;
+        }
+
+        alert(`${sucessos} agendamentos removidos.`);
+        fecharModalDetalhes();
+        carregarDados();
+    } catch (e) {
+        console.error(e);
+        alert("Erro ao remover agendamentos.");
+    }
+}
+window.excluirTodosAgendamentosDoDia = excluirTodosAgendamentosDoDia;
 
 let eventoSelecionadoDetalhes = null;
 
