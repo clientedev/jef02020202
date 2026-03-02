@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import date, timedelta
 from pydantic import BaseModel
+from backend.database import get_db
 from backend.models import Empresa, Usuario
 from backend.models.cronograma import Program, CronogramaEvento, CategoriaEvento, PeriodoEvento
 from backend.models.feriados import Feriado
