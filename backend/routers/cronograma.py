@@ -590,11 +590,13 @@ def obter_metricas(
     metrics_query = db.query(
         Usuario.nome.label("consultor_nome"),
         Empresa.empresa.label("empresa_nome"),
+        Program.id.label("program_id"),
         Program.nome.label("program_nome"),
         Program.carga_horaria.label("meta_total"),
         func.sum(CronogramaEvento.carga_horaria).label("total_horas_agendadas"),
         func.sum(case((CronogramaEvento.data <= hoje, CronogramaEvento.carga_horaria), else_=0)).label("horas_realizadas"),
         func.count(CronogramaEvento.id).label("total_atendimentos"),
+        func.count(func.distinct(CronogramaEvento.data)).label("dias_atendidos"),
         func.min(CronogramaEvento.data).label("data_inicio")
     ).select_from(CronogramaEvento)\
      .join(Program, Program.id == CronogramaEvento.program_id)\
@@ -605,6 +607,7 @@ def obter_metricas(
     metrics_program = []
     for row in metrics_query:
         metrics_program.append({
+            "program_id": row.program_id,
             "consultor": row.consultor_nome,
             "empresa": row.empresa_nome,
             "nome": row.program_nome,
@@ -612,6 +615,7 @@ def obter_metricas(
             "total_horas": row.total_horas_agendadas,
             "horas_realizadas": row.horas_realizadas,
             "total_atendimentos": row.total_atendimentos,
+            "dias": row.dias_atendidos,
             "saldo": row.meta_total - row.total_horas_agendadas,
             "data_inicio": row.data_inicio.isoformat() if row.data_inicio else None
         })
