@@ -20,7 +20,7 @@ async function carregarProducaoDiaria() {
         const lista = await response.json();
 
         if (lista.length === 0) {
-            container.innerHTML = '<tr><td colspan="4" class="py-10 text-center text-gray-500 italic">Nenhum consultor encontrado.</td></tr>';
+            container.innerHTML = '<tr><td colspan="5" class="py-10 text-center text-gray-500 italic">Nenhum consultor encontrado.</td></tr>';
             return;
         }
 
@@ -42,6 +42,9 @@ async function carregarProducaoDiaria() {
                         </div>
                         <span class="text-sm text-white font-bold group-hover:text-amber-500 transition-colors">${item.consultor_nome}</span>
                     </div>
+                </td>
+                <td class="px-6 py-5">
+                    ${item.numero_proposta ? `<span class="px-2 py-1 bg-yellow-500/10 text-yellow-400 rounded-lg border border-yellow-500/20 text-xs font-bold">${item.numero_proposta}</span>` : '<span class="text-gray-600 text-xs">---</span>'}
                 </td>
                 <td class="px-6 py-5">
                     <span class="text-sm ${item.tem_evento ? 'text-gray-200' : 'text-gray-500 italic'} font-medium">
@@ -66,7 +69,7 @@ async function carregarProducaoDiaria() {
             `;
         }).join('');
     } catch (e) {
-        container.innerHTML = '<tr><td colspan="4" class="py-10 text-center text-red-400">Erro ao carregar dados de produção.</td></tr>';
+        container.innerHTML = '<tr><td colspan="5" class="py-10 text-center text-red-400">Erro ao carregar dados de produção.</td></tr>';
     }
 }
 

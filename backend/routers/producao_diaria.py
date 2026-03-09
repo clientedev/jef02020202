@@ -42,6 +42,7 @@ def listar_producao_diaria(
             item["evento_id"] = evento.id
             item["empresa"] = evento.empresa.empresa if evento.empresa else (evento.sigla_empresa or "N/A")
             item["programa"] = evento.program.nome if evento.program else "Consultoria"
+            item["numero_proposta"] = evento.program.numero_proposta if evento.program else (evento.projeto.proposta if evento.projeto else None)
             item["local"] = f"{item['empresa']} - {item['programa']}"
             item["lancado_sgset"] = bool(evento.lancado_sgset)
             
