@@ -46,6 +46,27 @@ async def health_check():
         status_code=200
     )
 
+@app.get("/api/fix-db")
+async def fix_database():
+    """Emergency migration endpoint to fix schema mismatch"""
+    from backend.database import get_engine
+    from sqlalchemy import text
+    try:
+        engine = get_engine()
+        with engine.connect() as connection:
+            print("[FIX-DB] Adding numero_proposta to cronograma_eventos...")
+            connection.execute(text("ALTER TABLE cronograma_eventos ADD COLUMN IF NOT EXISTS numero_proposta VARCHAR(100);"))
+            print("[FIX-DB] Removing numero_proposta from programs (optional)...")
+            try:
+                connection.execute(text("ALTER TABLE programs DROP COLUMN IF EXISTS numero_proposta;"))
+            except:
+                pass
+            connection.commit()
+        return {"status": "success", "message": "Database fixed (numero_proposta added to cronograma_eventos)"}
+    except Exception as e:
+        import traceback
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+
 # --- 2. DEFERRED FULL BOOT ---
 def deferred_boot(app_instance):
     global templates, is_loaded, boot_error, boot_step
