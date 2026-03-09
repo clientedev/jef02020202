@@ -449,7 +449,12 @@ async function toggleConsultorGlobalInfo(consultorId, programIdToHighlight = nul
             if (!response.ok) throw new Error('Erro');
             const metrics = await response.json();
 
-            const lista = (metrics.programas || metrics).filter(m => m.consultor_id === consultorId);
+            let lista = (metrics.programas || metrics).filter(m => m.consultor_id === consultorId);
+
+            // FILTRO POR EVENTO: Se veio de um clique num agendamento, mostra só esse programa
+            if (programIdToHighlight) {
+                lista = lista.filter(m => m.program_id === programIdToHighlight);
+            }
 
             if (lista.length === 0) {
                 content.innerHTML = '<div class="py-10 text-center text-gray-500 text-xs italic uppercase tracking-widest font-bold">Nenhum programa vinculado a este consultor</div>';
