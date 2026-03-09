@@ -449,11 +449,11 @@ async function toggleConsultorGlobalInfo(consultorId, programIdToHighlight = nul
             if (!response.ok) throw new Error('Erro');
             const metrics = await response.json();
 
-            let lista = (metrics.programas || metrics).filter(m => m.consultor_id === consultorId);
+            let lista = (metrics.programas || metrics).filter(m => String(m.consultor_id) === String(consultorId));
 
             // FILTRO POR EVENTO: Se veio de um clique num agendamento, mostra só esse programa
             if (programIdToHighlight) {
-                lista = lista.filter(m => m.program_id === programIdToHighlight);
+                lista = lista.filter(m => String(m.program_id) === String(programIdToHighlight));
             }
 
             if (lista.length === 0) {
