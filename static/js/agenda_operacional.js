@@ -299,49 +299,64 @@ function renderizarScheduler() {
         <div class="text-sm font-bold text-white uppercase tracking-wider">Consultores</div>
     </div>`;
 
+    // Define columns: Consultant Name Col + N Day Cols
+    container.style.display = 'grid';
+    container.style.gridTemplateColumns = `280px repeat(${datas.length}, 150px)`;
+
+    // Header: empty top-left + dates
+    html += `<div class="scheduler-header-cell scheduler-cell p-4 border-b-2 border-r-2 border-dark-border/50 sticky left-0 z-30 glass-effect">
+        <span class="text-xs font-black text-blue-400 uppercase tracking-widest">Consultores</span>
+    </div>`;
+
     datas.forEach(data => {
         const dataStr = data.toISOString().split('T')[0];
         const isHoje = data.getTime() === hoje.getTime();
         const diaSemana = data.getDay();
         const feriado = feriadosAgenda.find(f => f.data === dataStr);
 
-        let classes = 'scheduler-header-cell scheduler-cell p-2 text-center border-b-2 border-dark-border/50 ';
-        if (feriado) classes += 'bg-red-900/10 border-red-500/30 ';
-        else if (isHoje) classes += 'today-col ';
-        else if (diaSemana === 0 || diaSemana === 6) classes += 'weekend-col ';
+        let classes = 'scheduler-header-cell scheduler-cell p-3 text-center border-b-2 border-dark-border/30 ';
+        if (feriado) classes += 'bg-red-500/5 text-red-400 ';
+        else if (isHoje) classes += 'bg-blue-500/5 ring-1 ring-inset ring-blue-500/30 ';
+        else if (diaSemana === 0 || diaSemana === 6) classes += 'bg-dark-bg/40 ';
 
         html += `<div class="${classes}">
-            <div class="text-lg font-bold ${isHoje ? 'text-blue-400' : 'text-white'}">
+            <div class="text-lg font-black ${isHoje ? 'text-blue-400' : 'text-white'} leading-none mb-1">
                 ${data.getDate()} 
                 ${feriado ? '<i class="fas fa-flag text-[10px] text-red-500 ml-1" title="' + feriado.descricao + '"></i>' : ''}
             </div>
-            <div class="text-[10px] text-gray-400">${DIAS_SEMANA[diaSemana]}</div>
+            <div class="text-[10px] font-bold uppercase ${isHoje ? 'text-blue-400/70' : 'text-gray-500'} tracking-tighter">${DIAS_SEMANA[diaSemana]}</div>
         </div>`;
     });
 
     consultoresAgenda.forEach(consultor => {
-        html += `<div class="scheduler-row-header scheduler-cell p-3 border-r-2 border-dark-border/50 flex items-center justify-between group" 
-                      onclick="abrirAcoesConsultor(${consultor.id})">
+        // Name Card (Sticky)
+        html += `
+        <div class="consultant-name-card scheduler-row-header scheduler-cell p-4 border-r-2 border-dark-border/50 sticky left-0 z-20 glass-effect flex items-center justify-between group" 
+              id="consultor-card-${consultor.id}"
+              onclick="toggleConsultorGlobalInfo(${consultor.id})">
             <div class="flex items-center gap-3 min-w-0">
-                <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-white font-bold text-xs shadow-lg group-hover:scale-110 transition-transform" style="background-color: ${getCorConsultor(consultor.id)}">
+                <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-white font-bold text-sm shadow-xl group-hover:scale-110 transition-all duration-300" 
+                     style="background: linear-gradient(135deg, ${getCorConsultor(consultor.id)}, rgba(0,0,0,0.3))">
                     ${getIniciaisAgenda(consultor.nome)}
                 </div>
                 <div class="min-w-0">
-                    <div class="truncate text-xs font-bold text-white group-hover:text-blue-400 transition-colors">${consultor.nome}</div>
+                    <div class="truncate text-sm font-bold text-white group-hover:text-blue-400 transition-colors duration-300">${consultor.nome}</div>
+                    <div class="text-[10px] text-gray-500 font-medium uppercase tracking-tighter">Consultor Comercial</div>
                 </div>
             </div>
-            <button onclick="event.stopPropagation(); mostrarResumoConsultor(${consultor.id})" 
-                    class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white flex items-center justify-center transition"
-                    title="Ver resumo de programas">
-                <i class="fas fa-chart-pie text-xs"></i>
-            </button>
+            <div class="flex items-center gap-2">
+                 <div class="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <i class="fas fa-chevron-down text-[10px]"></i>
+                 </div>
+            </div>
         </div>`;
 
+        // Empty cells for the name row
         datas.forEach(data => {
             const dataStr = data.toISOString().split('T')[0];
             const eventosCell = eventosAgenda.filter(e => e.consultor_id === consultor.id && e.data === dataStr);
 
-            html += `<div class="scheduler-cell group relative" 
+            html += `<div class="scheduler-cell group relative border-b border-dark-border/20" 
                         data-data="${dataStr}" 
                         data-consultor="${consultor.id}"
                         onclick="abrirModalNovoEvento('${dataStr}', ${consultor.id})">`;
@@ -350,32 +365,103 @@ function renderizarScheduler() {
                 eventosCell.forEach(evento => {
                     const cat = CATEGORIA_CORES_AGENDA[evento.categoria] || CATEGORIA_CORES_AGENDA['O'];
                     const empresaNome = evento.empresa_nome ? evento.empresa_nome.split(' ')[0] : (evento.sigla_empresa || 'N/A');
-                    const consultorNome = evento.consultor_nome ? evento.consultor_nome.split(' ')[0] : 'N/A';
                     const programa = evento.program_nome ? evento.program_nome.substring(0, 15) : '';
 
-                    html += `<div class="scheduler-cell-content" 
+                    html += `<div class="scheduler-cell-content rounded-xl shadow-lg border border-white/5 hover:brightness-110 transition-all active:scale-95" 
                         draggable="true"
                         ondragstart="dragAgenda(event, ${evento.id})"
-                        style="background-color: ${cat.cor}; color: ${cat.corTexto};"
+                        style="background: linear-gradient(135deg, ${cat.cor}, ${cat.cor}DD); color: ${cat.corTexto};"
                         onclick="event.stopPropagation(); mostrarDetalheEvento(${evento.id})"
                         onmouseenter="mostrarTooltip(event, ${evento.id})"
                         onmouseleave="esconderTooltip()">
-                        <div class="font-bold truncate text-[11px]">${empresaNome}</div>
-                        <div class="text-[9px] truncate opacity-90">${consultorNome}</div>
-                        ${programa ? `<div class="text-[8px] opacity-80 truncate border-t border-white/20 mt-1 pt-0.5">${programa}</div>` : ''}
+                        <div class="font-black truncate text-[11px] uppercase tracking-tighter">${empresaNome}</div>
+                        ${programa ? `<div class="text-[9px] font-bold opacity-80 truncate border-t border-white/10 mt-1 pt-1 italic">${programa}</div>` : ''}
                     </div>`;
                 });
             } else {
                 html += `<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <i class="fas fa-plus text-blue-500/50"></i>
+                    <div class="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center">
+                        <i class="fas fa-plus text-blue-500/50 text-xs text-[10px]"></i>
+                    </div>
                 </div>`;
             }
             html += `</div>`;
         });
+
+        // Expansion Row (Global Info)
+        html += `
+        <div id="expansion-${consultor.id}" class="expansion-row">
+            <div class="flex items-center gap-2 mb-4">
+                <div class="w-1 h-4 bg-blue-500 rounded-full"></div>
+                <h4 class="text-xs font-black text-blue-400 uppercase tracking-widest">Resumo Global de Execução</h4>
+            </div>
+            <div id="expansion-content-${consultor.id}" class="global-info-grid">
+                <div class="col-span-full py-8 text-center">
+                    <i class="fas fa-circle-notch fa-spin text-blue-500 mb-2"></i>
+                    <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Carregando métricas...</p>
+                </div>
+            </div>
+        </div>`;
     });
 
-    html += '</div>';
-    container.innerHTML = html;
+}
+
+// Expansão de detalhes globais do consultor
+async function toggleConsultorGlobalInfo(consultorId) {
+    const card = document.getElementById(`consultor-card-${consultorId}`);
+    const expansion = document.getElementById(`expansion-${consultorId}`);
+    const content = document.getElementById(`expansion-content-${consultorId}`);
+
+    if (!card || !expansion) return;
+
+    const isActive = expansion.classList.contains('active');
+
+    // Deactivate all others
+    document.querySelectorAll('.expansion-row').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.consultant-name-card').forEach(el => el.classList.remove('active'));
+
+    if (!isActive) {
+        card.classList.add('active');
+        expansion.classList.add('active');
+
+        try {
+            const response = await apiRequest('/api/cronograma/metrics');
+            if (!response.ok) throw new Error('Erro');
+            const metrics = await response.json();
+
+            const lista = (metrics.programas || metrics).filter(m => m.consultor_id === consultorId);
+
+            if (lista.length === 0) {
+                content.innerHTML = '<div class="col-span-full py-4 text-center text-gray-500 italic text-xs uppercase tracking-widest font-bold">Nenhum programa vinculado a este consultor</div>';
+                return;
+            }
+
+            content.innerHTML = lista.map(m => `
+                <div class="global-program-card flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-[10px] font-black text-blue-400 uppercase tracking-tighter truncate w-3/4">${m.empresa}</span>
+                            <span class="text-[9px] font-black px-1.5 py-0.5 bg-yellow-500/10 text-yellow-500 rounded border border-yellow-500/20">${m.numero_proposta || 'S/N'}</span>
+                        </div>
+                        <div class="text-xs font-bold text-white mb-2 line-clamp-1">${m.nome}</div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
+                        <div class="flex flex-col">
+                            <span class="text-[8px] text-gray-500 uppercase font-black uppercase tracking-tighter">Meta</span>
+                            <span class="text-[11px] text-white font-black">${m.meta_total}h</span>
+                        </div>
+                        <div class="flex flex-col text-right">
+                            <span class="text-[8px] text-gray-500 uppercase font-black uppercase tracking-tighter">Saldo</span>
+                            <span class="text-[11px] ${m.saldo < 0 ? 'text-red-400' : 'text-emerald-400'} font-black">${m.saldo.toFixed(1)}h</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+        } catch (e) {
+            content.innerHTML = '<div class="col-span-full py-4 text-center text-red-400 italic text-xs font-bold uppercase tracking-widest">Erro ao carregar métricas globais</div>';
+        }
+    }
 }
 
 // Ações do Consultor

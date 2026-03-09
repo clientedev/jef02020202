@@ -110,6 +110,75 @@
     </main>
 </div>
 
+<style>
+    /* Estilos Premium para Nomes de Consultores */
+    .consultant-name-card {
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-right-width: 2px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .consultant-name-card:hover {
+        background: rgba(59, 130, 246, 0.05);
+    }
+
+    .consultant-name-card.active {
+        background: rgba(59, 130, 246, 0.1);
+        border-right-color: #3b82f6 !important;
+    }
+
+    /* Expansão de Linha (Gestão Global) */
+    .expansion-row {
+        grid-column: 1 / -1;
+        background: rgba(15, 23, 42, 0.6);
+        border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.4s ease-out, padding 0.3s ease;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .expansion-row.active {
+        max-height: 500px;
+        padding: 1rem 1.5rem;
+    }
+
+    .global-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1rem;
+        width: 100%;
+    }
+
+    .global-program-card {
+        background: rgba(30, 41, 59, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 0.75rem;
+        padding: 0.75rem;
+        transition: transform 0.2s;
+    }
+
+    .global-program-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    /* Ajuste do Scheduler Grid para Expansão */
+    #schedulerGrid {
+        display: grid;
+        /* O grid-template-columns será definido dinamicamente no JS */
+    }
+
+    .scheduler-header-cell,
+    .scheduler-row-header,
+    .scheduler-cell {
+        border-color: rgba(255, 255, 255, 0.05);
+    }
+</style>
+
 <!-- Modal Feriados (Copiado do Cronograma + Reset Global) -->
 <div id="modalFeriados"
     class="hidden fixed inset-0 modal-backdrop flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
