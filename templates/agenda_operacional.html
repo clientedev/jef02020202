@@ -187,6 +187,33 @@
     .scheduler-cell {
         border-color: rgba(255, 255, 255, 0.05);
     }
+
+    /* Expansão do Scheduler */
+    .expansion-row {
+        grid-column: 1 / -1;
+        display: none;
+        background: rgba(15, 23, 42, 0.6);
+        border-bottom: 2px solid rgba(59, 130, 246, 0.3);
+        padding: 1.5rem;
+        animation: fadeIn 0.3s ease-out;
+        z-index: 10;
+    }
+
+    .expansion-row.active {
+        display: block;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 </style>
 
 <!-- Modal Feriados (Copiado do Cronograma + Reset Global) -->
