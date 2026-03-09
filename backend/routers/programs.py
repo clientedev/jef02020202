@@ -17,6 +17,7 @@ class ProgramCreate(BaseModel):
     carga_horaria: float
     descricao: Optional[str] = None
     empresa_id: Optional[int] = None
+    numero_proposta: Optional[str] = None
 
 class ProgramResponse(ProgramCreate):
     id: int

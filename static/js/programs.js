@@ -60,6 +60,7 @@ function renderizarProgramas() {
             <div class="flex justify-between items-start">
                 <div class="flex-1">
                     <h5 class="text-white font-medium">${p.nome}</h5>
+                    ${p.numero_proposta ? `<div class="mt-1"><span class="px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 text-[10px] font-bold border border-yellow-500/20">Proposta: ${p.numero_proposta}</span></div>` : ''}
                     <p class="text-gray-400 text-xs mt-1">${p.descricao || 'Sem descrição'}</p>
                     <div class="flex items-center gap-2 mt-2">
                         <span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 text-[10px] font-bold">
@@ -95,6 +96,8 @@ window.prepararEdicaoPrograma = function (id) {
     if (nomeField) nomeField.value = prog.nome;
     if (cargaField) cargaField.value = prog.carga_horaria;
     if (descField) descField.value = prog.descricao || '';
+    const propostaField = document.getElementById('progProposta');
+    if (propostaField) propostaField.value = prog.numero_proposta || '';
 
     let idInput = document.getElementById('editProgramId');
     if (!idInput) {
@@ -140,7 +143,8 @@ if (formProg) {
         const data = {
             nome: document.getElementById('progNome').value,
             carga_horaria: parseFloat(document.getElementById('progCarga').value),
-            descricao: document.getElementById('progDesc').value
+            descricao: document.getElementById('progDesc').value,
+            numero_proposta: (document.getElementById('progProposta')?.value || '').trim() || null
         };
 
         try {

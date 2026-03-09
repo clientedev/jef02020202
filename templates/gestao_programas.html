@@ -50,6 +50,7 @@
                             <tr
                                 class="bg-dark-card/50 text-[10px] text-gray-400 uppercase font-black tracking-widest border-b border-dark-border/30">
                                 <th class="px-8 py-5">Consultor</th>
+                                <th class="px-6 py-5">Nº Proposta</th>
                                 <th class="px-6 py-5">Início</th>
                                 <th class="px-6 py-5">Dias</th>
                                 <th class="px-6 py-5">Empresa / Projeto</th>
@@ -128,6 +129,9 @@
                         </div>
                         <span class="text-sm text-white font-bold group-hover:text-blue-400 transition-colors">${consultor}</span>
                     </div>
+                </td>
+                <td class="px-6 py-5">
+                    ${m.numero_proposta ? `<span class="px-2 py-1 bg-yellow-500/10 text-yellow-400 rounded-lg border border-yellow-500/20 text-xs font-bold">${m.numero_proposta}</span>` : '<span class="text-gray-600 text-xs">---</span>'}
                 </td>
                 <td class="px-6 py-5">
                     <div class="flex flex-col">

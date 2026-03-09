@@ -185,6 +185,7 @@ async def import_excel(
         data_inicio_raw = _col(row_data, "DATA INÍCIO", "DATA INICIO", "DATA DE INÍCIO")
         data_termino_raw = _col(row_data, "DATA TÉRMINO", "DATA TERMINO", "DATA DE TÉRMINO")
         solucao = _col(row_data, "SOLUÇÃO", "SOLUCAO", "SOLUÇÃO/PROGRAMA")
+        num_proposta = _col(row_data, "Nº PROPOSTA", "PROPOSTA", "NºP", "NUMERO PROPOSTA")
 
         if not empresa_nome:
             results["erros"].append(f"Linha {row_num}: EMPRESA é obrigatória")
@@ -252,14 +253,17 @@ async def import_excel(
                 nome=tipo_programa,
                 carga_horaria=carga_horaria,
                 descricao=solucao or tipo_programa,
+                numero_proposta=num_proposta or None,
             )
             db.add(program)
             db.flush()
             results["programas_criados"].append(tipo_programa)
         else:
-            # Update carga_horaria if empty
+            # Update carga_horaria if empty, and proposta if not set
             if program.carga_horaria == 0:
                 program.carga_horaria = carga_horaria
+            if num_proposta and not program.numero_proposta:
+                program.numero_proposta = num_proposta
 
         # --- Find consultor ---
         consultor = None

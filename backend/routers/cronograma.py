@@ -610,6 +610,7 @@ def obter_metricas(
         Program.id.label("program_id"),
         Program.nome.label("program_nome"),
         Program.carga_horaria.label("meta_total"),
+        Program.numero_proposta.label("numero_proposta"),
         func.sum(CronogramaEvento.carga_horaria).label("total_horas_agendadas"),
         func.sum(case((CronogramaEvento.data <= hoje, CronogramaEvento.carga_horaria), else_=0)).label("horas_realizadas"),
         func.count(CronogramaEvento.id).label("total_atendimentos"),
@@ -620,7 +621,7 @@ def obter_metricas(
      .join(Program, Program.id == CronogramaEvento.program_id)\
      .join(Usuario, Usuario.id == CronogramaEvento.consultor_id)\
      .join(Empresa, Empresa.id == CronogramaEvento.empresa_id)\
-     .group_by(Usuario.id, Empresa.id, Program.id, Usuario.nome, Empresa.empresa, Program.nome, Program.carga_horaria).all()
+     .group_by(Usuario.id, Empresa.id, Program.id, Usuario.nome, Empresa.empresa, Program.nome, Program.carga_horaria, Program.numero_proposta).all()
 
     metrics_program = []
     for row in metrics_query:
@@ -631,6 +632,7 @@ def obter_metricas(
             "empresa": row.empresa_nome,
             "nome": row.program_nome,
             "meta_total": row.meta_total,
+            "numero_proposta": row.numero_proposta,
             "total_horas": row.total_horas_agendadas,
             "horas_realizadas": row.horas_realizadas,
             "total_atendimentos": row.total_atendimentos,
