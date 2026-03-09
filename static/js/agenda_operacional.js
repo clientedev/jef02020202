@@ -496,7 +496,7 @@ async function renderizarGestaoGlobalAgenda(programIdToHighlight = null) {
                                             ${iniciais}
                                         </div>
                                         <div class="flex flex-col">
-                                            <span class="text-white font-bold group-hover/row:text-blue-400 transition-colors uppercase tracking-tight">${m.consultor_nome || 'N/A'}</span>
+                                            <span class="text-white font-bold group-hover/row:text-blue-400 transition-colors uppercase tracking-tight">${m.consultor || 'N/A'}</span>
                                         </div>
                                     </div>
                                 </td>
