@@ -516,14 +516,7 @@ def reset_global_cronograma(
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(obter_usuario_atual)
 ):
-    from backend.models.usuarios import TipoUsuario
-    if usuario.tipo != TipoUsuario.admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Apenas administradores podem resetar o cronograma globalmente."
-        )
-    
-    # Delete all events, projects and programs
+    # Delete all events, activities, projects and programs
     db.query(CronogramaEvento).delete()
     db.query(CronogramaAtividade).delete()
     db.query(CronogramaProjeto).delete()
