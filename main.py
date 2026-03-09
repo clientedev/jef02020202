@@ -84,6 +84,19 @@ def deferred_boot(app_instance):
         boot_step = "Sincronizando tabelas (create_all)..."
         print(f"[BOOT] {boot_step}")
         Base.metadata.create_all(bind=engine)
+        
+        # --- EMERGENCY FIX: Ensure numero_proposta column exists ---
+        try:
+            print("[BOOT] Verificando colunas de agendamento...")
+            from sqlalchemy import text
+            with engine.connect() as connection:
+                connection.execute(text("ALTER TABLE cronograma_eventos ADD COLUMN IF NOT EXISTS numero_proposta VARCHAR(100);"))
+                connection.execute(text("ALTER TABLE programs DROP COLUMN IF EXISTS numero_proposta;"))
+                connection.commit()
+            print("[BOOT] Colunas de agendamento verificadas/adicionadas.")
+        except Exception as db_err:
+            print(f"[BOOT] Alerta na migração automática: {db_err}")
+            
         print("[BOOT] Tabelas sincronizadas.")
 
         # 2c. Routers (This is what usually blocks)
