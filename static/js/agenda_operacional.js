@@ -407,7 +407,7 @@ function renderizarScheduler() {
 }
 
 // Expansão de detalhes globais do consultor
-async function toggleConsultorGlobalInfo(consultorId) {
+async function toggleConsultorGlobalInfo(consultorId, programIdToHighlight = null) {
     const card = document.getElementById(`consultor-card-${consultorId}`);
     const expansion = document.getElementById(`expansion-${consultorId}`);
     const content = document.getElementById(`expansion-content-${consultorId}`);
@@ -416,14 +416,16 @@ async function toggleConsultorGlobalInfo(consultorId) {
 
     const isActive = expansion.classList.contains('active');
 
-    // Deactivate all others
-    document.querySelectorAll('.expansion-row').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.consultant-name-card').forEach(el => el.classList.remove('active'));
+    // Deactivate all others IF NOT expanding for a specific program from a different consultant (unlikely but safe)
+    if (!programIdToHighlight || !isActive) {
+        document.querySelectorAll('.expansion-row').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.consultant-name-card').forEach(el => el.classList.remove('active'));
+    }
 
-    if (!isActive) {
-        card.classList.add('active');
-        expansion.classList.add('active');
+    card.classList.add('active');
+    expansion.classList.add('active');
 
+    if (!isActive || programIdToHighlight) {
         try {
             const response = await apiRequest('/api/cronograma/metrics');
             if (!response.ok) throw new Error('Erro');
@@ -436,8 +438,10 @@ async function toggleConsultorGlobalInfo(consultorId) {
                 return;
             }
 
-            content.innerHTML = lista.map(m => `
-                <div class="global-program-card flex flex-col justify-between">
+            content.innerHTML = lista.map(m => {
+                const isHighlighted = programIdToHighlight && m.program_id === programIdToHighlight;
+                return `
+                <div class="global-program-card flex flex-col justify-between ${isHighlighted ? 'highlight-program' : ''}" id="program-card-${m.program_id}">
                     <div>
                         <div class="flex justify-between items-start mb-2">
                             <span class="text-[10px] font-black text-blue-400 uppercase tracking-tighter truncate w-3/4">${m.empresa}</span>
@@ -456,11 +460,23 @@ async function toggleConsultorGlobalInfo(consultorId) {
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
+
+            if (programIdToHighlight) {
+                setTimeout(() => {
+                    const el = document.getElementById(`program-card-${programIdToHighlight}`);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 300);
+            }
 
         } catch (e) {
             content.innerHTML = '<div class="col-span-full py-4 text-center text-red-400 italic text-xs font-bold uppercase tracking-widest">Erro ao carregar métricas globais</div>';
         }
+    } else {
+        // Toggle off if clicking the card while already active and no highlight requested
+        card.classList.remove('active');
+        expansion.classList.remove('active');
     }
 }
 
@@ -783,6 +799,11 @@ async function mostrarDetalheEvento(eventoId) {
 
         document.getElementById('btnExcluirTodosPrograma').classList.toggle('hidden', !eventoSelecionado.program_id);
         document.getElementById('modalDetalheEvento').classList.remove('hidden');
+
+        // AUTO-EXPAND Global View for this consultant and highlight this program
+        if (eventoSelecionado.consultor_id && eventoSelecionado.program_id) {
+            toggleConsultorGlobalInfo(eventoSelecionado.consultor_id, eventoSelecionado.program_id);
+        }
     } catch (e) {
         console.error(e);
         showToast('Erro ao carregar detalhes', 'error');
