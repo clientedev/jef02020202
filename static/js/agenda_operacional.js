@@ -407,6 +407,7 @@ function renderizarScheduler() {
 }
 
 // Expansão de detalhes globais do consultor
+// Expansão de detalhes globais do consultor
 async function toggleConsultorGlobalInfo(consultorId, programIdToHighlight = null) {
     const card = document.getElementById(`consultor-card-${consultorId}`);
     const expansion = document.getElementById(`expansion-${consultorId}`);
@@ -416,10 +417,20 @@ async function toggleConsultorGlobalInfo(consultorId, programIdToHighlight = nul
 
     const isActive = expansion.classList.contains('active');
 
-    // Deactivate all others IF NOT expanding for a specific program from a different consultant (unlikely but safe)
+    // EXCLUSIVIDADE: Deactivate all others
     if (!programIdToHighlight || !isActive) {
-        document.querySelectorAll('.expansion-row').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.consultant-name-card').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.expansion-row').forEach(el => {
+            if (el.id !== `expansion-${consultorId}`) el.classList.remove('active');
+        });
+        document.querySelectorAll('.consultant-name-card').forEach(el => {
+            if (el.id !== `consultor-card-${consultorId}`) el.classList.remove('active');
+        });
+    }
+
+    if (isActive && !programIdToHighlight) {
+        card.classList.remove('active');
+        expansion.classList.remove('active');
+        return;
     }
 
     card.classList.add('active');
@@ -434,44 +445,72 @@ async function toggleConsultorGlobalInfo(consultorId, programIdToHighlight = nul
             const lista = (metrics.programas || metrics).filter(m => m.consultor_id === consultorId);
 
             if (lista.length === 0) {
-                content.innerHTML = '<div class="col-span-full py-4 text-center text-gray-500 italic text-xs uppercase tracking-widest font-bold">Nenhum programa vinculado a este consultor</div>';
+                content.innerHTML = '<div class="py-10 text-center text-gray-500 text-xs italic uppercase tracking-widest font-bold">Nenhum programa vinculado a este consultor</div>';
                 return;
             }
 
-            content.innerHTML = lista.map(m => {
+            content.innerHTML = `
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-[11px] border-collapse">
+                        <thead>
+                            <tr class="text-gray-500 uppercase font-bold border-b border-dark-border/30">
+                                <th class="px-4 py-2">Proposta</th>
+                                <th class="px-4 py-2">Início / Fim</th>
+                                <th class="px-4 py-2">Empresa</th>
+                                <th class="px-4 py-2">Programa</th>
+                                <th class="px-4 py-2 text-center">Meta</th>
+                                <th class="px-4 py-2 text-center">Agendado</th>
+                                <th class="px-4 py-2 text-center">Saldo</th>
+                                <th class="px-4 py-2 text-center">Progresso</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-dark-border/10">
+                            ${lista.map(m => {
+                const cargaTotal = m.carga_total || m.meta_total;
+                const horasRealizadas = m.horas_contabilizadas || m.horas_realizadas || 0;
+                const progresso = (horasRealizadas / cargaTotal) * 100;
                 const isHighlighted = programIdToHighlight && m.program_id === programIdToHighlight;
+
                 return `
-                <div class="global-program-card flex flex-col justify-between ${isHighlighted ? 'highlight-program' : ''}" id="program-card-${m.program_id}">
-                    <div>
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-[10px] font-black text-blue-400 uppercase tracking-tighter truncate w-3/4">${m.empresa}</span>
-                            <span class="text-[9px] font-black px-1.5 py-0.5 bg-yellow-500/10 text-yellow-500 rounded border border-yellow-500/20">${m.numero_proposta || 'S/N'}</span>
-                        </div>
-                        <div class="text-xs font-bold text-white mb-2 line-clamp-1">${m.nome}</div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
-                        <div class="flex flex-col">
-                            <span class="text-[8px] text-gray-500 uppercase font-black uppercase tracking-tighter">Meta</span>
-                            <span class="text-[11px] text-white font-black">${m.meta_total}h</span>
-                        </div>
-                        <div class="flex flex-col text-right">
-                            <span class="text-[8px] text-gray-500 uppercase font-black uppercase tracking-tighter">Saldo</span>
-                            <span class="text-[11px] ${m.saldo < 0 ? 'text-red-400' : 'text-emerald-400'} font-black">${m.saldo.toFixed(1)}h</span>
-                        </div>
-                    </div>
+                                <tr class="hover:bg-white/5 transition-colors ${isHighlighted ? 'highlight-row' : ''}" id="program-row-${m.program_id}">
+                                    <td class="px-4 py-3">
+                                        <span class="px-1.5 py-0.5 bg-yellow-500/10 text-yellow-500 rounded border border-yellow-500/20 font-bold">${m.numero_proposta || 'S/N'}</span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex flex-col">
+                                            <span class="text-white font-bold">${m.data_inicio ? new Date(m.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR') : '---'}</span>
+                                            <span class="text-[9px] text-gray-500 font-medium tracking-tighter">até ${m.data_fim ? new Date(m.data_fim + 'T12:00:00').toLocaleDateString('pt-BR') : '---'}</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-300 font-medium truncate max-w-[200px]">${m.empresa}</td>
+                                    <td class="px-4 py-3">
+                                        <span class="px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg border border-emerald-500/20 font-bold">${m.nome}</span>
+                                    </td>
+                                    <td class="px-4 py-3 text-center text-white font-black">${cargaTotal}h</td>
+                                    <td class="px-4 py-3 text-center text-blue-400 font-bold">${m.total_horas}h</td>
+                                    <td class="px-4 py-3 text-center ${m.saldo < 0 ? 'text-red-400' : 'text-orange-400'} font-black">${m.saldo.toFixed(1)}h</td>
+                                    <td class="px-4 py-3 text-center">
+                                        <div class="flex items-center justify-center gap-2">
+                                            <span class="text-blue-400 font-bold">${Math.round(progresso)}%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                `;
+            }).join('')}
+                        </tbody>
+                    </table>
                 </div>
             `;
-            }).join('');
 
             if (programIdToHighlight) {
                 setTimeout(() => {
-                    const el = document.getElementById(`program-card-${programIdToHighlight}`);
+                    const el = document.getElementById(`program-row-${programIdToHighlight}`);
                     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }, 300);
             }
 
         } catch (e) {
-            content.innerHTML = '<div class="col-span-full py-4 text-center text-red-400 italic text-xs font-bold uppercase tracking-widest">Erro ao carregar métricas globais</div>';
+            content.innerHTML = '<div class="py-10 text-center text-red-400 italic text-xs font-bold uppercase tracking-widest">Erro ao carregar métricas globais</div>';
         }
     } else {
         // Toggle off if clicking the card while already active and no highlight requested
