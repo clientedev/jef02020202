@@ -111,6 +111,7 @@ class CronogramaEvento(Base):
     alterado = Column(Integer, default=0) # 0: original, 1: alterado
     carga_horaria = Column(Float, default=0) # Horas da sessão
     lancado_sgset = Column(Integer, default=0) # 0: não lançado, 1: lançado
+    numero_proposta = Column(String(100), nullable=True) # Número da proposta
     
     empresa = relationship("Empresa")
     consultor = relationship("Usuario", back_populates="eventos_cronograma")
@@ -126,7 +127,6 @@ class Program(Base):
     carga_horaria = Column(Float, nullable=False)  # Horas totais do programa
     descricao = Column(Text)
     empresa_id = Column(Integer, ForeignKey("empresas.id"), nullable=True)
-    numero_proposta = Column(String(100), nullable=True)  # Número da proposta
     data_criacao = Column(DateTime, default=datetime.utcnow)
 
     empresa = relationship("Empresa")

@@ -141,6 +141,7 @@ class CronogramaEventoBase(BaseModel):
     descricao: Optional[str] = None
     observacoes: Optional[str] = None
     carga_horaria: float = 0
+    numero_proposta: Optional[str] = None
 
 
 class CronogramaEventoCriar(CronogramaEventoBase):
@@ -160,6 +161,7 @@ class CronogramaEventoAtualizar(BaseModel):
     descricao: Optional[str] = None
     observacoes: Optional[str] = None
     carga_horaria: Optional[float] = None
+    numero_proposta: Optional[str] = None
 
 
 class CronogramaEventoResposta(CronogramaEventoBase):
@@ -175,6 +177,7 @@ class CronogramaEventoResposta(CronogramaEventoBase):
     empresa_nome: Optional[str] = None
     consultor_nome: Optional[str] = None
     program_nome: Optional[str] = None
+    numero_proposta: Optional[str] = None
 
 
 class EventoCalendario(BaseModel):
@@ -192,3 +195,4 @@ class EventoCalendario(BaseModel):
     cor: str
     alterado: bool = False
     carga_horaria: float = 0
+    numero_proposta: Optional[str] = None

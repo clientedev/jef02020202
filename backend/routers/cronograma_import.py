@@ -253,17 +253,14 @@ async def import_excel(
                 nome=tipo_programa,
                 carga_horaria=carga_horaria,
                 descricao=solucao or tipo_programa,
-                numero_proposta=num_proposta or None,
             )
             db.add(program)
             db.flush()
             results["programas_criados"].append(tipo_programa)
         else:
-            # Update carga_horaria if empty, and proposta if not set
+            # Update carga_horaria if empty
             if program.carga_horaria == 0:
                 program.carga_horaria = carga_horaria
-            if num_proposta and not program.numero_proposta:
-                program.numero_proposta = num_proposta
 
         # --- Find consultor ---
         consultor = None
@@ -376,6 +373,7 @@ async def import_excel(
                 titulo=f"{tipo_programa} - {empresa_nome}",
                 descricao=solucao or f"Sessão de {tipo_programa}",
                 carga_horaria=h_hoje,
+                numero_proposta=num_proposta,
             )
             db.add(evento)
             horas_restantes -= h_hoje

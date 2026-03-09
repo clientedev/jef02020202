@@ -801,7 +801,8 @@ async function salvarEvento(e) {
             consultor_id: parseInt(document.getElementById('eventoConsultor').value),
             empresa_id: empresaId ? parseInt(empresaId) : null,
             sigla_empresa: document.getElementById('eventoSigla').value || null,
-            descricao: document.getElementById('eventoDescricao').value
+            descricao: document.getElementById('eventoDescricao').value,
+            numero_proposta: document.getElementById('eventoProposta').value || null
         };
         const response = await apiRequest(`/api/cronograma/eventos/${eventoId}`, { method: 'PUT', body: JSON.stringify(dados) });
         if (response.ok) {
@@ -824,7 +825,8 @@ async function salvarEvento(e) {
                 data_inicio: document.getElementById('eventoData').value,
                 dias_semana: Array.from(diasCheckboxes).map(cb => parseInt(cb.value)),
                 horas_por_dia: parseFloat(document.getElementById('eventoHorasDia').value || 8),
-                categoria: document.getElementById('eventoCategoria').value
+                categoria: document.getElementById('eventoCategoria').value,
+                numero_proposta: document.getElementById('eventoProposta').value || null
             };
 
             const response = await apiRequest('/api/programs/auto-schedule', { method: 'POST', body: JSON.stringify(dadosAuto) });
@@ -843,7 +845,8 @@ async function salvarEvento(e) {
                 program_id: parseInt(programId),
                 carga_horaria: parseFloat(document.getElementById('eventoHorasDia').value || 8),
                 sigla_empresa: document.getElementById('eventoSigla').value || null,
-                descricao: document.getElementById('eventoDescricao').value
+                descricao: document.getElementById('eventoDescricao').value,
+                numero_proposta: document.getElementById('eventoProposta').value || null
             };
 
             const response = await apiRequest('/api/cronograma/eventos', { method: 'POST', body: JSON.stringify(dados) });
@@ -860,7 +863,8 @@ async function salvarEvento(e) {
         consultor_id: parseInt(document.getElementById('eventoConsultor').value),
         empresa_id: empresaId ? parseInt(empresaId) : null,
         sigla_empresa: document.getElementById('eventoSigla').value || null,
-        descricao: document.getElementById('eventoDescricao').value
+        descricao: document.getElementById('eventoDescricao').value,
+        numero_proposta: document.getElementById('eventoProposta').value || null
     };
 
     const response = await apiRequest('/api/cronograma/eventos', { method: 'POST', body: JSON.stringify(dados) });

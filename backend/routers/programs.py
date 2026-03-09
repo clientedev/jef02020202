@@ -17,7 +17,7 @@ class ProgramCreate(BaseModel):
     carga_horaria: float
     descricao: Optional[str] = None
     empresa_id: Optional[int] = None
-    numero_proposta: Optional[str] = None
+    empresa_id: Optional[int] = None
 
 class ProgramResponse(ProgramCreate):
     id: int
@@ -33,6 +33,7 @@ class AutoScheduleRequest(BaseModel):
     dias_semana: List[int]  # 0=Monday, 6=Sunday
     horas_por_dia: float
     categoria: Optional[str] = None
+    numero_proposta: Optional[str] = None
 
 class ProgramDashboard(BaseModel):
     id: int
@@ -133,7 +134,8 @@ def auto_schedule(request: AutoScheduleRequest, db: Session = Depends(get_db)):
                 program_id=program.id,
                 titulo=f"{program.nome} - Sessão",
                 descricao=f"Sessão automática do programa {program.nome}. Carga: {horas_hoje}h",
-                carga_horaria=round(horas_hoje, 2)
+                carga_horaria=round(horas_hoje, 2),
+                numero_proposta=request.numero_proposta
             )
             db.add(novo_evento)
             eventos_criados.append(novo_evento)
