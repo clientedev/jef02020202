@@ -329,25 +329,19 @@ function renderizarScheduler() {
     });
 
     consultoresAgenda.forEach(consultor => {
-        // Name Card (Sticky)
+        // Coluna do Consultor (Sticky)
         html += `
-        <div class="consultant-name-card scheduler-row-header scheduler-cell p-4 border-r-2 border-dark-border/50 sticky left-0 z-20 glass-effect flex items-center justify-between group cursor-pointer" 
-              id="consultor-card-${consultor.id}"
-              onclick="toggleConsultorGlobalInfo(${consultor.id})">
+        <div class="consultant-name-card scheduler-row-header scheduler-cell p-4 border-r-2 border-dark-border/50 sticky left-0 z-20 glass-effect flex items-center justify-between group" 
+              id="consultor-card-${consultor.id}">
             <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-white font-bold text-sm shadow-xl group-hover:scale-110 transition-all duration-300" 
+                <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-white font-bold text-sm shadow-xl transition-all duration-300" 
                      style="background: linear-gradient(135deg, ${getCorConsultor(consultor.id)}, rgba(0,0,0,0.3))">
                     ${getIniciaisAgenda(consultor.nome)}
                 </div>
                 <div class="min-w-0">
-                    <div class="truncate text-sm font-bold text-white group-hover:text-blue-400 transition-colors duration-300">${consultor.nome}</div>
+                    <div class="truncate text-sm font-bold text-white transition-colors duration-300">${consultor.nome}</div>
                     <div class="text-[10px] text-gray-500 font-medium uppercase tracking-tighter">Consultor Comercial</div>
                 </div>
-            </div>
-            <div class="flex items-center gap-2">
-                 <div class="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center opacity-40 group-hover:opacity-100 transition-all duration-300">
-                    <i class="fas fa-chevron-down text-[10px] transition-transform duration-300" id="icon-expansion-${consultor.id}"></i>
-                 </div>
             </div>
         </div>`;
 
@@ -388,24 +382,138 @@ function renderizarScheduler() {
             html += `</div>`;
         });
 
-        // Expansion Row (Global Info)
-        html += `
-        <div id="expansion-${consultor.id}" class="expansion-row">
-            <div class="flex items-center gap-2 mb-4">
-                <div class="w-1 h-4 bg-blue-500 rounded-full"></div>
-                <h4 class="text-xs font-black text-blue-400 uppercase tracking-widest">Resumo Global de Execução</h4>
-            </div>
-            <div id="expansion-content-${consultor.id}" class="global-info-grid">
-                <div class="col-span-full py-8 text-center">
-                    <i class="fas fa-circle-notch fa-spin text-blue-500 mb-2"></i>
-                    <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Carregando métricas...</p>
-                </div>
-            </div>
-        </div>`;
+        // Removemos a linha de expansão pois agora será uma visão global fixa abaixo
     });
 
     html += `</div>`; // Fecha scheduler-grid
     container.innerHTML = html;
+
+    // Renderiza a lista global abaixo
+    renderizarGestaoGlobalAgenda();
+}
+
+async function renderizarGestaoGlobalAgenda() {
+    const listContainer = document.getElementById('globalProgramsList');
+    const metricsContainer = document.getElementById('metricsSummaryGlobal');
+
+    try {
+        const response = await apiRequest('/api/cronograma/metrics');
+        if (!response.ok) throw new Error('Erro ao carregar métricas');
+        const metrics = await response.json();
+
+        let programs = metrics.programas || metrics;
+
+        // ORDENAÇÃO: Lançados recentemente (ID decrescente ou data de criação se disponível)
+        // Como o program_id costuma ser sequencial/incremental, usaremos ele.
+        programs.sort((a, b) => b.program_id - a.program_id);
+
+        if (programs.length === 0) {
+            listContainer.innerHTML = '<div class="py-10 text-center text-gray-500 italic font-bold">Nenhum programa ativo no sistema.</div>';
+            return;
+        }
+
+        // Métricas Rápidas
+        const totalH = programs.reduce((acc, p) => acc + (p.carga_total || p.meta_total || 0), 0);
+        const saldoH = programs.reduce((acc, p) => acc + (p.saldo || 0), 0);
+
+        metricsContainer.innerHTML = `
+            <div class="px-4 py-2 bg-dark-card/50 rounded-xl border border-white/5 flex items-center gap-3">
+                <i class="fas fa-clock text-blue-400"></i>
+                <div class="flex flex-col">
+                    <span class="text-[9px] text-gray-500 font-black uppercase tracking-widest">Total Meta</span>
+                    <span class="text-sm font-black text-white">${totalH}h</span>
+                </div>
+            </div>
+            <div class="px-4 py-2 bg-dark-card/50 rounded-xl border border-white/5 flex items-center gap-3">
+                <i class="fas fa-chart-pie ${saldoH < 0 ? 'text-red-400' : 'text-emerald-400'}"></i>
+                <div class="flex flex-col">
+                    <span class="text-[9px] text-gray-500 font-black uppercase tracking-widest">Saldo Atual</span>
+                    <span class="text-sm font-black ${saldoH < 0 ? 'text-red-400' : 'text-emerald-400'}">${saldoH.toFixed(1)}h</span>
+                </div>
+            </div>
+        `;
+
+        listContainer.innerHTML = `
+            <div class="overflow-x-auto p-1">
+                <table class="w-full text-left text-[11px] border-separate border-spacing-y-3">
+                    <thead>
+                        <tr class="text-gray-500 uppercase font-black tracking-widest text-[9px] opacity-70">
+                            <th class="px-5 py-2">Consultor</th>
+                            <th class="px-5 py-2">Proposta</th>
+                            <th class="px-5 py-3">Período</th>
+                            <th class="px-5 py-3">Empresa / Programa</th>
+                            <th class="px-5 py-3 text-center">Meta</th>
+                            <th class="px-5 py-3 text-center">Saldo</th>
+                            <th class="px-5 py-3 text-center">Progresso</th>
+                            <th class="px-5 py-3 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${programs.map(m => {
+            const cargaTotal = m.carga_total || m.meta_total;
+            const horasRealizadas = m.horas_contabilizadas || m.horas_realizadas || 0;
+            const progresso = Math.min(100, Math.round((horasRealizadas / cargaTotal) * 100));
+            const iniciais = (m.consultor_nome || '??').substring(0, 2).toUpperCase();
+
+            return `
+                            <tr class="bg-dark-card/40 hover:bg-blue-500/5 transition-all duration-300 group/row border border-white/5">
+                                <td class="px-5 py-4 first:rounded-l-2xl border-y border-white/5 border-l">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold text-[10px] border border-blue-500/20">
+                                            ${iniciais}
+                                        </div>
+                                        <div class="flex flex-col">
+                                            <span class="text-white font-bold group-hover/row:text-blue-400 transition-colors uppercase tracking-tight">${m.consultor_nome || 'N/A'}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-5 py-4 border-y border-white/5">
+                                    <span class="px-3 py-1 bg-yellow-500/10 text-yellow-500 rounded-lg border border-yellow-500/20 font-black text-[11px]">
+                                        ${m.numero_proposta || 'S/PROPOSTA'}
+                                    </span>
+                                </td>
+                                <td class="px-5 py-4 border-y border-white/5">
+                                    <div class="flex flex-col">
+                                        <span class="text-white font-bold">${m.data_inicio ? new Date(m.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR') : '---'}</span>
+                                        <span class="text-[9px] text-gray-500 font-medium">até ${m.data_fim ? new Date(m.data_fim + 'T12:00:00').toLocaleDateString('pt-BR') : '---'}</span>
+                                    </div>
+                                </td>
+                                <td class="px-5 py-4 border-y border-white/5 max-w-[350px]">
+                                    <div class="text-gray-300 text-[10px] font-black uppercase tracking-tight truncate group-hover/row:text-white transition-colors">${m.empresa}</div>
+                                    <div class="mt-2">
+                                        <span class="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20 font-black text-[10px]">
+                                            ${m.nome}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="px-5 py-4 text-center text-white font-black text-xl border-y border-white/5">${cargaTotal}h</td>
+                                <td class="px-5 py-4 text-center ${m.saldo < 0 ? 'text-red-400' : 'text-orange-400'} font-black text-xl border-y border-white/5">
+                                    ${m.saldo.toFixed(1)}h
+                                </td>
+                                <td class="px-5 py-4 text-center border-y border-white/5">
+                                    <div class="flex flex-col items-center gap-2">
+                                        <span class="text-blue-400 font-black text-xl">${progresso}%</span>
+                                        <div class="w-20 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                            <div class="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)]" style="width: ${progresso}%"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-5 py-4 last:rounded-r-2xl border-y border-white/5 border-r text-center">
+                                    <a href="/program/${m.program_id}/dashboard" class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 hover:bg-blue-500 hover:text-white hover:scale-110 transition-all duration-300 mx-auto">
+                                        <i class="fas fa-chart-line text-lg"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            `;
+        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } catch (e) {
+        console.error(e);
+        listContainer.innerHTML = '<div class="py-10 text-center text-red-400 italic">Erro ao carregar programas recentes.</div>';
+    }
 }
 
 // Expansão de detalhes globais do consultor
