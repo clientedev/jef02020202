@@ -320,15 +320,21 @@ function renderizarScheduler() {
     });
 
     consultoresAgenda.forEach(consultor => {
-        html += `<div class="scheduler-row-header scheduler-cell p-3 border-r-2 border-dark-border/50 flex items-center gap-3 cursor-pointer hover:bg-dark-hover group transition-colors" 
+        html += `<div class="scheduler-row-header scheduler-cell p-3 border-r-2 border-dark-border/50 flex items-center justify-between group" 
                       onclick="abrirAcoesConsultor(${consultor.id})">
-            <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-lg group-hover:scale-110 transition-transform" style="background-color: ${getCorConsultor(consultor.id)}">
-                ${getIniciaisAgenda(consultor.nome)}
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-white font-bold text-xs shadow-lg group-hover:scale-110 transition-transform" style="background-color: ${getCorConsultor(consultor.id)}">
+                    ${getIniciaisAgenda(consultor.nome)}
+                </div>
+                <div class="min-w-0">
+                    <div class="truncate text-xs font-bold text-white group-hover:text-blue-400 transition-colors">${consultor.nome}</div>
+                </div>
             </div>
-            <div class="min-w-0">
-                <div class="truncate text-sm font-bold text-white group-hover:text-blue-400 transition-colors">${consultor.nome}</div>
-                <div class="text-[10px] text-gray-500 group-hover:text-gray-400">Ver ações <i class="fas fa-chevron-right ml-1 text-[8px]"></i></div>
-            </div>
+            <button onclick="event.stopPropagation(); mostrarResumoConsultor(${consultor.id})" 
+                    class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white flex items-center justify-center transition"
+                    title="Ver resumo de programas">
+                <i class="fas fa-chart-pie text-xs"></i>
+            </button>
         </div>`;
 
         datas.forEach(data => {
@@ -818,5 +824,92 @@ async function acionarResetGlobal() {
         }
     } catch (e) {
         showToast("Erro crítico ao resetar", "error");
+    }
+}
+
+async function mostrarResumoConsultor(consultorId) {
+    let container = document.getElementById('resumoConsultorContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'resumoConsultorContainer';
+        container.className = 'sticky bottom-0 z-30 w-full glass-effect border-t border-dark-border/50 shadow-2xl hidden';
+        document.querySelector('main').appendChild(container);
+    }
+
+    container.classList.remove('hidden');
+    container.innerHTML = `
+        <div class="p-4 sm:p-6 animate-slide-up bg-dark-card/95 backdrop-blur-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <i class="fas fa-chart-pie text-emerald-400"></i> Resumo de Programas do Consultor
+                </h3>
+                <button onclick="document.getElementById('resumoConsultorContainer').classList.add('hidden')" class="w-8 h-8 rounded-lg bg-dark-bg hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="resumoConsultorConteudo" class="overflow-x-auto custom-scrollbar max-h-60">
+                <div class="py-10 text-center">
+                    <i class="fas fa-spinner fa-spin text-blue-500 text-2xl mb-2"></i> 
+                    <p class="text-gray-500 text-xs">Consultando indicadores...</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    try {
+        const response = await apiRequest('/api/cronograma/metrics');
+        const metrics = await response.json();
+        const lista = (metrics.programas || metrics).filter(m => m.consultor_id === consultorId);
+
+        const conteudo = document.getElementById('resumoConsultorConteudo');
+        if (lista.length === 0) {
+            conteudo.innerHTML = '<div class="py-10 text-center text-gray-500 text-xs italic">Nenhum programa vinculado a este consultor no momento.</div>';
+            return;
+        }
+
+        conteudo.innerHTML = `
+            <table class="w-full text-left text-[11px] border-collapse min-w-[800px]">
+                <thead>
+                    <tr class="text-gray-500 uppercase font-bold border-b border-dark-border/30">
+                        <th class="px-4 py-2">Início / Fim</th>
+                        <th class="px-4 py-2 text-center">Dias</th>
+                        <th class="px-4 py-2">Empresa</th>
+                        <th class="px-4 py-2">Programa</th>
+                        <th class="px-4 py-2 text-center">Meta</th>
+                        <th class="px-4 py-2 text-center">Agendado</th>
+                        <th class="px-4 py-2 text-center">Saldo</th>
+                        <th class="px-4 py-2 text-center">Progresso</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-dark-border/10">
+                    ${lista.map(m => {
+            const cargaTotal = m.carga_total || m.meta_total;
+            const horasRealizadas = m.horas_contabilizadas || m.horas_realizadas || 0;
+            const progresso = (horasRealizadas / cargaTotal) * 100;
+            return `
+                        <tr class="hover:bg-white/5 transition-colors">
+                            <td class="px-4 py-3">
+                                <div class="flex flex-col">
+                                    <span class="text-white font-bold">${m.data_inicio ? new Date(m.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR') : '---'}</span>
+                                    <span class="text-[9px] text-gray-500 font-medium">até ${m.data_fim ? new Date(m.data_fim + 'T12:00:00').toLocaleDateString('pt-BR') : '---'}</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 font-bold text-gray-400 text-center">${m.dias || 0}</td>
+                            <td class="px-4 py-3 text-gray-300 font-medium truncate max-w-[200px]">${m.empresa}</td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg border border-emerald-500/20 font-bold">${m.nome}</span>
+                            </td>
+                            <td class="px-4 py-3 text-center text-white font-black">${cargaTotal}h</td>
+                            <td class="px-4 py-3 text-center text-blue-400 font-bold">${m.total_horas}h</td>
+                            <td class="px-4 py-3 text-center ${m.saldo < 0 ? 'text-red-400' : 'text-orange-400'} font-black">${m.saldo.toFixed(1)}h</td>
+                            <td class="px-4 py-3 text-center text-blue-400 font-bold">${Math.round(progresso)}%</td>
+                        </tr>
+                        `;
+        }).join('')}
+                </tbody>
+            </table>
+        `;
+    } catch (e) {
+        document.getElementById('resumoConsultorConteudo').innerHTML = '<div class="py-10 text-center text-red-400 text-xs">Erro ao carregar indicadores de desempenho.</div>';
     }
 }

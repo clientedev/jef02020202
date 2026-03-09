@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Produção Diária - Nucleo 1.03{% endblock %}
+
+{% set active_page = 'producao_diaria' %}
+
+{% block content %}
+<div class="flex h-screen bg-dark-bg">
+    {% include "partials/sidebar.html" %}
+
+    <main class="flex-1 overflow-y-auto custom-scrollbar flex flex-col h-screen">
+        <header class="sticky top-0 z-20 glass-effect border-b border-dark-border/50 px-8 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
+                        <i class="fas fa-briefcase text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-white uppercase tracking-tight">Produção Diária</h2>
+                        <p class="text-gray-400 text-xs">Acompanhamento em tempo real da alocação da equipe</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="relative">
+                        <input type="date" id="dataProducao"
+                            class="px-4 py-2.5 bg-dark-card border border-dark-border/30 rounded-xl text-sm text-white focus:outline-none focus:border-amber-500 transition-all">
+                    </div>
+                    <button onclick="carregarProducaoDiaria()"
+                        class="w-10 h-10 rounded-xl bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition group">
+                        <i class="fas fa-sync-alt group-active:rotate-180 transition-transform"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 p-8">
+            <div class="glass-effect rounded-2xl border border-dark-border/30 overflow-hidden shadow-2xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr
+                                class="bg-dark-card/50 text-[10px] text-gray-400 uppercase font-black tracking-widest border-b border-dark-border/30">
+                                <th class="px-8 py-5">Consultor</th>
+                                <th class="px-6 py-5">Local - Programa / Atividade</th>
+                                <th class="px-6 py-5 text-center">Status SGSET</th>
+                                <th class="px-8 py-5 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaProducaoDiaria" class="divide-y divide-dark-border/20">
+                            <!-- Injetado dinamicamente -->
+                            <tr>
+                                <td colspan="4" class="py-20 text-center">
+                                    <i class="fas fa-spinner fa-spin text-4xl text-amber-500 mb-4"></i>
+                                    <p class="text-gray-500 animate-pulse">Sincronizando produção...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="/static/js/producao_diaria.js"></script>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #1f2937;
+        border-radius: 10px;
+    }
+</style>
+{% endblock %}

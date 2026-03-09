@@ -4,7 +4,7 @@ from sqlalchemy import and_, or_
 from typing import List, Optional
 from datetime import date, datetime
 from backend.database import get_db
-from backend.models import CronogramaProjeto, CronogramaAtividade, CronogramaEvento, Usuario, Empresa, CategoriaEvento, PeriodoEvento, Feriado
+from backend.models import CronogramaProjeto, CronogramaAtividade, CronogramaEvento, Usuario, Empresa, CategoriaEvento, PeriodoEvento, Feriado, Program
 from backend.schemas.cronograma import (
     CronogramaProjetoCriar, CronogramaProjetoResposta, CronogramaProjetoAtualizar,
     CronogramaAtividadeCriar, CronogramaAtividadeResposta, CronogramaAtividadeAtualizar,
@@ -523,9 +523,10 @@ def reset_global_cronograma(
             detail="Apenas administradores podem resetar o cronograma globalmente."
         )
     
-    # Delete all events and projects
+    # Delete all events, projects and programs
     db.query(CronogramaEvento).delete()
     db.query(CronogramaProjeto).delete()
+    db.query(Program).delete()
     db.commit()
     
     return {"message": "Cronograma e Projetos limpos com sucesso."}
@@ -609,6 +610,7 @@ def obter_metricas(
     # Query events that are linked to a program
     # Group by (Consultant, Company, Program)
     metrics_query = db.query(
+        Usuario.id.label("consultor_id"),
         Usuario.nome.label("consultor_nome"),
         Empresa.empresa.label("empresa_nome"),
         Program.id.label("program_id"),
@@ -618,7 +620,8 @@ def obter_metricas(
         func.sum(case((CronogramaEvento.data <= hoje, CronogramaEvento.carga_horaria), else_=0)).label("horas_realizadas"),
         func.count(CronogramaEvento.id).label("total_atendimentos"),
         func.count(func.distinct(CronogramaEvento.data)).label("dias_atendidos"),
-        func.min(CronogramaEvento.data).label("data_inicio")
+        func.min(CronogramaEvento.data).label("data_inicio"),
+        func.max(CronogramaEvento.data).label("data_fim")
     ).select_from(CronogramaEvento)\
      .join(Program, Program.id == CronogramaEvento.program_id)\
      .join(Usuario, Usuario.id == CronogramaEvento.consultor_id)\
@@ -629,6 +632,7 @@ def obter_metricas(
     for row in metrics_query:
         metrics_program.append({
             "program_id": row.program_id,
+            "consultor_id": row.consultor_id,
             "consultor": row.consultor_nome,
             "empresa": row.empresa_nome,
             "nome": row.program_nome,
@@ -638,7 +642,8 @@ def obter_metricas(
             "total_atendimentos": row.total_atendimentos,
             "dias": row.dias_atendidos,
             "saldo": row.meta_total - row.total_horas_agendadas,
-            "data_inicio": row.data_inicio.isoformat() if row.data_inicio else None
+            "data_inicio": row.data_inicio.isoformat() if row.data_inicio else None,
+            "data_fim": row.data_fim.isoformat() if row.data_fim else None
         })
 
     # Metrics by Consultant (Keep counting all events)

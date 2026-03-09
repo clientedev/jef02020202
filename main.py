@@ -70,7 +70,7 @@ def deferred_boot(app_instance):
         from backend.routers import (auth, empresas, prospeccoes, agendamentos, admin, 
                                     atribuicoes, consultores, dashboard, cnpj, 
                                     notificacoes, mensagens, cronograma, pipeline, 
-                                    programs, contatos, feriados, cronograma_import)
+                                    programs, contatos, feriados, cronograma_import, producao_diaria)
         from backend.routers.formularios import router as forms_router, router_public as forms_pub_router
         
         routers = [
@@ -78,7 +78,7 @@ def deferred_boot(app_instance):
             agendamentos.router, atribuicoes.router, consultores.router, 
             dashboard.router, cnpj.router, notificacoes.router, mensagens.router, 
             cronograma.router, pipeline.router, programs.router, contatos.router, 
-            forms_router, forms_pub_router, feriados.router, cronograma_import.router
+            forms_router, forms_pub_router, feriados.router, cronograma_import.router, producao_diaria.router
         ]
         
         for r in routers:
@@ -195,6 +195,11 @@ async def program_dashboard_page(request: Request, program_id: int):
 async def gestao_programas_page(request: Request):
     if not is_loaded: return HTMLResponse("Carregando...")
     return templates.TemplateResponse("gestao_programas.html", {"request": request})
+
+@app.get("/producao-diaria", response_class=HTMLResponse)
+async def producao_diaria_page(request: Request):
+    if not is_loaded: return HTMLResponse("Carregando...")
+    return templates.TemplateResponse("producao_diaria.html", {"request": request})
 
 @app.get("/pipeline", response_class=HTMLResponse)
 async def pipeline_page(request: Request):

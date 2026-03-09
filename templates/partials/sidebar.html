@@ -145,6 +145,16 @@
             <span class="sidebar-text font-medium">Gestão Global</span>
         </a>
 
+        <a href="/producao-diaria"
+            class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg mb-1 {% if active_page == 'producao_diaria' %}active bg-amber-500/10 text-amber-400{% else %}text-gray-400 hover:text-white{% endif %}">
+            <div
+                class="w-9 h-9 min-w-[2.25rem] rounded-lg {% if active_page == 'producao_diaria' %}bg-amber-500/20{% else %}bg-dark-card{% endif %} flex items-center justify-center">
+                <i
+                    class="fas fa-briefcase {% if active_page == 'producao_diaria' %}text-amber-400{% else %}text-gray-400{% endif %}"></i>
+            </div>
+            <span class="sidebar-text font-medium">Produção Diária</span>
+        </a>
+
         <p class="sidebar-section-title px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 mt-6">
             Menu Principal</p>
 
