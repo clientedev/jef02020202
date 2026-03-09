@@ -269,6 +269,10 @@ async function carregarDadosAgenda() {
             apiRequest(`/api/feriados/?inicio=${params.get('data_inicio')}&fim=${params.get('data_fim')}`)
         ]);
 
+        if (!consultoresRes || !eventosRes || !feriadosRes) {
+            throw new Error("Sessão expirada ou erro de rede.");
+        }
+
         consultoresAgenda = (await consultoresRes.json()).items || [];
         eventosAgenda = await eventosRes.json();
         feriadosAgenda = await feriadosRes.json();
@@ -277,7 +281,13 @@ async function carregarDadosAgenda() {
         atualizarPeriodoExibido();
     } catch (error) {
         console.error('Erro ao carregar dados:', error);
-        showToast('Erro ao carregar agenda', 'error');
+        showToast('Erro ao carregar dados. Faça login novamente.', 'error');
+
+        const grid = document.getElementById('schedulerGrid');
+        if (grid) grid.innerHTML = '<div class="py-20 text-center text-red-500 font-bold uppercase text-xs tracking-widest"><i class="fas fa-exclamation-triangle text-2xl mb-2 block"></i>Erro de conexão. Verifique sua sessão.</div>';
+
+        const globalList = document.getElementById('globalProgramsList');
+        if (globalList) globalList.innerHTML = '<div class="py-10 text-center text-red-500 font-bold uppercase text-xs tracking-widest">Sem dados globais para exibir.</div>';
     }
 }
 
@@ -408,8 +418,10 @@ async function renderizarGestaoGlobalAgenda(programIdToHighlight = null) {
             programs = [];
         }
 
+        programs = programs.filter(p => p != null);
+
         // ORDENAÇÃO: Lançados recentemente (ID decrescente)
-        programs.sort((a, b) => b.program_id - a.program_id);
+        programs.sort((a, b) => (b.program_id || 0) - (a.program_id || 0));
 
         if (programIdToHighlight) {
             programs = programs.filter(m => String(m.program_id) === String(programIdToHighlight));
