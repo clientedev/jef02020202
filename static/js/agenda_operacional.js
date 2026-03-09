@@ -331,7 +331,7 @@ function renderizarScheduler() {
     consultoresAgenda.forEach(consultor => {
         // Name Card (Sticky)
         html += `
-        <div class="consultant-name-card scheduler-row-header scheduler-cell p-4 border-r-2 border-dark-border/50 sticky left-0 z-20 glass-effect flex items-center justify-between group" 
+        <div class="consultant-name-card scheduler-row-header scheduler-cell p-4 border-r-2 border-dark-border/50 sticky left-0 z-20 glass-effect flex items-center justify-between group cursor-pointer" 
               id="consultor-card-${consultor.id}"
               onclick="toggleConsultorGlobalInfo(${consultor.id})">
             <div class="flex items-center gap-3 min-w-0">
@@ -345,8 +345,8 @@ function renderizarScheduler() {
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                 <div class="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <i class="fas fa-chevron-down text-[10px]"></i>
+                 <div class="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center opacity-40 group-hover:opacity-100 transition-all duration-300">
+                    <i class="fas fa-chevron-down text-[10px] transition-transform duration-300" id="icon-expansion-${consultor.id}"></i>
                  </div>
             </div>
         </div>`;
@@ -407,11 +407,11 @@ function renderizarScheduler() {
 }
 
 // Expansão de detalhes globais do consultor
-// Expansão de detalhes globais do consultor
 async function toggleConsultorGlobalInfo(consultorId, programIdToHighlight = null) {
     const card = document.getElementById(`consultor-card-${consultorId}`);
     const expansion = document.getElementById(`expansion-${consultorId}`);
     const content = document.getElementById(`expansion-content-${consultorId}`);
+    const icon = document.getElementById(`icon-expansion-${consultorId}`);
 
     if (!card || !expansion) return;
 
@@ -425,16 +425,21 @@ async function toggleConsultorGlobalInfo(consultorId, programIdToHighlight = nul
         document.querySelectorAll('.consultant-name-card').forEach(el => {
             if (el.id !== `consultor-card-${consultorId}`) el.classList.remove('active');
         });
+        document.querySelectorAll('[id^="icon-expansion-"]').forEach(el => {
+            el.style.transform = 'rotate(0deg)';
+        });
     }
 
     if (isActive && !programIdToHighlight) {
         card.classList.remove('active');
         expansion.classList.remove('active');
+        if (icon) icon.style.transform = 'rotate(0deg)';
         return;
     }
 
     card.classList.add('active');
     expansion.classList.add('active');
+    if (icon) icon.style.transform = 'rotate(180deg)';
 
     if (!isActive || programIdToHighlight) {
         try {
@@ -450,49 +455,65 @@ async function toggleConsultorGlobalInfo(consultorId, programIdToHighlight = nul
             }
 
             content.innerHTML = `
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-[11px] border-collapse">
+                <div class="overflow-x-auto p-4 bg-dark-bg/30 rounded-2xl border border-white/5 mx-2">
+                    <table class="w-full text-left text-[11px] border-separate border-spacing-y-3">
                         <thead>
-                            <tr class="text-gray-500 uppercase font-bold border-b border-dark-border/30">
-                                <th class="px-4 py-2">Proposta</th>
-                                <th class="px-4 py-2">Início / Fim</th>
-                                <th class="px-4 py-2">Empresa</th>
-                                <th class="px-4 py-2">Programa</th>
-                                <th class="px-4 py-2 text-center">Meta</th>
-                                <th class="px-4 py-2 text-center">Agendado</th>
-                                <th class="px-4 py-2 text-center">Saldo</th>
-                                <th class="px-4 py-2 text-center">Progresso</th>
+                            <tr class="text-gray-500 uppercase font-black tracking-widest text-[9px] opacity-70">
+                                <th class="px-5 py-2">Proposta</th>
+                                <th class="px-5 py-3">Início / Fim</th>
+                                <th class="px-5 py-3 text-center">Dias</th>
+                                <th class="px-5 py-3">Empresa / Programa</th>
+                                <th class="px-5 py-3 text-center">Meta</th>
+                                <th class="px-5 py-3 text-center">Saldo</th>
+                                <th class="px-5 py-3 text-center">Progresso</th>
+                                <th class="px-5 py-3 text-center">Dashboard</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-dark-border/10">
+                        <tbody>
                             ${lista.map(m => {
                 const cargaTotal = m.carga_total || m.meta_total;
                 const horasRealizadas = m.horas_contabilizadas || m.horas_realizadas || 0;
-                const progresso = (horasRealizadas / cargaTotal) * 100;
+                const progresso = Math.min(100, Math.round((horasRealizadas / cargaTotal) * 100));
                 const isHighlighted = programIdToHighlight && m.program_id === programIdToHighlight;
 
                 return `
-                                <tr class="hover:bg-white/5 transition-colors ${isHighlighted ? 'highlight-row' : ''}" id="program-row-${m.program_id}">
-                                    <td class="px-4 py-3">
-                                        <span class="px-1.5 py-0.5 bg-yellow-500/10 text-yellow-500 rounded border border-yellow-500/20 font-bold">${m.numero_proposta || 'S/N'}</span>
+                                <tr class="bg-dark-card/40 hover:bg-blue-500/5 transition-all duration-300 group/row ${isHighlighted ? 'highlight-row' : ''}" id="program-row-${m.program_id}">
+                                    <td class="px-5 py-4 first:rounded-l-2xl border-y border-white/5 border-l">
+                                        <span class="px-3 py-1 bg-yellow-500/10 text-yellow-500 rounded-lg border border-yellow-500/20 font-black text-[11px] shadow-[0_0_10px_rgba(234,179,8,0.1)]">
+                                            ${m.numero_proposta || 'S/PROPOSTA'}
+                                        </span>
                                     </td>
-                                    <td class="px-4 py-3">
+                                    <td class="px-5 py-4 border-y border-white/5">
                                         <div class="flex flex-col">
                                             <span class="text-white font-bold">${m.data_inicio ? new Date(m.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR') : '---'}</span>
-                                            <span class="text-[9px] text-gray-500 font-medium tracking-tighter">até ${m.data_fim ? new Date(m.data_fim + 'T12:00:00').toLocaleDateString('pt-BR') : '---'}</span>
+                                            <span class="text-[9px] text-gray-500 font-medium">até ${m.data_fim ? new Date(m.data_fim + 'T12:00:00').toLocaleDateString('pt-BR') : '---'}</span>
                                         </div>
                                     </td>
-                                    <td class="px-4 py-3 text-gray-300 font-medium truncate max-w-[200px]">${m.empresa}</td>
-                                    <td class="px-4 py-3">
-                                        <span class="px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg border border-emerald-500/20 font-bold">${m.nome}</span>
-                                    </td>
-                                    <td class="px-4 py-3 text-center text-white font-black">${cargaTotal}h</td>
-                                    <td class="px-4 py-3 text-center text-blue-400 font-bold">${m.total_horas}h</td>
-                                    <td class="px-4 py-3 text-center ${m.saldo < 0 ? 'text-red-400' : 'text-orange-400'} font-black">${m.saldo.toFixed(1)}h</td>
-                                    <td class="px-4 py-3 text-center">
-                                        <div class="flex items-center justify-center gap-2">
-                                            <span class="text-blue-400 font-bold">${Math.round(progresso)}%</span>
+                                    <td class="px-5 py-4 text-center text-gray-400 font-bold border-y border-white/5">${m.dias || 0}</td>
+                                    <td class="px-5 py-4 border-y border-white/5 max-w-[350px]">
+                                        <div class="text-gray-300 text-[10px] font-black uppercase tracking-tight truncate group-hover/row:text-white transition-colors">${m.empresa}</div>
+                                        <div class="mt-2">
+                                            <span class="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20 font-black text-[10px] shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                                                ${m.nome}
+                                            </span>
                                         </div>
+                                    </td>
+                                    <td class="px-5 py-4 text-center text-white font-black text-xl border-y border-white/5">${cargaTotal}h</td>
+                                    <td class="px-5 py-4 text-center ${m.saldo < 0 ? 'text-red-400' : 'text-orange-400'} font-black text-xl border-y border-white/5">
+                                        ${m.saldo.toFixed(1)}h
+                                    </td>
+                                    <td class="px-5 py-4 text-center border-y border-white/5">
+                                        <div class="flex flex-col items-center gap-2">
+                                            <span class="text-blue-400 font-black text-xl">${progresso}%</span>
+                                            <div class="w-20 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                                <div class="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)] transition-all duration-500" style="width: ${progresso}%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-5 py-4 last:rounded-r-2xl border-y border-white/5 border-r text-center">
+                                        <a href="/program/${m.program_id}/dashboard" class="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 hover:bg-blue-500 hover:text-white hover:scale-110 transition-all duration-300 mx-auto shadow-lg">
+                                            <i class="fas fa-chart-line text-lg"></i>
+                                        </a>
                                     </td>
                                 </tr>
                                 `;
