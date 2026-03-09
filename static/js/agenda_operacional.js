@@ -806,7 +806,10 @@ function irParaHojeAgenda() {
 async function acionarResetGlobal() {
     const response = prompt("MODO DE MANUTENÇÃO: Digite o código de segurança 'RESET99' para LIMPAR TODO O CRONOGRAMA:");
     if (!response || response.trim().toUpperCase() !== "RESET99") {
-        if (response) alert("Código incorreto. Operação cancelada.");
+        if (response) {
+            console.log("Reset attempt failed (Agenda). Typed:", response);
+            alert("Código incorreto. Operação cancelada.");
+        }
         return;
     }
 
@@ -913,3 +916,6 @@ async function mostrarResumoConsultor(consultorId) {
         document.getElementById('resumoConsultorConteudo').innerHTML = '<div class="py-10 text-center text-red-400 text-xs">Erro ao carregar indicadores de desempenho.</div>';
     }
 }
+
+window.acionarResetGlobal = acionarResetGlobal;
+window.mostrarResumoConsultor = mostrarResumoConsultor;

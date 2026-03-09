@@ -496,8 +496,6 @@ function abrirModalFeriados() {
 }
 window.abrirModalFeriados = abrirModalFeriados;
 window.fecharModalFeriados = fecharModalFeriados;
-window.abrirModalProgramas = abrirModalProgramas;
-window.fecharModalProgramas = fecharModalProgramas;
 window.abrirModalNovoEvento = abrirModalNovoEvento;
 window.fecharModalEvento = fecharModalEvento;
 window.abrirDetalhesDia = abrirDetalhesDia;
@@ -514,6 +512,7 @@ window.selecionarEmpresaParaEvento = selecionarEmpresaParaEvento;
 window.excluirEventoCronograma = excluirEventoCronograma;
 window.excluirTodosEventosProgramaCronograma = excluirTodosEventosProgramaCronograma;
 window.editarEvento = editarEvento;
+window.acionarResetGlobal = acionarResetGlobal;
 window.reagendarAgendamento = (id) => { alert('Função em desenvolvimento'); };
 
 function fecharModalFeriados() {
@@ -1026,7 +1025,10 @@ function renderizarLegendaConsultores() { }
 async function acionarResetGlobal() {
     const response = prompt("MODO DE MANUTENÇÃO: Digite o código de segurança 'RESET99' para LIMPAR TODO O CRONOGRAMA:");
     if (!response || response.trim().toUpperCase() !== "RESET99") {
-        if (response) alert("Código incorreto. Operação cancelada.");
+        if (response) {
+            console.log("Reset attempt failed. Typed:", response);
+            alert("Código incorreto. Operação cancelada.");
+        }
         return;
     }
 
