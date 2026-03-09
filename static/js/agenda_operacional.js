@@ -804,9 +804,9 @@ function irParaHojeAgenda() {
 }
 
 async function acionarResetGlobal() {
-    const code = prompt("MODO DE MANUTENÇÃO: Digite o código de segurança 'RESET99' para LIMPAR TODO O CRONOGRAMA:");
-    if (code !== "RESET99") {
-        if (code) alert("Código incorreto. Operação cancelada.");
+    const response = prompt("MODO DE MANUTENÇÃO: Digite o código de segurança 'RESET99' para LIMPAR TODO O CRONOGRAMA:");
+    if (!response || response.trim().toUpperCase() !== "RESET99") {
+        if (response) alert("Código incorreto. Operação cancelada.");
         return;
     }
 

@@ -525,6 +525,7 @@ def reset_global_cronograma(
     
     # Delete all events, projects and programs
     db.query(CronogramaEvento).delete()
+    db.query(CronogramaAtividade).delete()
     db.query(CronogramaProjeto).delete()
     db.query(Program).delete()
     db.commit()
