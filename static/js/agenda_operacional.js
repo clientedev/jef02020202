@@ -404,6 +404,8 @@ function renderizarScheduler() {
         </div>`;
     });
 
+    html += `</div>`; // Fecha scheduler-grid
+    container.innerHTML = html;
 }
 
 // Expansão de detalhes globais do consultor
