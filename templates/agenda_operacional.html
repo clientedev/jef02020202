@@ -98,8 +98,8 @@
             </div>
         </div>
 
-        <div class="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar" id="schedulerContainer"
-            ondragover="allowDropAgenda(event)" ondrop="dropAgenda(event)">
+        <div class="flex-1 overflow-auto custom-scrollbar" id="schedulerContainer" ondragover="allowDropAgenda(event)"
+            ondrop="dropAgenda(event)">
             <div id="schedulerGrid" class="min-w-max">
                 <div class="text-center py-20 text-gray-500">
                     <i class="fas fa-spinner fa-spin text-3xl mb-4"></i>
@@ -563,22 +563,21 @@
         left: 0;
         top: 0;
         z-index: 30;
-        background: rgba(17, 24, 39, 0.98);
-        backdrop-filter: blur(8px);
+        background: #111827;
         min-width: 220px;
         max-width: 220px;
         padding: 8px 12px;
         text-align: center;
         border-bottom: 2px solid rgba(55, 65, 81, 0.4);
         border-right: 2px solid rgba(55, 65, 81, 0.4);
+        will-change: transform;
     }
 
     .agenda-header-cell {
         position: sticky;
         top: 0;
         z-index: 20;
-        background: rgba(17, 24, 39, 0.95);
-        backdrop-filter: blur(8px);
+        background: #111827;
         min-width: 110px;
         padding: 6px 6px;
         text-align: center;
@@ -608,14 +607,14 @@
         position: sticky;
         left: 0;
         z-index: 10;
-        background: rgba(17, 24, 39, 0.95);
-        backdrop-filter: blur(8px);
+        background: #111827;
         min-width: 220px;
         max-width: 220px;
         padding: 6px 10px;
         border-bottom: 1px solid rgba(55, 65, 81, 0.2);
         border-right: 2px solid rgba(55, 65, 81, 0.4);
         transition: background 0.2s ease;
+        will-change: transform;
     }
 
     .agenda-consultor-cell:hover {
