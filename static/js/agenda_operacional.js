@@ -303,18 +303,11 @@ function renderizarScheduler() {
         datas.push(d);
     }
 
-    let html = `<div class="scheduler-grid" style="grid-template-columns: 200px repeat(${datas.length}, minmax(90px, 1fr));">`;
-
-    html += `<div class="scheduler-corner scheduler-cell p-3 border-b-2 border-r-2 border-dark-border/50">
-        <div class="text-sm font-bold text-white uppercase tracking-wider">Consultores</div>
-    </div>`;
-
     // Define columns: Consultant Name Col + N Day Cols
     container.style.display = 'grid';
     container.style.gridTemplateColumns = `280px repeat(${datas.length}, 150px)`;
 
-    // Header: empty top-left + dates
-    html += `<div class="scheduler-header-cell scheduler-cell p-4 border-b-2 border-r-2 border-dark-border/50 sticky left-0 z-30 glass-effect">
+    let html = `<div class="scheduler-corner scheduler-cell p-4 border-b-2 border-r-2 border-dark-border/50 sticky left-0 top-0 z-30 glass-effect flex items-center justify-center bg-[#111827]">
         <span class="text-xs font-black text-blue-400 uppercase tracking-widest">Consultores</span>
     </div>`;
 
@@ -324,7 +317,7 @@ function renderizarScheduler() {
         const diaSemana = data.getDay();
         const feriado = feriadosAgenda.find(f => f.data === dataStr);
 
-        let classes = 'scheduler-header-cell scheduler-cell p-3 text-center border-b-2 border-dark-border/30 ';
+        let classes = 'scheduler-header-cell scheduler-cell p-3 text-center border-b-2 border-dark-border/30 sticky top-0 z-20 hover:bg-white/5 transition ';
         if (feriado) classes += 'bg-red-500/5 text-red-400 ';
         else if (isHoje) classes += 'bg-blue-500/5 ring-1 ring-inset ring-blue-500/30 ';
         else if (diaSemana === 0 || diaSemana === 6) classes += 'bg-dark-bg/40 ';
@@ -395,7 +388,6 @@ function renderizarScheduler() {
         // Removemos a linha de expansão pois agora será uma visão global fixa abaixo
     });
 
-    html += `</div>`; // Fecha scheduler-grid
     container.innerHTML = html;
 
     // Renderiza a lista global abaixo
