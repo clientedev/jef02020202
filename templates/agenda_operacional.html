@@ -558,83 +558,134 @@
 </div>
 
 <style>
-    .scheduler-grid {
-        display: grid;
-        border-collapse: collapse;
+    /* ====== Agenda Table Styles ====== */
+    .agenda-table {
+        border-collapse: separate;
+        border-spacing: 0;
+        width: max-content;
     }
 
-    .scheduler-header-cell {
+    .agenda-corner-cell {
+        position: sticky;
+        left: 0;
+        top: 0;
+        z-index: 30;
+        background: rgba(17, 24, 39, 0.98);
+        backdrop-filter: blur(8px);
+        min-width: 250px;
+        max-width: 250px;
+        padding: 16px;
+        text-align: center;
+        border-bottom: 2px solid rgba(55, 65, 81, 0.4);
+        border-right: 2px solid rgba(55, 65, 81, 0.4);
+    }
+
+    .agenda-header-cell {
         position: sticky;
         top: 0;
+        z-index: 20;
+        background: rgba(17, 24, 39, 0.95);
+        backdrop-filter: blur(8px);
+        min-width: 120px;
+        padding: 12px 8px;
+        text-align: center;
+        border-bottom: 2px solid rgba(55, 65, 81, 0.4);
+        border-right: 1px solid rgba(55, 65, 81, 0.15);
+        transition: background 0.15s ease;
+    }
+
+    .agenda-header-cell:hover {
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    .agenda-header-cell.agenda-hoje {
+        background: rgba(59, 130, 246, 0.08);
+        box-shadow: inset 0 -3px 0 #3b82f6;
+    }
+
+    .agenda-header-cell.agenda-weekend {
+        background: rgba(17, 24, 39, 0.6);
+    }
+
+    .agenda-header-cell.agenda-feriado {
+        background: rgba(239, 68, 68, 0.05);
+    }
+
+    .agenda-consultor-cell {
+        position: sticky;
+        left: 0;
         z-index: 10;
         background: rgba(17, 24, 39, 0.95);
         backdrop-filter: blur(8px);
-    }
-
-    .scheduler-row-header {
-        position: sticky;
-        left: 0;
-        z-index: 5;
-        background: rgba(17, 24, 39, 0.95);
-        backdrop-filter: blur(8px);
-        display: flex;
-        align-items: center;
-    }
-
-    .scheduler-corner {
-        position: sticky;
-        top: 0;
-        left: 0;
-        z-index: 15;
-        background: rgba(17, 24, 39, 0.98);
-        backdrop-filter: blur(8px);
-    }
-
-    .scheduler-cell {
-        min-width: 100px;
-        min-height: 42px;
-        border: 1px solid rgba(55, 65, 81, 0.2);
-        transition: all 0.15s ease;
-        display: flex;
-        flex-direction: column;
-        gap: 1px;
-        padding: 1px;
-        overflow: hidden;
-    }
-
-    .scheduler-row-header {
-        height: 42px;
-        display: flex;
-        align-items: center;
-        padding: 0 12px;
-        font-size: 11px;
-        font-weight: 600;
-        color: #94a3b8;
+        min-width: 250px;
+        max-width: 250px;
+        padding: 10px 16px;
         border-bottom: 1px solid rgba(55, 65, 81, 0.2);
+        border-right: 2px solid rgba(55, 65, 81, 0.4);
+        transition: background 0.2s ease;
     }
 
-    .scheduler-cell:hover {
-        transform: scale(1.02);
-        z-index: 2;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    .agenda-consultor-cell:hover {
+        background: rgba(59, 130, 246, 0.05);
     }
 
-    .scheduler-cell-content {
+    .agenda-day-cell {
+        min-width: 120px;
+        min-height: 50px;
+        padding: 3px;
+        border-bottom: 1px solid rgba(55, 65, 81, 0.15);
+        border-right: 1px solid rgba(55, 65, 81, 0.15);
+        vertical-align: top;
+        cursor: pointer;
+        transition: background 0.15s ease;
+    }
+
+    .agenda-day-cell:hover {
+        background: rgba(59, 130, 246, 0.04);
+    }
+
+    .agenda-day-cell.agenda-hoje {
+        background: rgba(59, 130, 246, 0.06);
+        box-shadow: inset 2px 0 0 #3b82f6, inset -2px 0 0 #3b82f6;
+    }
+
+    .agenda-day-cell.agenda-weekend {
+        background: rgba(17, 24, 39, 0.4);
+    }
+
+    .agenda-event-chip {
         cursor: pointer;
         padding: 6px 8px;
-        flex: 1;
-        min-height: 44px;
+        min-height: 40px;
         display: flex;
         flex-direction: column;
         justify-content: center;
-        border-radius: 6px;
+        border-radius: 10px;
         font-size: 10px;
         font-weight: 600;
         text-align: center;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        margin-bottom: 2px;
+        transition: filter 0.15s ease, transform 0.1s ease;
+    }
+
+    .agenda-event-chip:hover {
+        filter: brightness(1.15);
+        transform: scale(1.03);
+    }
+
+    .agenda-event-chip:active {
+        transform: scale(0.97);
+    }
+
+    /* Keep old class names for backward compatibility with other parts */
+    .scheduler-grid {
+        display: grid;
+        border-collapse: collapse;
     }
 
     .weekend-col {

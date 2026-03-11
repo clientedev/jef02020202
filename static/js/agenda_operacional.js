@@ -303,13 +303,17 @@ function renderizarScheduler() {
         datas.push(d);
     }
 
-    // Define columns: Consultant Name Col + N Day Cols
-    container.style.display = 'grid';
-    container.style.gridTemplateColumns = `280px repeat(${datas.length}, 150px)`;
+    // Usar TABLE em vez de CSS Grid para alinhar corretamente
+    container.style.display = '';
+    container.style.gridTemplateColumns = '';
 
-    let html = `<div class="scheduler-corner scheduler-cell p-4 border-b-2 border-r-2 border-dark-border/50 sticky left-0 top-0 z-30 glass-effect flex items-center justify-center bg-[#111827]">
+    let html = `<table class="agenda-table" style="border-collapse: separate; border-spacing: 0; width: max-content;">`;
+
+    // THEAD - Cabeçalho com data
+    html += `<thead><tr>`;
+    html += `<th class="agenda-corner-cell">
         <span class="text-xs font-black text-blue-400 uppercase tracking-widest">Consultores</span>
-    </div>`;
+    </th>`;
 
     datas.forEach(data => {
         const dataStr = data.toISOString().split('T')[0];
@@ -317,44 +321,53 @@ function renderizarScheduler() {
         const diaSemana = data.getDay();
         const feriado = feriadosAgenda.find(f => f.data === dataStr);
 
-        let classes = 'scheduler-header-cell scheduler-cell p-3 text-center border-b-2 border-dark-border/30 sticky top-0 z-20 hover:bg-white/5 transition ';
-        if (feriado) classes += 'bg-red-500/5 text-red-400 ';
-        else if (isHoje) classes += 'bg-blue-500/5 ring-1 ring-inset ring-blue-500/30 ';
-        else if (diaSemana === 0 || diaSemana === 6) classes += 'bg-dark-bg/40 ';
+        let tdClass = 'agenda-header-cell';
+        if (feriado) tdClass += ' agenda-feriado';
+        else if (isHoje) tdClass += ' agenda-hoje';
+        else if (diaSemana === 0 || diaSemana === 6) tdClass += ' agenda-weekend';
 
-        html += `<div class="${classes}">
+        html += `<th class="${tdClass}">
             <div class="text-lg font-black ${isHoje ? 'text-blue-400' : 'text-white'} leading-none mb-1">
-                ${data.getDate()} 
+                ${data.getDate()}
                 ${feriado ? '<i class="fas fa-flag text-[10px] text-red-500 ml-1" title="' + feriado.descricao + '"></i>' : ''}
             </div>
             <div class="text-[10px] font-bold uppercase ${isHoje ? 'text-blue-400/70' : 'text-gray-500'} tracking-tighter">${DIAS_SEMANA[diaSemana]}</div>
-        </div>`;
+        </th>`;
     });
+    html += `</tr></thead>`;
 
+    // TBODY - Linhas de consultores
+    html += `<tbody>`;
     consultoresAgenda.forEach(consultor => {
-        // Coluna do Consultor (Sticky)
-        html += `
-        <div class="consultant-name-card scheduler-row-header scheduler-cell p-4 border-r-2 border-dark-border/50 sticky left-0 z-20 glass-effect flex items-center justify-between group" 
-              id="consultor-card-${consultor.id}">
+        html += `<tr>`;
+
+        // Célula sticky do nome do consultor
+        html += `<td class="agenda-consultor-cell" id="consultor-card-${consultor.id}">
             <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-white font-bold text-sm shadow-xl transition-all duration-300" 
+                <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-white font-bold text-sm shadow-xl"
                      style="background: linear-gradient(135deg, ${getCorConsultor(consultor.id)}, rgba(0,0,0,0.3))">
                     ${getIniciaisAgenda(consultor.nome)}
                 </div>
                 <div class="min-w-0">
-                    <div class="truncate text-sm font-bold text-white transition-colors duration-300">${consultor.nome}</div>
+                    <div class="truncate text-sm font-bold text-white">${consultor.nome}</div>
                     <div class="text-[10px] text-gray-500 font-medium uppercase tracking-tighter">Consultor Comercial</div>
                 </div>
             </div>
-        </div>`;
+        </td>`;
 
-        // Empty cells for the name row
+        // Células de cada dia
         datas.forEach(data => {
             const dataStr = data.toISOString().split('T')[0];
+            const diaSemana = data.getDay();
             const eventosCell = eventosAgenda.filter(e => e.consultor_id === consultor.id && e.data === dataStr);
+            const isHoje = data.getTime() === hoje.getTime();
 
-            html += `<div class="scheduler-cell group relative border-b border-dark-border/20" 
-                        data-data="${dataStr}" 
+            let tdClass = 'agenda-day-cell';
+            if (isHoje) tdClass += ' agenda-hoje';
+            else if (diaSemana === 0 || diaSemana === 6) tdClass += ' agenda-weekend';
+
+            html += `<td class="${tdClass}"
+                        data-data="${dataStr}"
                         data-consultor="${consultor.id}"
                         onclick="abrirModalNovoEvento('${dataStr}', ${consultor.id})">`;
 
@@ -364,7 +377,7 @@ function renderizarScheduler() {
                     const empresaNome = evento.empresa_nome ? evento.empresa_nome.split(' ')[0] : (evento.sigla_empresa || 'N/A');
                     const programa = evento.program_nome ? evento.program_nome.substring(0, 15) : '';
 
-                    html += `<div class="scheduler-cell-content rounded-xl shadow-lg border border-white/5 hover:brightness-110 transition-all active:scale-95" 
+                    html += `<div class="agenda-event-chip"
                         draggable="true"
                         ondragstart="dragAgenda(event, ${evento.id})"
                         style="background: linear-gradient(135deg, ${cat.cor}, ${cat.cor}DD); color: ${cat.corTexto};"
@@ -375,19 +388,14 @@ function renderizarScheduler() {
                         ${programa ? `<div class="text-[9px] font-bold opacity-80 truncate border-t border-white/10 mt-1 pt-1 italic">${programa}</div>` : ''}
                     </div>`;
                 });
-            } else {
-                html += `<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div class="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center">
-                        <i class="fas fa-plus text-blue-500/50 text-xs text-[10px]"></i>
-                    </div>
-                </div>`;
             }
-            html += `</div>`;
+            html += `</td>`;
         });
 
-        // Removemos a linha de expansão pois agora será uma visão global fixa abaixo
+        html += `</tr>`;
     });
 
+    html += `</tbody></table>`;
     container.innerHTML = html;
 
     // Renderiza a lista global abaixo
