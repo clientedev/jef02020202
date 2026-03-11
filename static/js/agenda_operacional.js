@@ -353,14 +353,14 @@ function renderizarScheduler() {
 
         // Célula sticky do nome do consultor
         html += `<td class="agenda-consultor-cell" id="consultor-card-${consultor.id}">
-            <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-white font-bold text-sm shadow-xl"
+            <div class="flex items-center gap-2 min-w-0">
+                <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-white font-bold text-xs shadow-lg"
                      style="background: linear-gradient(135deg, ${getCorConsultor(consultor.id)}, rgba(0,0,0,0.3))">
                     ${getIniciaisAgenda(consultor.nome)}
                 </div>
                 <div class="min-w-0">
-                    <div class="truncate text-sm font-bold text-white">${consultor.nome}</div>
-                    <div class="text-[10px] text-gray-500 font-medium uppercase tracking-tighter">Consultor Comercial</div>
+                    <div class="truncate text-xs font-bold text-white">${consultor.nome}</div>
+                    <div class="text-[9px] text-gray-500 font-medium uppercase tracking-tighter">Consultor Comercial</div>
                 </div>
             </div>
         </td>`;
