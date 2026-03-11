@@ -303,10 +303,20 @@ function renderizarScheduler() {
         datas.push(d);
     }
 
-    // Usar TABLE em vez de CSS Grid para alinhar corretamente
-    container.style.display = '';
-    container.style.gridTemplateColumns = '';
+    // Limpar qualquer estilo inline residual de versões anteriores
+    container.removeAttribute('style');
 
+    // Deduplicar consultores por ID (segurança)
+    const consultoresUnicos = [];
+    const idsVistos = new Set();
+    for (const c of consultoresAgenda) {
+        if (!idsVistos.has(c.id)) {
+            idsVistos.add(c.id);
+            consultoresUnicos.push(c);
+        }
+    }
+
+    // Usar TABLE HTML para garantir alinhamento perfeito
     let html = `<table class="agenda-table" style="border-collapse: separate; border-spacing: 0; width: max-content;">`;
 
     // THEAD - Cabeçalho com data
@@ -336,9 +346,9 @@ function renderizarScheduler() {
     });
     html += `</tr></thead>`;
 
-    // TBODY - Linhas de consultores
+    // TBODY - Linhas de consultores (usando lista deduplicada)
     html += `<tbody>`;
-    consultoresAgenda.forEach(consultor => {
+    consultoresUnicos.forEach(consultor => {
         html += `<tr>`;
 
         // Célula sticky do nome do consultor

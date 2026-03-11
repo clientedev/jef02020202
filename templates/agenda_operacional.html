@@ -203,16 +203,9 @@
         color: white !important;
     }
 
-    /* Ajuste do Scheduler Grid para Expansão */
+    /* Container da Agenda - deve ser block para permitir table layout */
     #schedulerGrid {
-        display: grid;
-        /* O grid-template-columns será definido dinamicamente no JS */
-    }
-
-    .scheduler-header-cell,
-    .scheduler-row-header,
-    .scheduler-cell {
-        border-color: rgba(255, 255, 255, 0.05);
+        display: block;
     }
 
     /* Expansão do Scheduler */
