@@ -11,6 +11,9 @@ from datetime import datetime
 
 router = APIRouter(prefix="/api/empresas", tags=["Empresas"])
 
+# Import lookup logic from cnpj.py
+from backend.routers.cnpj import buscar_empresa_cnpj, limpar_cnpj as sanitizar_cnpj
+
 @router.post("/", response_model=EmpresaResposta)
 def criar_empresa(
     empresa: EmpresaCriar,
@@ -198,6 +201,69 @@ def deletar_empresa(
     db.delete(empresa)
     db.commit()
     return {"detail": "Empresa deletada com sucesso"}
+
+@router.post("/sync-cnpj")
+async def sincronizar_cnpj_empresas(
+    empresa_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(obter_usuario_admin)
+):
+    """
+    Sincroniza dados via CNPJ para uma empresa específica ou para todas as incompletas.
+    """
+    if empresa_id:
+        empresas_para_sync = db.query(Empresa).filter(Empresa.id == empresa_id).all()
+    else:
+        # Busca empresas que tem CNPJ mas faltam dados básicos (municipio ou endereco)
+        empresas_para_sync = db.query(Empresa).filter(
+            Empresa.cnpj.isnot(None),
+            (Empresa.municipio.is_(None)) | (Empresa.endereco.is_(None))
+        ).limit(20).all() # Limite de 20 por vez para não estourar APIs
+
+    if not empresas_para_sync:
+        return {"message": "Nenhuma empresa pendente de sincronização encontrada.", "sincronizados": 0}
+
+    sincronizados = 0
+    erros = 0
+
+    for emp in empresas_para_sync:
+        if not emp.cnpj:
+            erros += 1
+            continue
+            
+        try:
+            # Chama a lógica de busca que já alterna entre ReceitaWS, BrasilAPI e CNPJA
+            dados = await buscar_empresa_cnpj(emp.cnpj, usuario)
+            
+            # Atualiza os campos apenas se estiverem vazios ou para enriquecer o cadastro
+            emp.empresa = emp.empresa or dados.get("empresa")
+            emp.sigla = emp.sigla or dados.get("nome_fantasia")
+            emp.municipio = emp.municipio or dados.get("municipio")
+            emp.estado = emp.estado or dados.get("estado")
+            emp.bairro = emp.bairro or dados.get("bairro")
+            emp.cep = emp.cep or dados.get("cep")
+            emp.porte = emp.porte or dados.get("porte")
+            emp.tipo_empresa = emp.tipo_empresa or dados.get("natureza_juridica")
+            emp.descricao_cnae = emp.descricao_cnae or dados.get("atividade_principal")
+            
+            # Formata endereço completo se necessário
+            if not emp.endereco and dados.get("logradouro"):
+                addr = dados.get("logradouro")
+                if dados.get("numero"): addr += f", {dados.get('numero')}"
+                if dados.get("complemento"): addr += f" - {dados.get('complemento')}"
+                emp.endereco = addr
+
+            sincronizados += 1
+        except Exception as e:
+            print(f"Erro sincronizando CNPJ {emp.cnpj}: {e}")
+            erros += 1
+
+    db.commit()
+    return {
+        "message": f"Sincronização concluída: {sincronizados} atualizadas, {erros} falhas.",
+        "sincronizados": sincronizados,
+        "falhas": erros
+    }
 
 @router.post("/upload-excel")
 async def upload_excel(

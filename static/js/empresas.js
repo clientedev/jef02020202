@@ -56,6 +56,10 @@ async function carregarEmpresas(filtros = {}, pagina = 1) {
                             <i class="fas fa-eye"></i>
                         </button>
                         ${usuario.tipo === 'admin' ? `
+                        <button onclick="syncEmpresaCNPJ(${emp.id})" 
+                            class="text-emerald-400 hover:text-emerald-300 px-2 py-1 rounded hover:bg-dark-hover transition" title="Auto-preencher via CNPJ">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
                         <button onclick="abrirEditarEmpresa(${emp.id})" 
                             class="text-amber-400 hover:text-amber-300 px-2 py-1 rounded hover:bg-dark-hover transition" title="Editar">
                             <i class="fas fa-edit"></i>
@@ -573,6 +577,72 @@ async function confirmarLimparTudoEmpresas() {
         } else {
             alert("Exclusão cancelada. A frase de confirmação estava incorreta.");
         }
+    }
+}
+
+
+async function syncEmpresaCNPJ(empresaId) {
+    try {
+        const btn = event.currentTarget;
+        const icon = btn.querySelector('i');
+        icon.classList.add('fa-spin');
+        btn.disabled = true;
+
+        const response = await apiRequest('/api/empresas/sync-cnpj', {
+            method: 'POST',
+            body: JSON.stringify({ empresa_id: empresaId })
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+            if (result.sincronizados > 0) {
+                alert('Dados sincronizados com sucesso!');
+                carregarEmpresas(filtrosAtuais, paginaAtual);
+            } else {
+                alert('Nenhum dado novo encontrado ou erro na busca.');
+            }
+        } else {
+            alert(result.detail || 'Erro ao sincronizar dados');
+        }
+    } catch (error) {
+        console.error('Erro ao sincronizar:', error);
+        alert('Erro de conexão com o servidor');
+    } finally {
+        if (btn) {
+            btn.querySelector('i').classList.remove('fa-spin');
+            btn.disabled = false;
+        }
+    }
+}
+
+async function syncTodasEmpresas() {
+    if (!confirm('Deseja iniciar o auto-preenchimento de dados para todas as empresas incompleta?\n\nO processo será feito em lotes para respeitar limites de API.')) {
+        return;
+    }
+
+    const btn = document.getElementById('btnSyncCNPJ');
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sincronizando...';
+
+    try {
+        const response = await apiRequest('/api/empresas/sync-cnpj', {
+            method: 'POST'
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+            alert(result.message);
+            carregarEmpresas(filtrosAtuais, paginaAtual);
+        } else {
+            alert(result.detail || 'Erro ao iniciar sincronização');
+        }
+    } catch (error) {
+        console.error('Erro na sincronização global:', error);
+        alert('Erro de conexão com o servidor');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
     }
 }
 
