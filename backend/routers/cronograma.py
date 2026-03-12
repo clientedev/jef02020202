@@ -602,13 +602,13 @@ def obter_metricas(
     from backend.models import Empresa
     
     # Query events that are linked to a program
-    # Group by (Consultant, Company, Program)
     metrics_query = db.query(
         Usuario.id.label("consultor_id"),
         Usuario.nome.label("consultor_nome"),
         Empresa.empresa.label("empresa_nome"),
         Program.id.label("program_id"),
         Program.nome.label("program_nome"),
+        Program.descricao.label("program_descricao"),
         Program.carga_horaria.label("meta_total"),
         CronogramaEvento.numero_proposta.label("numero_proposta"),
         func.sum(CronogramaEvento.carga_horaria).label("total_horas_agendadas"),
@@ -621,7 +621,7 @@ def obter_metricas(
      .join(Program, Program.id == CronogramaEvento.program_id)\
      .join(Usuario, Usuario.id == CronogramaEvento.consultor_id)\
      .join(Empresa, Empresa.id == CronogramaEvento.empresa_id)\
-     .group_by(Usuario.id, Empresa.id, Program.id, Usuario.nome, Empresa.empresa, Program.nome, Program.carga_horaria, CronogramaEvento.numero_proposta).all()
+     .group_by(Usuario.id, Empresa.id, Program.id, Usuario.nome, Empresa.empresa, Program.nome, Program.descricao, Program.carga_horaria, CronogramaEvento.numero_proposta).all()
 
     metrics_program = []
     for row in metrics_query:
@@ -631,6 +631,7 @@ def obter_metricas(
             "consultor": row.consultor_nome,
             "empresa": row.empresa_nome,
             "nome": row.program_nome,
+            "descricao": row.program_descricao,
             "meta_total": row.meta_total,
             "numero_proposta": row.numero_proposta,
             "total_horas": row.total_horas_agendadas,
