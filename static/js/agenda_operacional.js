@@ -420,8 +420,12 @@ function renderizarScheduler() {
                             <div class="font-black truncate ${titleClass} uppercase tracking-tighter">${empresaNome}</div>
                             ${hoursTag}
                         </div>
-                        ${programa && !isRestante ? `<div class="text-[9px] font-bold opacity-80 truncate border-t border-white/10 mt-1 pt-1 italic">${programa}</div>` : ''}
-                        ${programa && isRestante ? `<div class="text-[8px] font-bold opacity-80 truncate italic">${programa}</div>` : ''}
+                        ${programa ? `
+                        <div class="flex flex-col mt-1 pt-1 ${!isRestante ? 'border-t border-white/10' : ''}">
+                            <div class="text-[9px] font-bold opacity-90 truncate uppercase leading-tight">${programa}</div>
+                            ${evento.program_descricao ? `<div class="text-[8px] opacity-60 truncate italic leading-tight">${evento.program_descricao}</div>` : ''}
+                        </div>
+                        ` : ''}
                     </div>`;
                 });
             }
@@ -555,9 +559,10 @@ async function renderizarGestaoGlobalAgenda(programIdToHighlight = null) {
                                 </td>
                                 <td class="px-5 py-4 border-y border-white/5 max-w-[350px]">
                                     <div class="text-gray-300 text-[10px] font-black uppercase tracking-tight truncate group-hover/row:text-white transition-colors">${m.empresa}</div>
-                                    <div class="mt-2">
-                                        <span class="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20 font-black text-[10px]">
-                                            ${m.nome} - [ ${m.descricao || 'Sem descrição'} ]
+                                    <div class="flex flex-col mt-2">
+                                        <span class="text-white font-black text-[11px] uppercase tracking-tighter mb-0.5">${m.nome}</span>
+                                        <span class="text-[9px] text-emerald-400 font-bold italic opacity-80 break-words leading-tight">
+                                            ${m.descricao || 'Sem descrição'}
                                         </span>
                                     </div>
                                 </td>

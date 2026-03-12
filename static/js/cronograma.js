@@ -506,7 +506,8 @@ function renderizarTimeline() {
                              onclick="exibirDetalhesAgendamento(${ev.id})"
                              title="${ev.sigla_empresa}: ${ev.program_nome || ev.titulo}">
                             <div class="font-bold truncate">${ev.sigla_empresa || '?'}</div>
-                            <div class="text-[8px] opacity-80 truncate">${ev.program_nome || ''}</div>
+                            <div class="text-[8px] font-bold text-white/90 truncate leading-tight">${ev.program_nome || ''}</div>
+                            ${ev.program_descricao ? `<div class="text-[7px] text-white/50 truncate italic leading-none">${ev.program_descricao}</div>` : ''}
                         </div>
                     </td>
                 `;
@@ -753,7 +754,8 @@ async function exibirDetalhesAgendamento(id) {
                 <div class="space-y-1">
                     <span class="text-xs text-gray-400 block">Programa</span>
                     <div class="p-2 rounded-lg bg-green-500/10 border border-green-500/20">
-                        <div class="text-sm text-green-400 font-bold">${evento.program_nome}</div>
+                        <div class="text-emerald-400 font-black text-xs uppercase tracking-tight mb-0.5">${evento.program_nome}</div>
+                        ${evento.program_descricao ? `<div class="text-gray-400 text-[11px] italic leading-tight">${evento.program_descricao}</div>` : ''}
                     </div>
                 </div>
                 ` : ''}

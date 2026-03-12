@@ -137,7 +137,10 @@
                         <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold text-sm border border-blue-500/20 group-hover:scale-110 transition-transform">
                             ${consultor.substring(0, 2).toUpperCase()}
                         </div>
-                        <span class="text-sm text-white font-bold group-hover:text-blue-400 transition-colors">${consultor}</span>
+                        <div class="flex flex-col">
+                            <span class="text-white font-black text-sm uppercase mb-0.5 group-hover:text-blue-400 transition-colors">${programa}</span>
+                            <span class="text-xs text-gray-500 font-medium italic group-hover:text-gray-400 transition-colors">${m.programa_descricao || 'Sem descrição'}</span>
+                        </div>
                     </div>
                 </td>
                 <td class="px-6 py-5">

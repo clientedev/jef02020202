@@ -289,10 +289,13 @@
         // 3. Progresso Solucoes (Stacked Bar)
         const solucoesMap = {};
         programas.forEach(p => {
-            const nome = p.nome || 'Solução';
-            if(!solucoesMap[nome]) solucoesMap[nome] = { t: 0, r: 0 };
-            solucoesMap[nome].t += (p.meta_total || 0);
-            solucoesMap[nome].r += (p.horas_realizadas || 0);
+            const nomeBase = p.nome || 'Solução';
+            const desc = p.descricao || '';
+            const labelUnico = desc ? `${nomeBase} - [ ${desc} ]` : nomeBase;
+            
+            if(!solucoesMap[labelUnico]) solucoesMap[labelUnico] = { t: 0, r: 0 };
+            solucoesMap[labelUnico].t += (p.meta_total || 0);
+            solucoesMap[labelUnico].r += (p.horas_realizadas || 0);
         });
         const labelsSolucao = Object.keys(solucoesMap);
 
