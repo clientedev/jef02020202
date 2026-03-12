@@ -5,6 +5,7 @@ let eventoSelecionado = null;
 let consultorSelecionadoAcoes = null;
 let feriadosAgenda = [];
 const DIAS_EXIBIR = 35;
+let programasCache = [];
 
 const CATEGORIA_CORES_AGENDA = {
     'C': { nome: 'Consultoria', cor: '#22c55e', corTexto: '#ffffff' },
@@ -242,9 +243,11 @@ async function carregarProgramasPorEmpresaAgenda(empresaId) {
         const programas = await response.json();
 
         if (programas.length > 0) {
+            programasCache = programas;
             select.innerHTML = '<option value="">Selecione um programa...</option>' +
                 programas.map(p => `<option value="${p.id}">${p.nome} (${p.carga_horaria}h)</option>`).join('');
         } else {
+            programasCache = [];
             select.innerHTML = '<option value="">Nenhum programa cadastrado</option>';
         }
         document.getElementById('campoEventoPrograma').classList.remove('hidden');
@@ -731,7 +734,34 @@ function abrirModalNovoEvento(data, consultorId) {
     // Carregar todos programas ao abrir o modal (sem filtro de empresa)
     carregarProgramasPorEmpresaAgenda(null);
 
+    // Limpar descrição ao abrir
+    const descElement = document.getElementById('descricaoProgramaSelecao');
+    if (descElement) {
+        descElement.textContent = '';
+        descElement.classList.add('hidden');
+    }
+
     modal.classList.remove('hidden');
+}
+
+function atualizarDescricaoPrograma(programId) {
+    const descElement = document.getElementById('descricaoProgramaSelecao');
+    if (!descElement) return;
+
+    if (!programId) {
+        descElement.textContent = '';
+        descElement.classList.add('hidden');
+        return;
+    }
+
+    const program = programasCache.find(p => String(p.id) === String(programId));
+    if (program && program.descricao) {
+        descElement.textContent = program.descricao;
+        descElement.classList.remove('hidden');
+    } else {
+        descElement.textContent = '';
+        descElement.classList.add('hidden');
+    }
 }
 
 function fecharModalEvento() {

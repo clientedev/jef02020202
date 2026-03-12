@@ -98,12 +98,14 @@
             </div>
         </div>
 
-        <div class="overflow-x-auto custom-scrollbar" id="schedulerContainer" ondragover="allowDropAgenda(event)"
-            ondrop="dropAgenda(event)">
-            <div id="schedulerGrid" class="min-w-max">
-                <div class="text-center py-20 text-gray-500">
-                    <i class="fas fa-spinner fa-spin text-3xl mb-4"></i>
-                    <p>Carregando agenda...</p>
+        <div class="flex-1 flex flex-col min-h-0 min-w-0">
+            <div class="overflow-x-auto custom-scrollbar flex-1" id="schedulerContainer" ondragover="allowDropAgenda(event)"
+                ondrop="dropAgenda(event)">
+                <div id="schedulerGrid" class="min-w-max">
+                    <div class="text-center py-20 text-gray-500">
+                        <i class="fas fa-spinner fa-spin text-3xl mb-4"></i>
+                        <p>Carregando agenda...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -433,10 +435,11 @@
             <!-- SELEÇÃO DE PROGRAMA -->
             <div id="campoEventoPrograma" class="space-y-1.5">
                 <label class="block text-xs sm:text-sm text-gray-400 font-bold text-green-400">PROGRAMA *</label>
-                <select id="eventoPrograma"
+                <select id="eventoPrograma" onchange="atualizarDescricaoPrograma(this.value)"
                     class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl border-2 border-green-500/30 focus:border-green-500 transition-all">
                     <option value="">Selecione um programa...</option>
                 </select>
+                <div id="descricaoProgramaSelecao" class="text-[11px] text-gray-400 italic mt-1 px-1 hidden min-h-[1.2rem]"></div>
             </div>
 
             <div class="space-y-1.5">
