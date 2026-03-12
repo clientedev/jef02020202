@@ -303,10 +303,12 @@
             <!-- SELEÇÃO DE PROGRAMA -->
             <div id="campoEventoPrograma" class="space-y-1.5">
                 <label class="block text-xs sm:text-sm text-gray-400 font-bold text-green-400">PROGRAMA *</label>
-                <select id="eventoPrograma" required
-                    class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl border-2 border-green-500/30 focus:border-green-500 transition-all">
+                <select id="eventoPrograma" required onchange="atualizarDescricaoPrograma(this.value)"
+                    class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl border-2 border-green-500/30 focus:border-blue-500 transition-all">
                     <option value="">Selecione um programa...</option>
                 </select>
+                <div id="descricaoProgramaSelecao" class="hidden mt-2 p-3 rounded-xl bg-blue-500/5 border border-blue-500/20 text-xs text-blue-300 italic animate-fade-in shadow-sm">
+                </div>
             </div>
 
             <div id="configuracaoDistribuicao" class="space-y-4 pt-4 border-t border-dark-border/30">

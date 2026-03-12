@@ -25,6 +25,8 @@ const CONSULTOR_CORES = [
 const MESES = ['Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
+let programasCache = [];
+
 // --- INITIALIZATION ---
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -149,6 +151,64 @@ function selecionarEmpresaParaEvento(id, nome, sigla) {
     if (eid) eid.value = id;
     if (sig) sig.value = sigla;
     if (sug) sug.classList.add('hidden');
+
+    // Carregar programas desta empresa
+    carregarProgramasPorEmpresa(id);
+}
+
+async function carregarProgramasPorEmpresa(empresaId) {
+    const select = document.getElementById('eventoPrograma');
+    if (!select) return;
+
+    if (!empresaId) {
+        select.innerHTML = '<option value="">Selecione a empresa primeiro...</option>';
+        programasCache = [];
+        atualizarDescricaoPrograma('');
+        return;
+    }
+
+    try {
+        select.innerHTML = '<option value="">Carregando programas...</option>';
+        const response = await apiRequest(`/api/programs/empresa/${empresaId}`);
+        const programas = await response.json();
+
+        if (programas.length > 0) {
+            programasCache = programas;
+            select.innerHTML = '<option value="">Selecione um programa...</option>' +
+                programas.map(p => {
+                    const descSuffix = p.descricao ? ` - [ ${p.descricao} ]` : '';
+                    return `<option value="${p.id}">${p.nome} (${p.carga_horaria}h)${descSuffix}</option>`;
+                }).join('');
+        } else {
+            programasCache = [];
+            select.innerHTML = '<option value="">Nenhum programa cadastrado</option>';
+        }
+        atualizarDescricaoPrograma('');
+    } catch (error) {
+        console.error('Erro ao carregar programas:', error);
+        select.innerHTML = '<option value="">Erro ao carregar programas</option>';
+    }
+}
+
+function atualizarDescricaoPrograma(programId) {
+    const descElement = document.getElementById('descricaoProgramaSelecao');
+    if (!descElement) return;
+
+    if (!programId) {
+        descElement.innerHTML = '';
+        descElement.classList.add('hidden');
+        return;
+    }
+
+    const program = programasCache.find(p => String(p.id) === String(programId));
+
+    if (program && program.descricao && program.descricao.trim() !== "") {
+        descElement.innerHTML = `<i class="fas fa-info-circle mr-1 opacity-70"></i> ${program.descricao}`;
+        descElement.classList.remove('hidden');
+    } else {
+        descElement.innerHTML = '';
+        descElement.classList.add('hidden');
+    }
 }
 
 // --- DATA LOADING ---
@@ -484,16 +544,37 @@ function renderizarListaFeriados() {
 
 // --- MODAL & UI ACTIONS ---
 
-function abrirModalFeriados() {
-    console.log("CRONOGRAMA_DEBUG: abrirModalFeriados called");
-    const modal = document.getElementById('modalFeriados');
-    if (modal) {
-        carregarFeriados();
-        modal.classList.remove('hidden');
     } else {
         console.error("CRONOGRAMA_DEBUG: modalFeriados element not found");
     }
 }
+
+function abrirModalNovoEvento(data) {
+    const form = document.getElementById('formEvento');
+    if (form) form.reset();
+
+    const evIdElem = document.getElementById('eventoId');
+    if (evIdElem) evIdElem.value = '';
+
+    const dataInput = document.getElementById('eventoData');
+    if (dataInput && data) dataInput.value = data;
+
+    const selectProg = document.getElementById('eventoPrograma');
+    if (selectProg) {
+        selectProg.disabled = false;
+        selectProg.innerHTML = '<option value="">Selecione a empresa primeiro...</option>';
+    }
+
+    const campoProg = document.getElementById('campoEventoPrograma');
+    if (campoProg) campoProg.classList.remove('hidden');
+
+    atualizarDescricaoPrograma('');
+
+    const modal = document.getElementById('modalEvento');
+    if (modal) modal.classList.remove('hidden');
+}
+
+window.atualizarDescricaoPrograma = atualizarDescricaoPrograma;
 window.abrirModalFeriados = abrirModalFeriados;
 window.fecharModalFeriados = fecharModalFeriados;
 window.abrirModalNovoEvento = abrirModalNovoEvento;
@@ -782,6 +863,13 @@ async function editarEvento(id) {
 
         const modal = document.getElementById('modalEvento');
         if (modal) modal.classList.remove('hidden');
+
+        // Se tiver programa, atualizar descrição
+        if (evento.program_id) {
+            atualizarDescricaoPrograma(evento.program_id);
+        } else {
+            atualizarDescricaoPrograma('');
+        }
     } catch (e) {
         console.error('Erro ao editar evento:', e);
         alert('Erro ao carregar detalhes do evento');
