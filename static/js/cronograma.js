@@ -177,7 +177,7 @@ async function carregarProgramasPorEmpresa(empresaId) {
             select.innerHTML = '<option value="">Selecione uma solução...</option>' +
                 programas.map(p => {
                     const descSuffix = p.descricao ? ` - [ ${p.descricao} ]` : '';
-                    return `<option value="${p.id}">${p.nome}${descSuffix}</option>`;
+                    return `<option value="${p.id}">${p.nome}${descSuffix} - (${p.carga_horaria}h)</option>`;
                 }).join('');
         } else {
             programasCache = [];
@@ -1043,8 +1043,11 @@ async function carregarProgramasNoEvento() {
     try {
         const response = await apiRequest('/api/programs/');
         const programs = await response.json();
-        select.innerHTML = '<option value="">Selecione um programa...</option>' +
-            programs.map(p => `<option value="${p.id}">${p.nome}</option>`).join('');
+        select.innerHTML = '<option value="">Selecione uma solução...</option>' +
+            programs.map(p => {
+                const descSuffix = p.descricao ? ` - [ ${p.descricao} ]` : '';
+                return `<option value="${p.id}">${p.nome}${descSuffix} - (${p.carga_horaria}h)</option>`;
+            }).join('');
     } catch (e) { console.error(e); }
 }
 
