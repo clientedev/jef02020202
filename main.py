@@ -235,6 +235,11 @@ async def producao_diaria_page(request: Request):
     if not is_loaded: return HTMLResponse("Carregando...")
     return templates.TemplateResponse("producao_diaria.html", {"request": request})
 
+@app.get("/indicadores", response_class=HTMLResponse)
+async def indicadores_page(request: Request):
+    if not is_loaded: return HTMLResponse("Carregando...")
+    return templates.TemplateResponse("indicadores.html", {"request": request})
+
 @app.get("/pipeline", response_class=HTMLResponse)
 async def pipeline_page(request: Request):
     if not is_loaded: return HTMLResponse("Carregando...")

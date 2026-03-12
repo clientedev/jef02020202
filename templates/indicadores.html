@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Indicadores Globais - Nucleo 1.03{% endblock %}
+
+{% set active_page = 'metrics' %}
+
+{% block content %}
+<div class="flex h-screen bg-dark-bg">
+    {% include "partials/sidebar.html" %}
+
+    <main class="flex-1 overflow-y-auto custom-scrollbar flex flex-col h-screen">
+        <header class="sticky top-0 z-20 glass-effect border-b border-dark-border/50 px-8 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                        <i class="fas fa-chart-pie text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-white uppercase tracking-tight">Indicadores Globais</h2>
+                        <p class="text-gray-400 text-xs">Dashboard consolidado das soluções e execução</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button onclick="carregarGraficos()" class="w-10 h-10 rounded-xl bg-dark-card hover:bg-dark-hover flex items-center justify-center text-gray-400 hover:text-white transition group">
+                        <i class="fas fa-sync-alt group-active:rotate-180 transition-transform"></i>
+                    </button>
+                    <a href="/gestao-global" class="btn-primary text-white px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-blue-500/20">
+                        <i class="fas fa-arrow-left"></i> Voltar à Gestão Global
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 p-8">
+            <div id="loadingState" class="flex flex-col items-center justify-center h-full text-center py-20">
+                <i class="fas fa-spinner fa-spin text-4xl text-blue-500 mb-4"></i>
+                <p class="text-gray-500 font-medium animate-pulse">Consultando banco de dados para os indicadores...</p>
+            </div>
+
+            <div id="errorState" class="hidden flex flex-col items-center justify-center h-full text-center py-20">
+                <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+                <p class="text-red-400 font-bold">Erro ao carregar dados do banco de dados.</p>
+                <button onclick="carregarGraficos()" class="mt-4 px-4 py-2 bg-red-500/20 text-red-400 rounded-lg font-bold">Tentar Novamente</button>
+            </div>
+
+            <div id="chartsContainer" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Global Progresso -->
+                <div class="card-modern p-6 h-auto min-h-[400px] flex flex-col">
+                    <h3 class="text-sm font-bold text-gray-400 mb-6 uppercase tracking-wider border-b border-dark-border/50 pb-3">
+                        <i class="fas fa-chart-pie text-blue-500 mr-2"></i>Status Global de Execução
+                    </h3>
+                    <div class="relative flex-1 w-full min-h-[300px]">
+                        <canvas id="chartStatusGlobal"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Progresso por Solucao -->
+                <div class="card-modern p-6 h-auto min-h-[400px] flex flex-col">
+                    <h3 class="text-sm font-bold text-gray-400 mb-6 uppercase tracking-wider border-b border-dark-border/50 pb-3">
+                        <i class="fas fa-chart-bar text-purple-500 mr-2"></i>Progresso por Solução
+                    </h3>
+                    <div class="relative flex-1 w-full min-h-[300px]">
+                        <canvas id="chartProgressoSolucoes"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let chartGlobalInstance = null;
+    let chartSolucoesInstance = null;
+
+    async function carregarGraficos() {
+        const loading = document.getElementById('loadingState');
+        const errorData = document.getElementById('errorState');
+        const container = document.getElementById('chartsContainer');
+        
+        loading.classList.remove('hidden');
+        errorData.classList.add('hidden');
+        container.classList.add('hidden');
+
+        try {
+            // Buscando os dados que abastecem a tabela Global
+            const response = await apiRequest('/api/cronograma/metrics');
+            if (!response.ok) throw new Error('Erro ao carregar métricas');
+            const metrics = await response.json();
+            const lista = metrics.programas || metrics;
+
+            if (!lista || lista.length === 0) {
+                loading.classList.add('hidden');
+                errorData.innerHTML = `
+                    <i class="fas fa-info-circle text-4xl text-gray-500 mb-4"></i>
+                    <p class="text-gray-400 font-bold">Nenhum dado encontrado para gerar indicadores no momento.</p>
+                `;
+                errorData.classList.remove('hidden');
+                return;
+            }
+
+            renderizarIndicadores(lista);
+            
+            loading.classList.add('hidden');
+            container.classList.remove('hidden');
+            
+        } catch (e) {
+            console.error("Erro no gráfico:", e);
+            loading.classList.add('hidden');
+            errorData.classList.remove('hidden');
+        }
+    }
+    
+    function renderizarIndicadores(lista) {
+        let globalHorasTotais = 0;
+        let globalHorasRealizadas = 0;
+        const solucoesMap = {};
+        
+        lista.forEach(m => {
+            const cargaTotal = m.carga_total || m.meta_total || 0;
+            const horasRealizadas = m.horas_contabilizadas || m.horas_realizadas || 0;
+            
+            globalHorasTotais += cargaTotal;
+            globalHorasRealizadas += horasRealizadas;
+            
+            const nomeSolucao = m.programa_nome || m.nome || 'Desconhecida';
+            if (!solucoesMap[nomeSolucao]) {
+                solucoesMap[nomeSolucao] = { totais: 0, realizadas: 0 };
+            }
+            solucoesMap[nomeSolucao].totais += cargaTotal;
+            solucoesMap[nomeSolucao].realizadas += horasRealizadas;
+        });
+
+        const globalSaldo = Math.max(0, globalHorasTotais - globalHorasRealizadas);
+
+        Chart.defaults.color = '#9ca3af';
+        Chart.defaults.font = { family: 'Inter, Roboto, sans-serif' };
+
+        if (chartGlobalInstance) chartGlobalInstance.destroy();
+        if (chartSolucoesInstance) chartSolucoesInstance.destroy();
+
+        // 1. Chart Global (Doughnut)
+        const ctxGlobal = document.getElementById('chartStatusGlobal').getContext('2d');
+        chartGlobalInstance = new Chart(ctxGlobal, {
+            type: 'doughnut',
+            data: {
+                labels: ['Horas Realizadas', 'Saldo Restante'],
+                datasets: [{
+                    data: [globalHorasRealizadas, globalSaldo],
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.8)',
+                        'rgba(245, 158, 11, 0.8)' 
+                    ],
+                    borderColor: [
+                        'rgba(59, 130, 246, 1)',
+                        'rgba(245, 158, 11, 1)'
+                    ],
+                    borderWidth: 1,
+                    cutout: '70%'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 20, color: '#e5e7eb' }
+                    }
+                }
+            }
+        });
+
+        // 2. Chart Solucoes (Bar)
+        const labelsSolucoes = Object.keys(solucoesMap);
+        const dataTotais = labelsSolucoes.map(k => solucoesMap[k].totais);
+        const dataRealizadas = labelsSolucoes.map(k => solucoesMap[k].realizadas);
+
+        const ctxSolucoes = document.getElementById('chartProgressoSolucoes').getContext('2d');
+        chartSolucoesInstance = new Chart(ctxSolucoes, {
+            type: 'bar',
+            data: {
+                labels: labelsSolucoes,
+                datasets: [
+                    {
+                        label: 'Horas Realizadas',
+                        data: dataRealizadas,
+                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Meta Total (Horas)',
+                        data: dataTotais,
+                        backgroundColor: 'rgba(75, 85, 99, 0.5)',
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { ticks: { color: '#9ca3af', font: { size: 10 } }, grid: { color: 'rgba(55, 65, 81, 0.3)' } },
+                    y: { beginAtZero: true, ticks: { color: '#9ca3af' }, grid: { color: 'rgba(55, 65, 81, 0.3)' } }
+                },
+                plugins: {
+                    legend: { position: 'top', labels: { color: '#e5e7eb' } }
+                }
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', carregarGraficos);
+</script>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #1f2937;
+        border-radius: 10px;
+    }
+</style>
+{% endblock %}
