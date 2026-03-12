@@ -254,7 +254,10 @@ async function carregarProgramasPorEmpresaAgenda(empresaId) {
         if (programas.length > 0) {
             programasCache = programas;
             select.innerHTML = '<option value="">Selecione um programa...</option>' +
-                programas.map(p => `<option value="${p.id}">${p.nome} (${p.carga_horaria}h)</option>`).join('');
+                programas.map(p => {
+                    const descSuffix = p.descricao ? ` - [ ${p.descricao} ]` : '';
+                    return `<option value="${p.id}">${p.nome} (${p.carga_horaria}h)${descSuffix}</option>`;
+                }).join('');
         } else {
             programasCache = [];
             select.innerHTML = '<option value="">Nenhum programa cadastrado</option>';
