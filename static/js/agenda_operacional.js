@@ -98,6 +98,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const formEvento = document.getElementById('formEvento');
     if (formEvento) formEvento.addEventListener('submit', salvarEventoAgenda);
 
+    // Carregar preferência da legenda
+    const legendaPreferida = localStorage.getItem('agenda_legenda_visivel');
+    const lg = document.getElementById('legendaContainer');
+    if (lg && legendaPreferida === 'false') {
+        lg.classList.add('hidden');
+    } else if (lg) {
+        lg.classList.remove('hidden');
+    }
+
     // Gestão de Feriados
     const formFeriado = document.getElementById('formFeriado');
     if (formFeriado) {
@@ -737,7 +746,7 @@ function abrirModalNovoEvento(data, consultorId) {
     // Limpar descrição ao abrir
     const descElement = document.getElementById('descricaoProgramaSelecao');
     if (descElement) {
-        descElement.textContent = '';
+        descElement.innerHTML = '';
         descElement.classList.add('hidden');
     }
 
@@ -749,17 +758,18 @@ function atualizarDescricaoPrograma(programId) {
     if (!descElement) return;
 
     if (!programId) {
-        descElement.textContent = '';
+        descElement.innerHTML = '';
         descElement.classList.add('hidden');
         return;
     }
 
     const program = programasCache.find(p => String(p.id) === String(programId));
-    if (program && program.descricao) {
-        descElement.textContent = program.descricao;
+
+    if (program && program.descricao && program.descricao.trim() !== "") {
+        descElement.innerHTML = `<i class="fas fa-info-circle mr-1 opacity-70"></i> ${program.descricao}`;
         descElement.classList.remove('hidden');
     } else {
-        descElement.textContent = '';
+        descElement.innerHTML = '';
         descElement.classList.add('hidden');
     }
 }
@@ -1013,7 +1023,11 @@ function irParaHojeAgenda() {
 }
 
 function toggleLegenda() {
-    document.getElementById('legendaContainer').classList.toggle('hidden');
+    const lg = document.getElementById('legendaContainer');
+    if (lg) {
+        lg.classList.toggle('hidden');
+        localStorage.setItem('agenda_legenda_visivel', !lg.classList.contains('hidden'));
+    }
 }
 
 function atualizarPeriodoExibido() {

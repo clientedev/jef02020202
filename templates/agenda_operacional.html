@@ -7,8 +7,8 @@
 <div class="flex h-screen">
     {% include "partials/sidebar.html" %}
 
-    <main class="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
-        <header class="sticky top-0 z-20 glass-effect border-b border-dark-border/50 px-3 sm:px-6 py-2 sm:py-3 mb-4">
+    <main class="flex-1 overflow-hidden flex flex-col">
+        <header class="flex-shrink-0 glass-effect border-b border-dark-border/50 px-3 sm:px-6 py-2 sm:py-3 z-30">
             <div class="flex justify-between items-center gap-2">
                 <div class="flex items-center gap-2 sm:gap-3 min-w-0">
                     <button onclick="toggleMobileSidebar()"
@@ -76,42 +76,37 @@
             </div>
         </header>
 
-        <div id="legendaContainer" class="hidden px-4 py-3 bg-dark-card/50 border-b border-dark-border/30">
+        <div id="legendaContainer" class="flex-shrink-0 px-4 py-2 bg-dark-card/30 border-b border-dark-border/30 z-20">
             <div class="flex flex-wrap items-center gap-3">
-                <span class="text-xs text-gray-400 font-medium uppercase">Legenda:</span>
+                <span class="text-[9px] text-gray-500 font-bold uppercase tracking-tight">Status:</span>
                 <div class="flex flex-wrap gap-2">
-                    <span class="px-2 py-1 rounded text-[10px] font-bold text-white" style="background-color: #22c55e">C
-                        - Consultoria</span>
-                    <span class="px-2 py-1 rounded text-[10px] font-bold text-[#101827]"
-                        style="background-color: #eab308">K - Kick-off</span>
-                    <span class="px-2 py-1 rounded text-[10px] font-bold text-white" style="background-color: #3b82f6">F
-                        - Reunião Final</span>
-                    <span class="px-2 py-1 rounded text-[10px] font-bold text-white" style="background-color: #ef4444">M
-                        - Mentoria</span>
-                    <span class="px-2 py-1 rounded text-[10px] font-bold text-white" style="background-color: #f97316">T
-                        - Diagnóstico</span>
-                    <span class="px-2 py-1 rounded text-[10px] font-bold text-white" style="background-color: #06b6d4">P
-                        - Programado</span>
-                    <span class="px-2 py-1 rounded text-[10px] font-bold text-white" style="background-color: #6b7280">O
-                        - Outros</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold text-white" style="background-color: #22c55e">C - Consultoria</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold text-[#101827]" style="background-color: #eab308">K - Kick-off</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold text-white" style="background-color: #3b82f6">F - Reunião Final</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold text-white" style="background-color: #ef4444">M - Mentoria</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold text-white" style="background-color: #f97316">T - Diagnóstico</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold text-white" style="background-color: #06b6d4">P - Programado</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold text-white" style="background-color: #6b7280">O - Outros</span>
                 </div>
             </div>
         </div>
 
-        <div class="flex-1 flex flex-col min-h-0 min-w-0">
-            <div class="overflow-x-auto custom-scrollbar flex-1" id="schedulerContainer" ondragover="allowDropAgenda(event)"
-                ondrop="dropAgenda(event)">
-                <div id="schedulerGrid" class="min-w-max">
-                    <div class="text-center py-20 text-gray-500">
-                        <i class="fas fa-spinner fa-spin text-3xl mb-4"></i>
-                        <p>Carregando agenda...</p>
+        <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col min-h-0 bg-dark-bg/10">
+
+            <div class="flex-shrink-0 flex flex-col min-h-0 min-w-0">
+                <div class="overflow-x-auto custom-scrollbar" id="schedulerContainer" ondragover="allowDropAgenda(event)"
+                    ondrop="dropAgenda(event)">
+                    <div id="schedulerGrid" class="min-w-max">
+                        <div class="text-center py-20 text-gray-500">
+                            <i class="fas fa-spinner fa-spin text-3xl mb-4"></i>
+                            <p>Carregando agenda...</p>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Lista Global de Programas -->
-        <div id="globalProgramsContainer" class="p-4 sm:p-6 lg:p-8 bg-dark-bg/20 border-t border-dark-border/30">
+            <!-- Lista Global de Programas (Internal Scroll) -->
+            <div id="globalProgramsContainer" class="flex-1 min-h-[400px] p-4 sm:p-6 lg:p-8 bg-dark-bg/20 border-t border-dark-border/30 overflow-y-auto custom-scrollbar">
             <div class="flex items-center justify-between mb-6">
                 <div class="flex items-center gap-3">
                     <div class="w-1 h-6 bg-blue-500 rounded-full"></div>
@@ -134,6 +129,7 @@
                     class="text-center py-10 text-gray-500 italic text-xs animate-pulse uppercase font-black tracking-widest">
                     Carregando listagem global...
                 </div>
+            </div>
             </div>
         </div>
     </main>
@@ -436,10 +432,10 @@
             <div id="campoEventoPrograma" class="space-y-1.5">
                 <label class="block text-xs sm:text-sm text-gray-400 font-bold text-green-400">PROGRAMA *</label>
                 <select id="eventoPrograma" onchange="atualizarDescricaoPrograma(this.value)"
-                    class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl border-2 border-green-500/30 focus:border-green-500 transition-all">
+                    class="w-full px-3 sm:px-4 py-2.5 sm:py-3 input-modern text-white text-sm rounded-xl border-2 border-green-500/30 focus:border-green-500 transition-all font-bold">
                     <option value="">Selecione um programa...</option>
                 </select>
-                <div id="descricaoProgramaSelecao" class="text-[11px] text-gray-400 italic mt-1 px-1 hidden min-h-[1.2rem]"></div>
+                <div id="descricaoProgramaSelecao" class="text-xs text-blue-400/90 italic mt-2 px-3 py-2 bg-blue-500/5 rounded-lg border border-blue-500/10 hidden"></div>
             </div>
 
             <div class="space-y-1.5">
