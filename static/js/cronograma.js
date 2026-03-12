@@ -544,6 +544,12 @@ function renderizarListaFeriados() {
 
 // --- MODAL & UI ACTIONS ---
 
+function abrirModalFeriados() {
+    console.log("CRONOGRAMA_DEBUG: abrirModalFeriados called");
+    const modal = document.getElementById('modalFeriados');
+    if (modal) {
+        carregarFeriados();
+        modal.classList.remove('hidden');
     } else {
         console.error("CRONOGRAMA_DEBUG: modalFeriados element not found");
     }
