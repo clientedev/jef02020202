@@ -193,7 +193,7 @@ function allowDropAgenda(ev) {
 
 async function dropAgenda(ev) {
     ev.preventDefault();
-    const cell = ev.target.closest('.scheduler-cell');
+    const cell = ev.target.closest('.agenda-day-cell');
     if (!cell) return;
 
     const targetData = cell.getAttribute('data-data');
@@ -217,7 +217,7 @@ async function dropAgenda(ev) {
     }
 
     // Reset opacity visually
-    const draggables = document.querySelectorAll('.scheduler-cell-content');
+    const draggables = document.querySelectorAll('.agenda-event-chip');
     draggables.forEach(d => d.style.opacity = "1");
 }
 
@@ -394,6 +394,8 @@ function renderizarScheduler() {
             html += `<td class="${tdClass}"
                         data-data="${dataStr}"
                         data-consultor="${consultor.id}"
+                        ondragover="allowDropAgenda(event)"
+                        ondrop="dropAgenda(event)"
                         onclick="abrirModalNovoEvento('${dataStr}', ${consultor.id})">`;
 
             if (eventosCell.length > 0) {
@@ -401,16 +403,25 @@ function renderizarScheduler() {
                     const cat = CATEGORIA_CORES_AGENDA[evento.categoria] || CATEGORIA_CORES_AGENDA['O'];
                     const empresaNome = evento.empresa_nome ? evento.empresa_nome.split(' ')[0] : (evento.sigla_empresa || 'N/A');
                     const programa = evento.program_nome ? evento.program_nome.substring(0, 15) : '';
+                    const isRestante = evento.carga_horaria && evento.carga_horaria < 4;
+                    const paddingClass = isRestante ? 'p-1' : 'p-2';
+                    const titleClass = isRestante ? 'text-[9px]' : 'text-[11px] mb-1';
+                    
+                    const hoursTag = isRestante ? `<span class="bg-white/20 px-1 py-0.5 rounded text-[8px] ml-1">${evento.carga_horaria}h</span>` : '';
 
-                    html += `<div class="agenda-event-chip"
+                    html += `<div class="agenda-event-chip ${paddingClass} rounded-lg mb-1.5 cursor-move shadow-sm hover:shadow-md transition-all relative overflow-hidden group"
                         draggable="true"
                         ondragstart="dragAgenda(event, ${evento.id})"
                         style="background: linear-gradient(135deg, ${cat.cor}, ${cat.cor}DD); color: ${cat.corTexto};"
                         onclick="event.stopPropagation(); mostrarDetalheEvento(${evento.id})"
                         onmouseenter="mostrarTooltip(event, ${evento.id})"
                         onmouseleave="esconderTooltip()">
-                        <div class="font-black truncate text-[11px] uppercase tracking-tighter">${empresaNome}</div>
-                        ${programa ? `<div class="text-[9px] font-bold opacity-80 truncate border-t border-white/10 mt-1 pt-1 italic">${programa}</div>` : ''}
+                        <div class="flex items-center justify-between">
+                            <div class="font-black truncate ${titleClass} uppercase tracking-tighter">${empresaNome}</div>
+                            ${hoursTag}
+                        </div>
+                        ${programa && !isRestante ? `<div class="text-[9px] font-bold opacity-80 truncate border-t border-white/10 mt-1 pt-1 italic">${programa}</div>` : ''}
+                        ${programa && isRestante ? `<div class="text-[8px] font-bold opacity-80 truncate italic">${programa}</div>` : ''}
                     </div>`;
                 });
             }
