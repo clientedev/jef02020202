@@ -137,10 +137,7 @@
                         <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold text-sm border border-blue-500/20 group-hover:scale-110 transition-transform">
                             ${consultor.substring(0, 2).toUpperCase()}
                         </div>
-                        <div class="flex flex-col">
-                            <span class="text-white font-black text-sm uppercase mb-0.5 group-hover:text-blue-400 transition-colors">${programa}</span>
-                            <span class="text-xs text-gray-500 font-medium italic group-hover:text-gray-400 transition-colors">${m.programa_descricao || 'Sem descrição'}</span>
-                        </div>
+                        <span class="text-sm text-white font-bold group-hover:text-blue-400 transition-colors">${consultor}</span>
                     </div>
                 </td>
                 <td class="px-6 py-5">
@@ -163,10 +160,9 @@
                     <span class="text-sm text-gray-300 font-medium">${empresa}</span>
                 </td>
                 <td class="px-6 py-5">
-                    <div class="mt-2">
-                        <span class="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20 font-black text-[10px] inline-block">
-                            ${programa} - [ ${m.descricao || 'Sem descrição'} ]
-                        </span>
+                    <div class="flex flex-col">
+                        <span class="text-white font-black text-sm uppercase mb-0.5 group-hover:text-blue-400 transition-colors">${programa}</span>
+                        <span class="text-xs text-gray-400 font-medium italic opacity-80 leading-tight">${m.programa_descricao || m.descricao || 'Sem descrição'}</span>
                     </div>
                 </td>
                 <td class="px-6 py-5 text-center">
