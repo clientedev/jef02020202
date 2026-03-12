@@ -123,8 +123,14 @@ def auto_schedule(request: AutoScheduleRequest, db: Session = Depends(get_db)):
             if horas_hoje < 0.1:
                 break
 
+            # If this is the remainder (not a full block) and we already created events,
+            # place it on the same day as the last event instead of spanning a new day.
+            data_evento = data_atual
+            if horas_hoje < request.horas_por_dia and len(eventos_criados) > 0:
+                data_evento = eventos_criados[-1].data
+
             novo_evento = CronogramaEvento(
-                data=data_atual,
+                data=data_evento,
                 categoria=request.categoria if request.categoria else CategoriaEvento.programado,
                 periodo=PeriodoEvento.dia_todo if horas_hoje >= 4 else PeriodoEvento.manha,
                 consultor_id=request.consultor_id,
@@ -132,7 +138,7 @@ def auto_schedule(request: AutoScheduleRequest, db: Session = Depends(get_db)):
                 projeto_id=request.projeto_id,
                 program_id=program.id,
                 titulo=f"{program.nome} - Sessão",
-                descricao=f"Sessão automática do programa {program.nome}. Carga: {horas_hoje}h",
+                descricao=f"Sessão automática da solução {program.nome}. Carga: {horas_hoje}h (Restante)",
                 carga_horaria=round(horas_hoje, 2),
                 numero_proposta=request.numero_proposta
             )
