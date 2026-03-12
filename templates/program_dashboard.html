@@ -124,9 +124,12 @@
 
             let apiUrl = `/api/programs/${programId}/dashboard`;
             const params = new URLSearchParams();
-            if (consultorId) params.append('consultor_id', consultorId);
-            if (empresaId) params.append('empresa_id', empresaId);
-            if (numeroProposta) params.append('numero_proposta', numeroProposta);
+            
+            const isValidParam = (val) => val && val !== 'null' && val !== 'undefined';
+
+            if (isValidParam(consultorId)) params.append('consultor_id', consultorId);
+            if (isValidParam(empresaId)) params.append('empresa_id', empresaId);
+            if (isValidParam(numeroProposta)) params.append('numero_proposta', numeroProposta);
             
             if (params.toString()) apiUrl += `?${params.toString()}`;
 

@@ -256,7 +256,7 @@ async function carregarProgramasPorEmpresaAgenda(empresaId) {
             select.innerHTML = '<option value="">Selecione uma solução...</option>' +
                 programas.map(p => {
                     const descSuffix = p.descricao ? ` - [ ${p.descricao} ]` : '';
-                    return `<option value="${p.id}">${p.nome}${descSuffix}</option>`;
+                    return `<option value="${p.id}">${p.nome}${descSuffix} - (${p.carga_horaria}h)</option>`;
                 }).join('');
         } else {
             programasCache = [];
@@ -513,6 +513,12 @@ async function renderizarGestaoGlobalAgenda(programIdToHighlight = null) {
             const progresso = cargaTotal > 0 ? Math.min(100, Math.round((horasRealizadas / cargaTotal) * 100)) : 0;
             const iniciais = (m.consultor_nome || '??').substring(0, 2).toUpperCase();
 
+            const queryParams = new URLSearchParams();
+            if (m.consultor_id) queryParams.append('consultor_id', m.consultor_id);
+            if (m.empresa_id) queryParams.append('empresa_id', m.empresa_id);
+            if (m.numero_proposta) queryParams.append('numero_proposta', m.numero_proposta);
+            const dashboardUrl = `/program/${m.program_id}/dashboard${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+
             return `
                             <tr class="bg-dark-card/40 hover:bg-blue-500/5 transition-all duration-300 group/row border border-white/5" id="program-row-${m.program_id}">
                                 <td class="px-5 py-4 first:rounded-l-2xl border-y border-white/5 border-l">
@@ -557,7 +563,7 @@ async function renderizarGestaoGlobalAgenda(programIdToHighlight = null) {
                                     </div>
                                 </td>
                                 <td class="px-5 py-4 last:rounded-r-2xl border-y border-white/5 border-r text-center">
-                                    <a href="/program/${m.program_id}/dashboard?consultor_id=${m.consultor_id}&empresa_id=${m.empresa_id}&numero_proposta=${m.numero_proposta || ''}" class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 hover:bg-blue-500 hover:text-white hover:scale-110 transition-all duration-300 mx-auto">
+                                    <a href="${dashboardUrl}" class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 hover:bg-blue-500 hover:text-white hover:scale-110 transition-all duration-300 mx-auto">
                                         <i class="fas fa-chart-line text-lg"></i>
                                     </a>
                                 </td>
