@@ -168,20 +168,20 @@ async function carregarProgramasPorEmpresa(empresaId) {
     }
 
     try {
-        select.innerHTML = '<option value="">Carregando programas...</option>';
+        select.innerHTML = '<option value="">Carregando soluções...</option>';
         const response = await apiRequest(`/api/programs/empresa/${empresaId}`);
         const programas = await response.json();
 
         if (programas.length > 0) {
             programasCache = programas;
-            select.innerHTML = '<option value="">Selecione um programa...</option>' +
+            select.innerHTML = '<option value="">Selecione uma solução...</option>' +
                 programas.map(p => {
                     const descSuffix = p.descricao ? ` - [ ${p.descricao} ]` : '';
-                    return `<option value="${p.id}">${p.nome} (${p.carga_horaria}h)${descSuffix}</option>`;
+                    return `<option value="${p.id}">${p.nome}${descSuffix}</option>`;
                 }).join('');
         } else {
             programasCache = [];
-            select.innerHTML = '<option value="">Nenhum programa cadastrado</option>';
+            select.innerHTML = '<option value="">Nenhuma solução cadastrada</option>';
         }
         atualizarDescricaoPrograma('');
     } catch (error) {
@@ -203,7 +203,7 @@ function atualizarDescricaoPrograma(programId) {
     const program = programasCache.find(p => String(p.id) === String(programId));
 
     if (program && program.descricao && program.descricao.trim() !== "") {
-        descElement.innerHTML = `<i class="fas fa-info-circle mr-1 opacity-70"></i> ${program.descricao}`;
+        descElement.innerHTML = `<i class="fas fa-info-circle mr-1 opacity-70"></i> <b>Solução:</b> ${program.descricao}`;
         descElement.classList.remove('hidden');
     } else {
         descElement.innerHTML = '';

@@ -150,6 +150,9 @@ def auto_schedule(request: AutoScheduleRequest, db: Session = Depends(get_db)):
 @router.get("/{program_id}/dashboard", response_model=ProgramDashboard)
 def get_program_dashboard(
     program_id: int, 
+    consultor_id: Optional[int] = None,
+    empresa_id: Optional[int] = None,
+    numero_proposta: Optional[str] = None,
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(obter_usuario_atual)
 ):
@@ -159,15 +162,28 @@ def get_program_dashboard(
     
     # Calc totals
     hoje = date.today()
-    realizado = db.query(func.sum(CronogramaEvento.carga_horaria))\
+    
+    def apply_filters(query):
+        if consultor_id:
+            query = query.filter(CronogramaEvento.consultor_id == consultor_id)
+        if empresa_id:
+            query = query.filter(CronogramaEvento.empresa_id == empresa_id)
+        if numero_proposta:
+            query = query.filter(CronogramaEvento.numero_proposta == numero_proposta)
+        return query
+
+    realizado_query = db.query(func.sum(CronogramaEvento.carga_horaria))\
         .filter(CronogramaEvento.program_id == program_id)\
-        .filter(CronogramaEvento.data <= hoje).scalar() or 0
+        .filter(CronogramaEvento.data <= hoje)
+    realizado = apply_filters(realizado_query).scalar() or 0
         
-    agendado = db.query(func.sum(CronogramaEvento.carga_horaria))\
-        .filter(CronogramaEvento.program_id == program_id).scalar() or 0
+    agendado_query = db.query(func.sum(CronogramaEvento.carga_horaria))\
+        .filter(CronogramaEvento.program_id == program_id)
+    agendado = apply_filters(agendado_query).scalar() or 0
         
     # Get all events (simplified info)
-    eventos_db = db.query(CronogramaEvento).filter(CronogramaEvento.program_id == program_id).order_by(CronogramaEvento.data.desc()).all()
+    eventos_query = db.query(CronogramaEvento).filter(CronogramaEvento.program_id == program_id).order_by(CronogramaEvento.data.desc())
+    eventos_db = apply_filters(eventos_query).all()
     
     atendimentos = []
     for e in eventos_db:
@@ -181,19 +197,23 @@ def get_program_dashboard(
         })
         
     # Stats by consultant
-    consultores_stats = db.query(
+    consultores_stats_query = db.query(
         Usuario.nome,
         func.sum(CronogramaEvento.carga_horaria).label("horas"),
         func.count(CronogramaEvento.id).label("sessoes")
     ).join(CronogramaEvento, Usuario.id == CronogramaEvento.consultor_id)\
-     .filter(CronogramaEvento.program_id == program_id)\
-     .group_by(Usuario.nome).all()
+     .filter(CronogramaEvento.program_id == program_id)
+    
+    consultores_stats = apply_filters(consultores_stats_query).group_by(Usuario.nome).all()
      
     consultores = [{"nome": c[0], "horas": c[1], "sessoes": c[2]} for c in consultores_stats]
     
     # First and last session
-    data_inicio = db.query(func.min(CronogramaEvento.data)).filter(CronogramaEvento.program_id == program_id).scalar()
-    data_fim = db.query(func.max(CronogramaEvento.data)).filter(CronogramaEvento.program_id == program_id).scalar()
+    data_inicio_query = db.query(func.min(CronogramaEvento.data)).filter(CronogramaEvento.program_id == program_id)
+    data_inicio = apply_filters(data_inicio_query).scalar()
+    
+    data_fim_query = db.query(func.max(CronogramaEvento.data)).filter(CronogramaEvento.program_id == program_id)
+    data_fim = apply_filters(data_fim_query).scalar()
 
     return {
         "id": program.id,

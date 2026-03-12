@@ -113,7 +113,7 @@ window.prepararEdicaoPrograma = function (id) {
     if (btnSubmit) btnSubmit.innerHTML = '<i class="fas fa-save"></i> Salvar Alterações';
 
     const modalTitle = document.querySelector('#modalProgramas h3');
-    if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-edit text-green-400"></i> Editar Programa';
+    if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-edit text-green-400"></i> Editar Solução';
 
     // Rolar para o topo do formulário
     const form = document.getElementById('formPrograma');
@@ -121,7 +121,7 @@ window.prepararEdicaoPrograma = function (id) {
 }
 
 window.deletarPrograma = async function (id) {
-    if (!confirm('Deseja realmente excluir este programa? Os eventos agendados não serão removidos.')) return;
+    if (!confirm('Deseja realmente excluir esta solução? Os eventos agendados não serão removidos.')) return;
     try {
         const response = await apiRequest(`/api/programs/${id}`, { method: 'DELETE' });
         if (response.ok) {
@@ -163,7 +163,7 @@ if (formProg) {
 
                 // Resetar título do modal se estivermos na agenda
                 const modalTitle = document.querySelector('#modalProgramas h3');
-                if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-list-check text-blue-400"></i> Gestão de Programas';
+                if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-list-check text-blue-400"></i> Gestão de Soluções';
 
                 await carregarProgramas();
 

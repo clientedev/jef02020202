@@ -253,10 +253,10 @@ async function carregarProgramasPorEmpresaAgenda(empresaId) {
 
         if (programas.length > 0) {
             programasCache = programas;
-            select.innerHTML = '<option value="">Selecione um programa...</option>' +
+            select.innerHTML = '<option value="">Selecione uma solução...</option>' +
                 programas.map(p => {
                     const descSuffix = p.descricao ? ` - [ ${p.descricao} ]` : '';
-                    return `<option value="${p.id}">${p.nome} (${p.carga_horaria}h)${descSuffix}</option>`;
+                    return `<option value="${p.id}">${p.nome}${descSuffix}</option>`;
                 }).join('');
         } else {
             programasCache = [];
@@ -540,7 +540,7 @@ async function renderizarGestaoGlobalAgenda(programIdToHighlight = null) {
                                     <div class="text-gray-300 text-[10px] font-black uppercase tracking-tight truncate group-hover/row:text-white transition-colors">${m.empresa}</div>
                                     <div class="mt-2">
                                         <span class="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20 font-black text-[10px]">
-                                            ${m.nome}
+                                            ${m.nome} - [ ${m.descricao || 'Sem descrição'} ]
                                         </span>
                                     </div>
                                 </td>
@@ -557,7 +557,7 @@ async function renderizarGestaoGlobalAgenda(programIdToHighlight = null) {
                                     </div>
                                 </td>
                                 <td class="px-5 py-4 last:rounded-r-2xl border-y border-white/5 border-r text-center">
-                                    <a href="/program/${m.program_id}/dashboard" class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 hover:bg-blue-500 hover:text-white hover:scale-110 transition-all duration-300 mx-auto">
+                                    <a href="/program/${m.program_id}/dashboard?consultor_id=${m.consultor_id}&empresa_id=${m.empresa_id}&numero_proposta=${m.numero_proposta || ''}" class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 hover:bg-blue-500 hover:text-white hover:scale-110 transition-all duration-300 mx-auto">
                                         <i class="fas fa-chart-line text-lg"></i>
                                     </a>
                                 </td>
@@ -769,7 +769,7 @@ function atualizarDescricaoPrograma(programId) {
     const program = programasCache.find(p => String(p.id) === String(programId));
 
     if (program && program.descricao && program.descricao.trim() !== "") {
-        descElement.innerHTML = `<i class="fas fa-info-circle mr-1 opacity-70"></i> ${program.descricao}`;
+        descElement.innerHTML = `<i class="fas fa-info-circle mr-1 opacity-70"></i> <b>Solução:</b> ${program.descricao}`;
         descElement.classList.remove('hidden');
     } else {
         descElement.innerHTML = '';

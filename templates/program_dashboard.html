@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard do Programa - Nucleo 1.03{% endblock %}
+{% block title %}Dashboard da Solução - Nucleo 1.03{% endblock %}
 
 {% set active_page = 'agenda_operacional' %}
 
@@ -117,7 +117,20 @@
 
     async function carregarDashboard() {
         try {
-            const res = await apiRequest(`/api/programs/${programId}/dashboard`);
+            const urlParams = new URL(window.location.href).searchParams;
+            const consultorId = urlParams.get('consultor_id');
+            const empresaId = urlParams.get('empresa_id');
+            const numeroProposta = urlParams.get('numero_proposta');
+
+            let apiUrl = `/api/programs/${programId}/dashboard`;
+            const params = new URLSearchParams();
+            if (consultorId) params.append('consultor_id', consultorId);
+            if (empresaId) params.append('empresa_id', empresaId);
+            if (numeroProposta) params.append('numero_proposta', numeroProposta);
+            
+            if (params.toString()) apiUrl += `?${params.toString()}`;
+
+            const res = await apiRequest(apiUrl);
             if (!res.ok) {
                 alert("Erro ao carregar dashboard");
                 return;
@@ -125,8 +138,12 @@
             const data = await res.json();
 
             // Populate header
-            document.getElementById('progNome').innerText = data.nome;
+            const fullTitle = data.descricao ? `${data.nome} - [ ${data.descricao} ]` : data.nome;
+            document.getElementById('progNome').innerText = fullTitle;
             document.getElementById('progEmpresa').innerText = `Empresa: ${data.empresa_nome}`;
+
+            const propostatext = numeroProposta ? ` | Proposta: ${numeroProposta}` : "";
+            document.getElementById('progEmpresa').innerText += propostatext;
 
             // Populate stats
             document.getElementById('metaTotal').innerText = `${data.carga_horaria.toFixed(1)}h`;
